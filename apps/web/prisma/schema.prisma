@@ -1,0 +1,70 @@
+// Cambridge KET / PET — Prisma schema
+// Phase 1, Step 3 — minimal: User, TeacherActivationCode, Class, ClassMember.
+// Future steps extend additively via new migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum ExamType {
+  KET
+  PET
+}
+
+model User {
+  id          String    @id @default(cuid())
+  supabaseId  String    @unique
+  email       String    @unique
+  displayName String?
+  role        UserRole  @default(STUDENT)
+  locale      String    @default("zh-CN")
+  activatedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  ownedClasses     Class[]       @relation("TeacherClasses")
+  classMemberships ClassMember[]
+}
+
+model TeacherActivationCode {
+  code      String    @id
+  used      Boolean   @default(false)
+  usedById  String?
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Class {
+  id         String    @id @default(cuid())
+  name       String
+  teacherId  String
+  inviteCode String    @unique
+  examFocus  ExamType?
+  createdAt  DateTime  @default(now())
+
+  teacher User          @relation("TeacherClasses", fields: [teacherId], references: [id])
+  members ClassMember[]
+}
+
+model ClassMember {
+  classId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  class Class @relation(fields: [classId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@id([classId, userId])
+}
