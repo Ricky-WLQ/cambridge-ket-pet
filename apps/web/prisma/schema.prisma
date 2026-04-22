@@ -76,6 +76,7 @@ model User {
   attempts         TestAttempt[]
   generationEvents GenerationEvent[]
   mistakeNotes     MistakeNote[]
+  authoredComments Comment[]         @relation("CommentAuthor")
 }
 
 model Account {
@@ -135,6 +136,7 @@ model Class {
   teacher     User          @relation("TeacherClasses", fields: [teacherId], references: [id])
   members     ClassMember[]
   assignments Assignment[]
+  comments    Comment[]
 }
 
 model ClassMember {
@@ -274,6 +276,26 @@ model Assignment {
 
   @@index([classId])
   @@index([classId, examType, kind])
+}
+
+// =============== Teacher -> Student comments ===============
+
+// Short teacher note targeting one student in a class. Student views all
+// received comments on /history. Phase 1 is one-way and no-unread-tracking;
+// class-wide comments and student replies can be added later.
+model Comment {
+  id           String   @id @default(cuid())
+  classId      String
+  authorId     String
+  targetUserId String
+  body         String
+  createdAt    DateTime @default(now())
+
+  class  Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  author User  @relation("CommentAuthor", fields: [authorId], references: [id])
+
+  @@index([targetUserId, createdAt])
+  @@index([classId, targetUserId])
 }
 
 // =============== Rate limiting ===============

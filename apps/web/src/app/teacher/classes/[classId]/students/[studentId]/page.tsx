@@ -4,6 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import AnalysisPanel from "./AnalysisPanel";
+import CommentPanel, { type CommentItem } from "./CommentPanel";
 import ScoreTrend from "./ScoreTrend";
 
 const KIND_ZH: Record<string, string> = {
@@ -127,6 +128,20 @@ export default async function StudentDetailPage({
   if (!membership) notFound();
 
   const student = membership.user;
+
+  const commentsDb = await prisma.comment.findMany({
+    where: { classId, targetUserId: studentId },
+    include: { author: { select: { id: true, name: true, email: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+  const comments: CommentItem[] = commentsDb.map((c) => ({
+    id: c.id,
+    body: c.body,
+    createdAt: c.createdAt.toISOString(),
+    authorName: c.author.name ?? c.author.email,
+    authorId: c.authorId,
+  }));
 
   const [attempts, aggregate, perKind, mistakeByStatus, mistakesByExamPoint] =
     await Promise.all([
@@ -432,6 +447,14 @@ export default async function StudentDetailPage({
             </div>
           </>
         )}
+
+        <h2 className="mt-8 mb-3 text-lg font-semibold">留言记录</h2>
+        <CommentPanel
+          classId={cls.id}
+          studentId={studentId}
+          currentUserId={userId}
+          comments={comments}
+        />
 
         <h2 className="mt-8 mb-3 text-lg font-semibold">答卷记录</h2>
         {attempts.length === 0 ? (

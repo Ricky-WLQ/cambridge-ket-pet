@@ -129,7 +129,7 @@ export default async function HistoryPage({
     where.test = testFilter;
   }
 
-  const [attempts, mistakeCount] = await Promise.all([
+  const [attempts, mistakeCount, comments] = await Promise.all([
     prisma.testAttempt.findMany({
       where,
       include: {
@@ -142,6 +142,15 @@ export default async function HistoryPage({
     }) as Promise<AttemptRow[]>,
     prisma.mistakeNote.count({
       where: { userId, status: "NEW" },
+    }),
+    prisma.comment.findMany({
+      where: { targetUserId: userId },
+      include: {
+        author: { select: { name: true, email: true } },
+        class: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
     }),
   ]);
 
@@ -186,6 +195,68 @@ export default async function HistoryPage({
             PET 门户
           </Link>
         </div>
+
+        {comments.length > 0 && (
+          <div className="mb-6 rounded-md border border-blue-200 bg-blue-50/60 p-4">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
+              <span aria-hidden>💬</span>
+              老师的留言
+              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-blue-700">
+                {comments.length}
+              </span>
+            </div>
+            <ul className="space-y-2">
+              {comments.slice(0, 5).map((c) => (
+                <li
+                  key={c.id}
+                  className="rounded-md border border-blue-100 bg-white p-3"
+                >
+                  <div className="text-xs text-neutral-500">
+                    {c.author.name ?? c.author.email} · {c.class.name} ·{" "}
+                    {c.createdAt.toLocaleString("zh-CN", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">
+                    {c.body}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            {comments.length > 5 && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs text-blue-800/70 hover:text-blue-900">
+                  查看更多留言（{comments.length - 5} 条）
+                </summary>
+                <ul className="mt-2 space-y-2">
+                  {comments.slice(5).map((c) => (
+                    <li
+                      key={c.id}
+                      className="rounded-md border border-blue-100 bg-white p-3"
+                    >
+                      <div className="text-xs text-neutral-500">
+                        {c.author.name ?? c.author.email} · {c.class.name} ·{" "}
+                        {c.createdAt.toLocaleString("zh-CN", {
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">
+                        {c.body}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
 
         <FiltersBar />
 
