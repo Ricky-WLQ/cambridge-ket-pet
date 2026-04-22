@@ -1,18 +1,44 @@
 import Link from "next/link";
 import { auth, signOut } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export default async function Home() {
   const session = await auth();
-  const user = session?.user;
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+
+  const dbUser = userId
+    ? await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, email: true, name: true },
+      })
+    : null;
+
+  const loggedIn = !!dbUser;
+  const isTeacher = dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN";
 
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
         <div className="text-lg font-semibold">剑桥 KET / PET</div>
         <nav className="flex items-center gap-3 text-sm">
-          {user ? (
+          {loggedIn ? (
             <>
-              <span className="text-neutral-600">{user.email}</span>
+              <span className="flex items-center gap-2 text-neutral-600">
+                {isTeacher && (
+                  <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+                    教师
+                  </span>
+                )}
+                <span>{dbUser?.email}</span>
+              </span>
+              {!isTeacher && (
+                <Link
+                  href="/teacher/activate"
+                  className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+                >
+                  申请教师
+                </Link>
+              )}
               <form
                 action={async () => {
                   "use server";
@@ -54,7 +80,7 @@ export default async function Home() {
           </p>
         </div>
 
-        {user ? (
+        {loggedIn ? (
           <div className="flex gap-4">
             <Link
               href="/ket"
