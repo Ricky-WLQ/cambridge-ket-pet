@@ -109,3 +109,36 @@ model ClassMember {
 
   @@id([classId, userId])
 }
+
+// Exam-point (考点) reference table. One row per part of each paper.
+// IDs use a stable human-readable scheme: "{examType}.{paperCode}.P{part}".
+// Seeded once from Cambridge-official format data in the implementation plan.
+model ExamPoint {
+  id            String   @id
+  examType      ExamType
+  paperCode     String // "RW" (KET combined) | "R" | "W" | "L" | "S"
+  part          Int?
+  code          String // short code e.g. "R_P1_matching"
+  label         String
+  descriptionZh String
+  skillTags     Json
+  createdAt     DateTime @default(now())
+
+  @@unique([examType, paperCode, part])
+  @@index([examType])
+}
+
+// Difficulty-point (难点) reference table. Shared across KET + PET unless
+// examType is set. Seeded from the top-10 cross-exam difficulty list.
+model DifficultyPoint {
+  id            String    @id
+  examType      ExamType? // null => applies to both KET and PET
+  code          String
+  label         String
+  descriptionZh String
+  category      String // "grammar" | "vocab" | "pronunciation" | "discourse"
+  createdAt     DateTime  @default(now())
+
+  @@index([examType])
+  @@index([category])
+}
