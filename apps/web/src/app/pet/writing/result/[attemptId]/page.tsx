@@ -67,6 +67,10 @@ export default async function PetWritingResultPage({
   const payload = attempt.test.payload as unknown as WritingPayload;
   const stored = (attempt.weakPoints ?? {}) as unknown as StoredWritingResult;
   const userAnswers = (attempt.answers ?? {}) as Record<string, string>;
+  const chosenOption =
+    userAnswers.chosenOption === "A" || userAnswers.chosenOption === "B"
+      ? (userAnswers.chosenOption as "A" | "B")
+      : null;
 
   const totalBand = attempt.rawScore ?? 0;
   const scaledScore = attempt.scaledScore ?? 0;
@@ -84,8 +88,13 @@ export default async function PetWritingResultPage({
         <h1 className="text-xl font-semibold">
           PET 写作 · Part {attempt.test.part} · 成绩
         </h1>
-        <p className="text-sm text-neutral-500">
-          {attempt.mode === "MOCK" ? "模拟考试" : "练习模式"}
+        <p className="flex items-center gap-2 text-sm text-neutral-500">
+          <span>{attempt.mode === "MOCK" ? "模拟考试" : "练习模式"}</span>
+          {chosenOption && (
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-900">
+              你选择了：选项 {chosenOption}
+            </span>
+          )}
         </p>
 
         <div className="mt-6 rounded-md border border-neutral-300 p-6 text-center">
@@ -155,7 +164,14 @@ export default async function PetWritingResultPage({
         </div>
 
         <div className="mt-4 rounded-md border border-neutral-200 p-4">
-          <div className="mb-2 text-sm font-medium">你的作文</div>
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-sm font-medium">你的作文</span>
+            {chosenOption && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-900">
+                选项 {chosenOption}
+              </span>
+            )}
+          </div>
           <div className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
             {userAnswers.response ?? ""}
           </div>

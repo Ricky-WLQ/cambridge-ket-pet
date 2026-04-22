@@ -34,6 +34,12 @@ export async function SiteHeader() {
               <span>{dbUser?.email}</span>
             </span>
             <Link
+              href="/history"
+              className="text-neutral-700 hover:text-neutral-900"
+            >
+              {t.nav.history}
+            </Link>
+            <Link
               href="/classes"
               className="text-neutral-700 hover:text-neutral-900"
             >

@@ -23,6 +23,7 @@ export const t = {
     applyTeacher: "申请教师",
     teacherBadge: "教师",
     backHome: "← 返回首页",
+    history: "历史记录",
   },
   common: {
     loading: "加载中…",
