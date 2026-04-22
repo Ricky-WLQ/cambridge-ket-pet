@@ -18,9 +18,13 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
 from app.agents.reading import generate_reading_test
+from app.agents.writing import generate_writing_test
 from app.prompts.reading import UnsupportedReadingPart
+from app.prompts.writing import UnsupportedWritingPart
 from app.schemas.reading import ReadingTestRequest, ReadingTestResponse
+from app.schemas.writing import WritingTestRequest, WritingTestResponse
 from app.validators.reading import validate_reading_test
+from app.validators.writing import validate_writing_test
 
 load_dotenv()
 
@@ -139,4 +143,57 @@ async def reading_generate(req: ReadingTestRequest) -> ReadingTestResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal error generating reading test",
+        ) from e
+
+
+@app.post(
+    "/v1/writing/generate",
+    response_model=WritingTestResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def writing_generate(req: WritingTestRequest) -> WritingTestResponse:
+    """Generate a fresh KET/PET writing task. Retries up to 3 times on
+    format-validator failure; returns 422 after that."""
+    try:
+        last_errors: list[str] = []
+        for attempt in range(1, 4):
+            try:
+                response = await generate_writing_test(req)
+            except UnsupportedWritingPart as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e),
+                ) from e
+
+            errors = validate_writing_test(response, req.exam_type, req.part)
+            if not errors:
+                if attempt > 1:
+                    log.info("writing_generate succeeded on attempt %d", attempt)
+                return response
+
+            last_errors = [f"{e.code}: {e.message}" for e in errors]
+            log.warning(
+                "writing_generate attempt %d failed format checks: %s",
+                attempt,
+                last_errors,
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "generation_failed_validation",
+                "message": (
+                    "The generator could not produce a valid writing task "
+                    "after 3 attempts. Please retry."
+                ),
+                "last_errors": last_errors,
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001 — last-resort log + 500
+        log.exception("writing_generate unexpected failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal error generating writing task",
         ) from e
