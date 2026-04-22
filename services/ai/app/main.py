@@ -10,13 +10,22 @@ Responsibilities right now (Phase 1, Step 9):
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
+from app.agents.reading import generate_reading_test
+from app.prompts.reading import UnsupportedReadingPart
+from app.schemas.reading import ReadingTestRequest, ReadingTestResponse
+from app.validators.reading import validate_reading_test
+
 load_dotenv()
+
+log = logging.getLogger("ketpet-ai")
+logging.basicConfig(level=logging.INFO)
 
 INTERNAL_SHARED_SECRET: str = os.environ.get("INTERNAL_SHARED_SECRET", "")
 
@@ -73,5 +82,61 @@ def ready() -> dict[str, object]:
 @app.get("/v1/ping", dependencies=[Depends(verify_internal_auth)])
 def ping() -> dict[str, str]:
     """Authenticated ping — verifies the Next.js <-> AI shared-secret
-    handshake works end-to-end. Real endpoints replace this in Step 10+."""
+    handshake works end-to-end."""
     return {"pong": "ketpet-ai"}
+
+
+@app.post(
+    "/v1/reading/generate",
+    response_model=ReadingTestResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def reading_generate(req: ReadingTestRequest) -> ReadingTestResponse:
+    """Generate a fresh KET/PET reading test.
+
+    Retries up to 3 times on format-validator failure; after that, returns
+    422 so the Next.js caller can surface a user-visible error.
+    """
+    try:
+        last_errors: list[str] = []
+        for attempt in range(1, 4):
+            try:
+                response = await generate_reading_test(req)
+            except UnsupportedReadingPart as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=str(e),
+                ) from e
+
+            errors = validate_reading_test(response, req.exam_type, req.part)
+            if not errors:
+                if attempt > 1:
+                    log.info("reading_generate succeeded on attempt %d", attempt)
+                return response
+
+            last_errors = [f"{e.code}: {e.message}" for e in errors]
+            log.warning(
+                "reading_generate attempt %d failed format checks: %s",
+                attempt,
+                last_errors,
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error": "generation_failed_validation",
+                "message": (
+                    "The generator could not produce a valid test after 3 "
+                    "attempts. Please retry."
+                ),
+                "last_errors": last_errors,
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001 — last-resort log + 500
+        log.exception("reading_generate unexpected failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal error generating reading test",
+        ) from e
