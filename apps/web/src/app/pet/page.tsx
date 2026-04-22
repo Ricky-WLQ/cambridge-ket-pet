@@ -27,12 +27,15 @@ export default async function PetPortalPage() {
             </div>
           </Link>
 
-          <div className="rounded-lg border border-dashed border-neutral-300 p-5 opacity-60">
+          <Link
+            href="/pet/writing/new"
+            className="rounded-lg border border-neutral-300 p-5 transition hover:border-neutral-900 hover:shadow-sm"
+          >
             <div className="text-lg font-semibold">写作</div>
             <div className="mt-1 text-xs text-neutral-500">
-              Writing · 即将开放
+              Writing · AI 即时生成写作任务
             </div>
-          </div>
+          </Link>
 
           <div className="rounded-lg border border-dashed border-neutral-300 p-5 opacity-60">
             <div className="text-lg font-semibold">听力</div>

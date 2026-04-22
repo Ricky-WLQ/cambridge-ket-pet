@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { gradeReading, type GradableQuestion } from "@/lib/grading";
 
 const submitSchema = z.object({
+  // Generic string map: keyed by question-id for READING, or by
+  // { response, chosenOption? } for WRITING. Per-kind validation below.
   answers: z.record(z.string(), z.string()),
 });
 
@@ -49,41 +51,56 @@ export async function POST(
     );
   }
 
-  // Phase 1 only reading tests have a deterministic grader; writing will be
-  // graded in Step 16 via the AI grader, listening in Phase 2.
-  if (attempt.test.kind !== "READING") {
-    return NextResponse.json(
-      { error: "当前仅支持阅读题的自动批改" },
-      { status: 400 },
-    );
-  }
+  // --------- READING: deterministic grader runs synchronously, status -> GRADED
+  if (attempt.test.kind === "READING") {
+    const payload = attempt.test.payload as unknown as {
+      questions: GradableQuestion[];
+    };
+    const result = gradeReading(payload.questions, parsed.data.answers);
 
-  const payload = attempt.test.payload as unknown as {
-    questions: GradableQuestion[];
-  };
+    await prisma.testAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status: "GRADED",
+        submittedAt: new Date(),
+        answers: parsed.data.answers,
+        rawScore: result.rawScore,
+        totalPossible: result.totalPossible,
+        scaledScore: result.scaledScore,
+        weakPoints: {
+          examPoints: result.weakPoints.examPoints,
+          difficultyPoints: result.weakPoints.difficultyPoints,
+        },
+      },
+    });
 
-  const result = gradeReading(payload.questions, parsed.data.answers);
-
-  await prisma.testAttempt.update({
-    where: { id: attemptId },
-    data: {
-      status: "GRADED",
-      submittedAt: new Date(),
-      answers: parsed.data.answers,
+    return NextResponse.json({
+      attemptId,
       rawScore: result.rawScore,
       totalPossible: result.totalPossible,
       scaledScore: result.scaledScore,
-      weakPoints: {
-        examPoints: result.weakPoints.examPoints,
-        difficultyPoints: result.weakPoints.difficultyPoints,
-      },
-    },
-  });
+    });
+  }
 
-  return NextResponse.json({
-    attemptId,
-    rawScore: result.rawScore,
-    totalPossible: result.totalPossible,
-    scaledScore: result.scaledScore,
-  });
+  // --------- WRITING: save response, flip to SUBMITTED; AI grader (Step 16) flips to GRADED later
+  if (attempt.test.kind === "WRITING") {
+    const response = parsed.data.answers.response ?? "";
+    if (!response.trim()) {
+      return NextResponse.json({ error: "请先写下你的作文" }, { status: 400 });
+    }
+    await prisma.testAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status: "SUBMITTED",
+        submittedAt: new Date(),
+        answers: parsed.data.answers,
+      },
+    });
+    return NextResponse.json({ attemptId, pending: "grading" });
+  }
+
+  return NextResponse.json(
+    { error: "当前题型暂不支持自动批改" },
+    { status: 400 },
+  );
 }
