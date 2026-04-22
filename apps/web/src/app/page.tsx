@@ -31,7 +31,20 @@ export default async function Home() {
                 )}
                 <span>{dbUser?.email}</span>
               </span>
-              {!isTeacher && (
+              <Link
+                href="/classes"
+                className="text-neutral-700 hover:text-neutral-900"
+              >
+                我的班级
+              </Link>
+              {isTeacher ? (
+                <Link
+                  href="/teacher/classes"
+                  className="text-neutral-700 hover:text-neutral-900"
+                >
+                  教师面板
+                </Link>
+              ) : (
                 <Link
                   href="/teacher/activate"
                   className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
