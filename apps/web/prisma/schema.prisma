@@ -46,6 +46,12 @@ enum AttemptStatus {
   ABANDONED
 }
 
+enum NoteStatus {
+  NEW
+  REVIEWED
+  MASTERED
+}
+
 // =============== Users + Auth (Auth.js) ===============
 
 model User {
@@ -69,6 +75,7 @@ model User {
 
   attempts         TestAttempt[]
   generationEvents GenerationEvent[]
+  mistakeNotes     MistakeNote[]
 }
 
 model Account {
@@ -214,6 +221,31 @@ model TestAttempt {
 
   @@index([userId, startedAt])
   @@index([testId])
+}
+
+// =============== Mistake notes ===============
+
+// One row per wrong question answer. Automatically created during READING
+// grading. Students can walk through them at /history/mistakes and update
+// status NEW -> REVIEWED -> MASTERED as they study.
+model MistakeNote {
+  id                String     @id @default(cuid())
+  userId            String
+  attemptId         String
+  questionId        String
+  userAnswer        String
+  correctAnswer     String
+  explanationZh     String?
+  examPointId       String?
+  difficultyPointId String?
+  status            NoteStatus @default(NEW)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([attemptId])
 }
 
 // =============== Rate limiting ===============

@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { gradeReading, type GradableQuestion } from "@/lib/grading";
-import { gradeWriting, type WritingTaskType } from "@/lib/aiClient";
+import { gradeReading } from "@/lib/grading";
+import {
+  gradeWriting,
+  type ReadingQuestion,
+  type WritingTaskType,
+} from "@/lib/aiClient";
 
 export const maxDuration = 150; // allow time for the writing grader (~30-90s)
 
@@ -64,24 +68,45 @@ export async function POST(
   // --------- READING: deterministic grader runs synchronously, status -> GRADED
   if (attempt.test.kind === "READING") {
     const payload = attempt.test.payload as unknown as {
-      questions: GradableQuestion[];
+      questions: ReadingQuestion[];
     };
     const result = gradeReading(payload.questions, parsed.data.answers);
 
-    await prisma.testAttempt.update({
-      where: { id: attemptId },
-      data: {
-        status: "GRADED",
-        submittedAt: new Date(),
-        answers: parsed.data.answers,
-        rawScore: result.rawScore,
-        totalPossible: result.totalPossible,
-        scaledScore: result.scaledScore,
-        weakPoints: {
-          examPoints: result.weakPoints.examPoints,
-          difficultyPoints: result.weakPoints.difficultyPoints,
+    // Build MistakeNote rows for wrong answers (one per question that was
+    // either wrong or blank).
+    const mistakeNotesData = payload.questions
+      .map((q, i) => ({ q, pq: result.perQuestion[i] }))
+      .filter(({ pq }) => !pq.isCorrect)
+      .map(({ q, pq }) => ({
+        userId,
+        attemptId,
+        questionId: q.id,
+        userAnswer: pq.userAnswer,
+        correctAnswer: pq.correctAnswer,
+        explanationZh: q.explanation_zh ?? null,
+        examPointId: q.exam_point_id ?? null,
+        difficultyPointId: q.difficulty_point_id ?? null,
+      }));
+
+    await prisma.$transaction(async (tx) => {
+      await tx.testAttempt.update({
+        where: { id: attemptId },
+        data: {
+          status: "GRADED",
+          submittedAt: new Date(),
+          answers: parsed.data.answers,
+          rawScore: result.rawScore,
+          totalPossible: result.totalPossible,
+          scaledScore: result.scaledScore,
+          weakPoints: {
+            examPoints: result.weakPoints.examPoints,
+            difficultyPoints: result.weakPoints.difficultyPoints,
+          },
         },
-      },
+      });
+      if (mistakeNotesData.length > 0) {
+        await tx.mistakeNote.createMany({ data: mistakeNotesData });
+      }
     });
 
     return NextResponse.json({

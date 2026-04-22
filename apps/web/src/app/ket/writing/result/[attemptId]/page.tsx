@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { redoAttemptAction } from "@/lib/attemptActions";
 
 type WritingPayload = {
   prompt: string;
@@ -158,6 +160,32 @@ export default async function KetWritingResultPage({
           <div className="mb-2 text-sm font-medium">你的作文</div>
           <div className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
             {userAnswers.response ?? ""}
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/history"
+            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+          >
+            ← 返回历史记录
+          </Link>
+          <div className="flex flex-wrap gap-2">
+            <form action={redoAttemptAction}>
+              <input type="hidden" name="attemptId" value={attempt.id} />
+              <button
+                type="submit"
+                className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+              >
+                再做一次
+              </button>
+            </form>
+            <Link
+              href="/ket"
+              className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+            >
+              返回 KET 门户
+            </Link>
           </div>
         </div>
       </main>

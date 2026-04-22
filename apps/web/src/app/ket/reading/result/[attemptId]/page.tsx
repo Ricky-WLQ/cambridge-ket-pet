@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import ResultView, {
@@ -5,6 +6,7 @@ import ResultView, {
 } from "@/components/reading/ResultView";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { redoAttemptAction } from "@/lib/attemptActions";
 import type { GradableQuestionType } from "@/lib/grading";
 
 type ReadingTestPayload = {
@@ -119,6 +121,31 @@ export default async function KetReadingResultPage({
           questions={payload.questions}
           weakPoints={weakPoints}
         />
+        <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3 px-6 pb-10">
+          <Link
+            href="/history"
+            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+          >
+            ← 返回历史记录
+          </Link>
+          <div className="flex flex-wrap gap-2">
+            <form action={redoAttemptAction}>
+              <input type="hidden" name="attemptId" value={attempt.id} />
+              <button
+                type="submit"
+                className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+              >
+                再做一次
+              </button>
+            </form>
+            <Link
+              href="/ket"
+              className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+            >
+              返回 KET 门户
+            </Link>
+          </div>
+        </div>
       </main>
     </div>
   );
