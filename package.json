@@ -1,0 +1,9 @@
+{
+  "name": "cambridge-ket-pet",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  }
+}

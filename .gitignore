@@ -1,0 +1,63 @@
+# ========== Node / Next.js ==========
+node_modules/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+.pnpm-store/
+.turbo/
+
+# ========== Python ==========
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.python-version
+
+# ========== Env / secrets ==========
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+
+# ========== Logs / coverage ==========
+*.log
+logs/
+coverage/
+.nyc_output/
+
+# ========== OS ==========
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ========== Editors ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========== Database / Docker volumes ==========
+*.sqlite
+*.sqlite3
+*.db
+docker-volumes/
+postgres-data/
+
+# ========== Claude / local tooling ==========
+.claude/settings.local.json
+
+# ========== Next.js cache / build artifacts ==========
+next-env.d.ts
+.vercel
