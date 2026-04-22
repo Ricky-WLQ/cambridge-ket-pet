@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { gradeReading, type GradableQuestion } from "@/lib/grading";
 
 const submitSchema = z.object({
   answers: z.record(z.string(), z.string()),
@@ -33,8 +34,11 @@ export async function POST(
 
   const attempt = await prisma.testAttempt.findUnique({
     where: { id: attemptId },
-    select: { id: true, userId: true, status: true },
+    include: {
+      test: { select: { kind: true, payload: true } },
+    },
   });
+
   if (!attempt || attempt.userId !== userId) {
     return NextResponse.json({ error: "未找到作答" }, { status: 404 });
   }
@@ -45,16 +49,41 @@ export async function POST(
     );
   }
 
+  // Phase 1 only reading tests have a deterministic grader; writing will be
+  // graded in Step 16 via the AI grader, listening in Phase 2.
+  if (attempt.test.kind !== "READING") {
+    return NextResponse.json(
+      { error: "当前仅支持阅读题的自动批改" },
+      { status: 400 },
+    );
+  }
+
+  const payload = attempt.test.payload as unknown as {
+    questions: GradableQuestion[];
+  };
+
+  const result = gradeReading(payload.questions, parsed.data.answers);
+
   await prisma.testAttempt.update({
     where: { id: attemptId },
     data: {
-      status: "SUBMITTED",
+      status: "GRADED",
       submittedAt: new Date(),
       answers: parsed.data.answers,
+      rawScore: result.rawScore,
+      totalPossible: result.totalPossible,
+      scaledScore: result.scaledScore,
+      weakPoints: {
+        examPoints: result.weakPoints.examPoints,
+        difficultyPoints: result.weakPoints.difficultyPoints,
+      },
     },
   });
 
-  // Grading lands in Step 12; for now we just redirect to the result page
-  // which will show a "grading pending" view until the grader is built.
-  return NextResponse.json({ attemptId });
+  return NextResponse.json({
+    attemptId,
+    rawScore: result.rawScore,
+    totalPossible: result.totalPossible,
+    scaledScore: result.scaledScore,
+  });
 }
