@@ -133,25 +133,44 @@ export default function ReadingRunner({
       )}
 
       <ol className="space-y-6">
-        {questions.map((q, idx) => (
-          <li key={q.id} className="rounded-md border border-neutral-200 p-4">
-            <div className="mb-3 flex items-start gap-2">
-              <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 px-1.5 text-xs font-medium text-white">
-                {idx + 1}
-              </span>
-              <div className="flex-1 whitespace-pre-wrap text-sm">
-                {q.prompt}
+        {questions.map((q, idx) => {
+          const hasAnswer = (answers[q.id] ?? "").trim().length > 0;
+          return (
+            <li key={q.id} className="rounded-md border border-neutral-200 p-4">
+              <div className="mb-3 flex items-start gap-2">
+                <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 px-1.5 text-xs font-medium text-white">
+                  {idx + 1}
+                </span>
+                <div className="flex-1 whitespace-pre-wrap text-sm">
+                  {q.prompt}
+                </div>
+                {hasAnswer && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAnswers((prev) => {
+                        const next = { ...prev };
+                        delete next[q.id];
+                        return next;
+                      })
+                    }
+                    className="shrink-0 rounded-md border border-neutral-300 px-2 py-0.5 text-xs text-neutral-600 hover:bg-neutral-100"
+                    aria-label={`清除第 ${idx + 1} 题的作答`}
+                  >
+                    清除
+                  </button>
+                )}
               </div>
-            </div>
-            <QuestionInput
-              question={q}
-              value={answers[q.id] ?? ""}
-              onChange={(v) =>
-                setAnswers((prev) => ({ ...prev, [q.id]: v }))
-              }
-            />
-          </li>
-        ))}
+              <QuestionInput
+                question={q}
+                value={answers[q.id] ?? ""}
+                onChange={(v) =>
+                  setAnswers((prev) => ({ ...prev, [q.id]: v }))
+                }
+              />
+            </li>
+          );
+        })}
       </ol>
 
       {error && (
