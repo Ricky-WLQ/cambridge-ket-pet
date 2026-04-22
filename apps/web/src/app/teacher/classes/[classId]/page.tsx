@@ -4,6 +4,8 @@ import type { Prisma } from "@prisma/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getClassAssignments } from "@/lib/assignments";
+import { deleteAssignmentAction } from "@/lib/assignmentActions";
 import ActivityFilter from "./ActivityFilter";
 
 const KIND_ZH: Record<string, string> = {
@@ -116,6 +118,8 @@ export default async function ClassOverviewPage({
     recentWhere.status = statusFilter;
   }
 
+  const assignments = await getClassAssignments(classId);
+
   const [recentAttempts, classAggregate, perStudent] = await Promise.all([
     memberIds.length > 0
       ? prisma.testAttempt.findMany({
@@ -219,6 +223,111 @@ export default async function ClassOverviewPage({
             }
           />
         </div>
+
+        {/* Assignments */}
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">作业</h2>
+          <Link
+            href={`/teacher/classes/${cls.id}/assignments/new`}
+            className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700"
+          >
+            + 布置新作业
+          </Link>
+        </div>
+        {assignments.length === 0 ? (
+          <div className="mb-8 rounded-md border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500">
+            暂无作业。点击右上方「布置新作业」开始。
+          </div>
+        ) : (
+          <ul className="mb-8 space-y-2">
+            {assignments.map((a) => {
+              const completionPct =
+                a.totalStudents === 0
+                  ? 0
+                  : Math.round((a.completedStudents / a.totalStudents) * 100);
+              const overdue =
+                a.dueAt !== null && a.dueAt < new Date() && completionPct < 100;
+              const kindZh =
+                a.kind === "READING"
+                  ? "阅读"
+                  : a.kind === "WRITING"
+                    ? "写作"
+                    : a.kind;
+              return (
+                <li
+                  key={a.id}
+                  className="rounded-md border border-neutral-200 p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{a.title}</span>
+                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                          {a.examType} {kindZh}
+                          {a.part != null && ` Part ${a.part}`}
+                        </span>
+                        {a.minScore != null && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                            ≥ {a.minScore}%
+                          </span>
+                        )}
+                        {a.dueAt && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs ${
+                              overdue
+                                ? "bg-red-100 text-red-800"
+                                : "bg-neutral-100 text-neutral-600"
+                            }`}
+                          >
+                            截止 {a.dueAt.toLocaleDateString("zh-CN")}
+                          </span>
+                        )}
+                      </div>
+                      {a.description && (
+                        <p className="mt-1 text-xs text-neutral-500">
+                          {a.description}
+                        </p>
+                      )}
+                    </div>
+                    <form action={deleteAssignmentAction}>
+                      <input
+                        type="hidden"
+                        name="assignmentId"
+                        value={a.id}
+                      />
+                      <button
+                        type="submit"
+                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        删除
+                      </button>
+                    </form>
+                  </div>
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between text-xs text-neutral-600">
+                      <span>
+                        完成 {a.completedStudents} / {a.totalStudents} 人
+                      </span>
+                      <span className="font-medium">{completionPct}%</span>
+                    </div>
+                    <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className={`h-full ${
+                          completionPct >= 80
+                            ? "bg-green-500"
+                            : completionPct >= 40
+                              ? "bg-amber-500"
+                              : "bg-red-400"
+                        }`}
+                        style={{ width: `${completionPct}%` }}
+                      />
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
         {/* Student list */}
         <h2 className="mb-3 text-lg font-semibold">学生名单</h2>

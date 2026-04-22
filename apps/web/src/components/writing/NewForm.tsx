@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-type Props = { examType: "KET" | "PET" };
+type Props = { examType: "KET" | "PET"; initialPart?: number | null };
 
 const PARTS: Record<
   "KET" | "PET",
@@ -36,9 +36,12 @@ const PARTS: Record<
   ],
 };
 
-export default function WritingNewForm({ examType }: Props) {
+export default function WritingNewForm({ examType, initialPart }: Props) {
   const router = useRouter();
-  const [part, setPart] = useState<number | null>(null);
+  const validParts = PARTS[examType].map((p) => p.part);
+  const startingPart =
+    initialPart != null && validParts.includes(initialPart) ? initialPart : null;
+  const [part, setPart] = useState<number | null>(startingPart);
   const [mode, setMode] = useState<"PRACTICE" | "MOCK">("PRACTICE");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

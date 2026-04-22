@@ -132,8 +132,9 @@ model Class {
   examFocus  ExamType?
   createdAt  DateTime  @default(now())
 
-  teacher User          @relation("TeacherClasses", fields: [teacherId], references: [id])
-  members ClassMember[]
+  teacher     User          @relation("TeacherClasses", fields: [teacherId], references: [id])
+  members     ClassMember[]
+  assignments Assignment[]
 }
 
 model ClassMember {
@@ -246,6 +247,33 @@ model MistakeNote {
 
   @@index([userId, status])
   @@index([attemptId])
+}
+
+// =============== Assignments ===============
+
+// Teacher-created target for a class. Completion is derived from TestAttempt
+// rows: a student counts as "completed" iff they have a GRADED attempt whose
+// test matches (examType, kind, optional part) and whose scaledScore >=
+// optional minScore. A later phase can introduce AssignmentCompletion for
+// richer status (ASSIGNED / IN_PROGRESS / SUBMITTED / GRADED) and for
+// marking completion manually; for Phase 1 derivation is enough.
+model Assignment {
+  id          String    @id @default(cuid())
+  classId     String
+  title       String
+  description String?
+  examType    ExamType
+  kind        TestKind
+  part        Int? // null = any part of that kind
+  minScore    Int? // 0-100 scaled pass threshold; null = any graded attempt counts
+  dueAt       DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@index([classId])
+  @@index([classId, examType, kind])
 }
 
 // =============== Rate limiting ===============

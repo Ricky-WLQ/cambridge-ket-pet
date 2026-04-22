@@ -1,20 +1,27 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
+import AssignmentList from "@/components/student/AssignmentList";
 import { auth } from "@/lib/auth";
+import { getStudentAssignments } from "@/lib/assignments";
 
 export default async function KetPortalPage() {
   const session = await auth();
-  if (!session?.user) redirect("/login");
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) redirect("/login");
+
+  const assignments = await getStudentAssignments(userId, { examType: "KET" });
 
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-3xl px-6 py-10">
         <h1 className="mb-2 text-2xl font-semibold">KET 门户</h1>
-        <p className="mb-8 text-sm text-neutral-500">
+        <p className="mb-6 text-sm text-neutral-500">
           Cambridge A2 Key · 选择你想练习的题目类型
         </p>
+
+        <AssignmentList examType="KET" assignments={assignments} />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Link
