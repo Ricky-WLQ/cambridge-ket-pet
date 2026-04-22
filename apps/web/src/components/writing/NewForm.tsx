@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type Props = { examType: "KET" | "PET" };
@@ -71,9 +72,16 @@ export default function WritingNewForm({ examType }: Props) {
 
   const parts = PARTS[examType];
   const cefr = examType === "KET" ? "A2" : "B1";
+  const portal = examType === "KET" ? "ket" : "pet";
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
+      <Link
+        href={`/${portal}`}
+        className="mb-4 inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-900 hover:bg-neutral-100"
+      >
+        <span aria-hidden>←</span> 返回 {examType} 门户
+      </Link>
       <h1 className="mb-2 text-2xl font-semibold">
         新建 {examType} 写作练习
       </h1>

@@ -110,6 +110,71 @@ export async function gradeWriting(
   );
 }
 
+export type StudentAnalysisRequest = {
+  student_name: string;
+  class_name: string;
+  stats: {
+    total_graded: number;
+    avg_score: number | null;
+    best_score: number | null;
+    worst_score: number | null;
+  };
+  recent_attempts: Array<{
+    date: string;
+    exam_type: "KET" | "PET";
+    kind: string;
+    part: number | null;
+    mode: "PRACTICE" | "MOCK";
+    score: number;
+  }>;
+  writing_averages: {
+    content: number;
+    communicative: number;
+    organisation: number;
+    language: number;
+    count: number;
+  } | null;
+  top_error_exam_points: Array<{
+    id: string;
+    label_zh: string;
+    description_zh: string | null;
+    count: number;
+  }>;
+  recent_writing_samples: Array<{
+    exam_type: "KET" | "PET";
+    part: number;
+    prompt: string;
+    response: string;
+    scores: {
+      content: number;
+      communicative: number;
+      organisation: number;
+      language: number;
+    };
+    feedback_zh: string | null;
+  }>;
+  focus_exam_type: "KET" | "PET" | null;
+};
+
+export type StudentAnalysisResponse = {
+  strengths: string[];
+  weaknesses: string[];
+  priority_actions: string[];
+  narrative_zh: string;
+};
+
+const ANALYSIS_TIMEOUT_MS = 90_000;
+
+export async function analyzeStudent(
+  req: StudentAnalysisRequest,
+): Promise<StudentAnalysisResponse> {
+  return postToAi<StudentAnalysisResponse>(
+    "/v1/analysis/student",
+    req,
+    ANALYSIS_TIMEOUT_MS,
+  );
+}
+
 async function postToAi<T>(
   path: string,
   body: unknown,

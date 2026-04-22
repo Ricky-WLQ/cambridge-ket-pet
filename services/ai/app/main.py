@@ -17,10 +17,15 @@ from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
+from app.agents.analysis import analyze_student
 from app.agents.reading import generate_reading_test
 from app.agents.writing import generate_writing_test, grade_writing_response
 from app.prompts.reading import UnsupportedReadingPart
 from app.prompts.writing import UnsupportedWritingPart
+from app.schemas.analysis import (
+    StudentAnalysisRequest,
+    StudentAnalysisResponse,
+)
 from app.schemas.reading import ReadingTestRequest, ReadingTestResponse
 from app.schemas.writing import (
     WritingGradeRequest,
@@ -201,6 +206,27 @@ async def writing_generate(req: WritingTestRequest) -> WritingTestResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal error generating writing task",
+        ) from e
+
+
+@app.post(
+    "/v1/analysis/student",
+    response_model=StudentAnalysisResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def student_analysis(
+    req: StudentAnalysisRequest,
+) -> StudentAnalysisResponse:
+    """Teacher-style diagnostic for one student. Returns 4 zh-CN fields:
+    strengths, weaknesses, priority_actions, narrative_zh. Grounded in the
+    caller-provided performance summary JSON."""
+    try:
+        return await analyze_student(req)
+    except Exception as e:  # noqa: BLE001
+        log.exception("student_analysis unexpected failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal error producing student analysis",
         ) from e
 
 

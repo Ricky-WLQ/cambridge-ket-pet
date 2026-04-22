@@ -62,33 +62,36 @@ export default async function TeacherClassesPage() {
         ) : (
           <ul className="space-y-3">
             {classes.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between rounded-md border border-neutral-200 p-4"
-              >
-                <div>
-                  <div className="font-medium">
-                    {c.name}
-                    {c.examFocus && (
-                      <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
-                        {c.examFocus}
-                      </span>
-                    )}
+              <li key={c.id}>
+                <Link
+                  href={`/teacher/classes/${c.id}`}
+                  className="flex items-center justify-between gap-4 rounded-md border border-neutral-200 p-4 transition hover:border-neutral-900 hover:shadow-sm"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">
+                      {c.name}
+                      {c.examFocus && (
+                        <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                          {c.examFocus}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 text-xs text-neutral-500">
+                      {c._count.members} {t.classes.teacher.studentsSuffix} ·{" "}
+                      {t.classes.teacher.createdAt}{" "}
+                      {c.createdAt.toLocaleDateString("zh-CN")}
+                    </div>
                   </div>
-                  <div className="mt-1 text-xs text-neutral-500">
-                    {c._count.members} {t.classes.teacher.studentsSuffix} ·{" "}
-                    {t.classes.teacher.createdAt}{" "}
-                    {c.createdAt.toLocaleDateString("zh-CN")}
+                  <div className="text-right">
+                    <div className="text-xs text-neutral-500">
+                      {t.classes.teacher.inviteCodeLabel}
+                    </div>
+                    <div className="font-mono text-lg font-semibold tracking-wider">
+                      {c.inviteCode}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-neutral-500">
-                    {t.classes.teacher.inviteCodeLabel}
-                  </div>
-                  <div className="font-mono text-lg font-semibold tracking-wider">
-                    {c.inviteCode}
-                  </div>
-                </div>
+                  <span className="text-neutral-400">→</span>
+                </Link>
               </li>
             ))}
           </ul>

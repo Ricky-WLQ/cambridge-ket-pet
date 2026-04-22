@@ -1,0 +1,261 @@
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { SiteHeader } from "@/components/SiteHeader";
+import ReadingResultView, {
+  type ResultViewProps as ReadingResultProps,
+} from "@/components/reading/ResultView";
+import WritingResultView from "@/components/writing/ResultView";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import type { GradableQuestionType } from "@/lib/grading";
+
+type ReadingPayload = {
+  passage: string | null;
+  questions: Array<{
+    id: string;
+    type: GradableQuestionType;
+    prompt: string;
+    options: string[] | null;
+    answer: string;
+    explanation_zh: string;
+    exam_point_id: string;
+    difficulty_point_id: string | null;
+  }>;
+  time_limit_sec: number;
+};
+
+type StoredWeakPoints = {
+  examPoints: Array<{ id: string; errorCount: number }>;
+  difficultyPoints: Array<{ id: string; errorCount: number }>;
+};
+
+type WritingPayload = {
+  prompt: string;
+  content_points: string[];
+  scene_descriptions?: string[];
+  options?: Array<{ label: string; prompt: string; content_points: string[] }>;
+};
+
+type StoredWritingResult = {
+  scores: {
+    content: number;
+    communicative: number;
+    organisation: number;
+    language: number;
+  };
+  feedback_zh: string;
+  specific_suggestions_zh: string[];
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  IN_PROGRESS: "进行中",
+  SUBMITTED: "已提交",
+  GRADED: "已批改",
+  ABANDONED: "已放弃",
+};
+
+function formatDateTime(d: Date): string {
+  return d.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export default async function TeacherAttemptDetailPage({
+  params,
+}: {
+  params: Promise<{ classId: string; studentId: string; attemptId: string }>;
+}) {
+  const { classId, studentId, attemptId } = await params;
+
+  const session = await auth();
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) redirect("/login");
+
+  const teacher = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  if (!teacher || (teacher.role !== "TEACHER" && teacher.role !== "ADMIN")) {
+    redirect("/teacher/activate");
+  }
+
+  const cls = await prisma.class.findUnique({
+    where: { id: classId },
+    select: { id: true, name: true, teacherId: true },
+  });
+  if (!cls || cls.teacherId !== userId) notFound();
+
+  const membership = await prisma.classMember.findUnique({
+    where: { classId_userId: { classId, userId: studentId } },
+    include: {
+      user: { select: { id: true, email: true, name: true } },
+    },
+  });
+  if (!membership) notFound();
+
+  const attempt = await prisma.testAttempt.findUnique({
+    where: { id: attemptId },
+    include: {
+      test: {
+        select: {
+          examType: true,
+          kind: true,
+          part: true,
+          payload: true,
+        },
+      },
+    },
+  });
+
+  if (!attempt || attempt.userId !== studentId) notFound();
+
+  const backHref = `/teacher/classes/${classId}/students/${studentId}`;
+
+  const headerBlock = (
+    <div className="mx-auto w-full max-w-3xl px-6 pt-8">
+      <Link
+        href={backHref}
+        className="inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-900 hover:bg-neutral-100"
+      >
+        <span aria-hidden>←</span> 返回学生详情
+      </Link>
+      <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        <div className="font-medium">
+          查看学生：{membership.user.name ?? membership.user.email}
+        </div>
+        <div className="mt-0.5 text-xs text-blue-800">
+          {membership.user.email} · {cls.name} · 作答时间：
+          {formatDateTime(attempt.startedAt)}
+          {attempt.submittedAt && ` → ${formatDateTime(attempt.submittedAt)}`}
+          <span className="ml-2 rounded-full bg-white/60 px-2 py-0.5 text-[11px]">
+            {STATUS_LABEL[attempt.status] ?? attempt.status}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Ungraded attempt: no ResultView to show — render a minimal card.
+  if (attempt.status !== "GRADED") {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main className="flex-1">
+          {headerBlock}
+          <div className="mx-auto mt-6 max-w-3xl px-6 pb-10">
+            <div className="rounded-md border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+              该答卷尚未批改完成，暂无详细成绩可查看。
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (attempt.test.kind === "READING") {
+    const payload = attempt.test.payload as unknown as ReadingPayload;
+    const storedWp = (attempt.weakPoints ?? {
+      examPoints: [],
+      difficultyPoints: [],
+    }) as unknown as StoredWeakPoints;
+
+    const [examPoints, difficultyPoints] = await Promise.all([
+      prisma.examPoint.findMany({
+        where: { id: { in: storedWp.examPoints.map((e) => e.id) } },
+        select: { id: true, label: true, descriptionZh: true },
+      }),
+      prisma.difficultyPoint.findMany({
+        where: { id: { in: storedWp.difficultyPoints.map((d) => d.id) } },
+        select: { id: true, label: true, descriptionZh: true },
+      }),
+    ]);
+
+    const weakPoints: ReadingResultProps["weakPoints"] = {
+      examPoints: storedWp.examPoints.map((wp) => {
+        const ep = examPoints.find((e) => e.id === wp.id);
+        return {
+          id: wp.id,
+          errorCount: wp.errorCount,
+          label: ep?.label ?? wp.id,
+          descriptionZh: ep?.descriptionZh ?? "",
+        };
+      }),
+      difficultyPoints: storedWp.difficultyPoints.map((wp) => {
+        const dp = difficultyPoints.find((d) => d.id === wp.id);
+        return {
+          id: wp.id,
+          errorCount: wp.errorCount,
+          label: dp?.label ?? wp.id,
+          descriptionZh: dp?.descriptionZh ?? "",
+        };
+      }),
+    };
+
+    const userAnswers = (attempt.answers ?? {}) as Record<string, string>;
+
+    return (
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main className="flex-1">
+          {headerBlock}
+          <ReadingResultView
+            examType={attempt.test.examType}
+            part={attempt.test.part ?? 0}
+            mode={attempt.mode}
+            rawScore={attempt.rawScore ?? 0}
+            totalPossible={attempt.totalPossible ?? payload.questions.length}
+            scaledScore={attempt.scaledScore ?? 0}
+            userAnswers={userAnswers}
+            passage={payload.passage}
+            questions={payload.questions}
+            weakPoints={weakPoints}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  if (attempt.test.kind === "WRITING") {
+    const payload = attempt.test.payload as unknown as WritingPayload;
+    const stored = (attempt.weakPoints ?? {}) as unknown as StoredWritingResult;
+    const userAnswers = (attempt.answers ?? {}) as Record<string, string>;
+
+    return (
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main className="flex-1">
+          {headerBlock}
+          <WritingResultView
+            examType={attempt.test.examType}
+            part={attempt.test.part ?? 0}
+            mode={attempt.mode}
+            totalBand={attempt.rawScore ?? 0}
+            scaledScore={attempt.scaledScore ?? 0}
+            payload={payload}
+            stored={stored}
+            userAnswers={userAnswers}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // Future phases (listening/speaking/mock). For now, show a polite placeholder.
+  return (
+    <div className="flex min-h-screen flex-col">
+      <SiteHeader />
+      <main className="flex-1">
+        {headerBlock}
+        <div className="mx-auto mt-6 max-w-3xl px-6 pb-10">
+          <div className="rounded-md border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+            该题型（{attempt.test.kind}）的详细视图尚未上线。
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
