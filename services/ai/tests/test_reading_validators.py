@@ -113,3 +113,28 @@ def test_unknown_part_returns_no_errors():
     response = _stub_response([_stub_q("q1")])
     errors = validate_reading_test(response, "KET", 6)
     assert errors == []
+
+
+# ========== RED 6: passage required for MATCHING / GAPPED_TEXT parts ==========
+def test_ket_rw_part_1_without_passage_fails():
+    """KET Part 1 MATCHING requires a passage containing the 8 A-H description bank."""
+    qs = [_stub_q(f"q{i}", q_type="MATCHING") for i in range(6)]
+    response = _stub_response(qs, passage=None)
+    errors = validate_reading_test(response, "KET", 1)
+    assert any(e.code == "MISSING_PASSAGE" for e in errors)
+
+
+def test_pet_reading_part_4_without_passage_fails():
+    """PET Part 4 GAPPED_TEXT requires a passage with the gapped text + 8 candidate sentences."""
+    qs = [_stub_q(f"q{i}", q_type="GAPPED_TEXT") for i in range(5)]
+    response = _stub_response(qs, passage=None)
+    errors = validate_reading_test(response, "PET", 4)
+    assert any(e.code == "MISSING_PASSAGE" for e in errors)
+
+
+def test_pet_reading_part_1_without_passage_is_ok():
+    """PET Part 1 is MCQ on DISCRETE short texts; no shared passage is needed."""
+    qs = [_stub_q(f"q{i}", q_type="MCQ", options=["a", "b", "c", "d", "e"]) for i in range(5)]
+    response = _stub_response(qs, passage=None)
+    errors = validate_reading_test(response, "PET", 1)
+    assert not any(e.code == "MISSING_PASSAGE" for e in errors)

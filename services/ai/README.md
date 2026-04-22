@@ -24,10 +24,10 @@ pip install -e ".[dev]"
 
 # Create a local .env (git-ignored) — copy from the repo-root .env.example
 # and fill values as you add provider keys.
-uvicorn app.main:app --reload --host :: --port 8000
+uvicorn app.main:app --reload --host :: --port 8001
 ```
 
-`--host ::` binds IPv6 dual-stack, which matters on Windows where `localhost` resolves to `::1` first. On Linux/Mac `--host 0.0.0.0` is equivalent. Service listens on http://localhost:8000 either way after that.
+`--host ::` binds IPv6 dual-stack, which matters on Windows where `localhost` resolves to `::1` first. On Linux/Mac `--host 0.0.0.0` is equivalent. Service listens on http://localhost:8001 locally (8000 in Docker/Zeabur — see `Dockerfile`). Local port picked as 8001 to avoid colliding with other Docker projects that bind 8000.
 
 ## Environment variables
 

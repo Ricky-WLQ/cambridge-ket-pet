@@ -67,6 +67,24 @@ EXPECTED_OPTIONS_COUNT: dict[tuple[ExamType, int], int | None] = {
     ("PET", 6): None,  # open cloze
 }
 
+# Parts that MUST have a non-empty passage. For MATCHING / GAPPED_TEXT parts
+# the passage holds the 8-letter description/candidate bank. For CLOZE and
+# MCQ-on-longer-text parts the passage holds the text being read.
+# Parts NOT in this set (KET Part 1 before fix, PET Part 1) have discrete
+# items with self-contained prompts and no shared passage.
+REQUIRES_PASSAGE: set[tuple[ExamType, int]] = {
+    ("KET", 1),  # MATCHING — passage holds the A-H description bank
+    ("KET", 2),  # OPEN_CLOZE — passage is the gapped email/postcard
+    ("KET", 3),  # MCQ — passage is the longer text
+    ("KET", 4),  # MATCHING — passage is the article with paragraphs A-D
+    ("KET", 5),  # MCQ_CLOZE — passage is the gapped short message
+    ("PET", 2),  # MATCHING — passage is the 8 descriptions A-H
+    ("PET", 3),  # MCQ — passage is the longer article
+    ("PET", 4),  # GAPPED_TEXT — passage is the gapped text + candidate sentences
+    ("PET", 5),  # MCQ_CLOZE — passage is the gapped text
+    ("PET", 6),  # OPEN_CLOZE — passage is the gapped text
+}
+
 
 def validate_reading_test(
     response: ReadingTestResponse,
@@ -109,6 +127,18 @@ def validate_reading_test(
                         ),
                     )
                 )
+
+    if key in REQUIRES_PASSAGE and not (response.passage and response.passage.strip()):
+        errors.append(
+            ValidationError(
+                code="MISSING_PASSAGE",
+                message=(
+                    f"{exam_type} Part {part} requires a non-empty passage "
+                    f"(description bank for MATCHING/GAPPED_TEXT, or the text "
+                    f"being read for CLOZE/MCQ). Got empty/null passage."
+                ),
+            )
+        )
 
     required_options = EXPECTED_OPTIONS_COUNT.get(key)
     if required_options is not None:

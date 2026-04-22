@@ -1,6 +1,6 @@
 // Cambridge KET / PET — Prisma schema
-// Phase 1, Step 4 — Auth.js v5 (NextAuth v5) tables added.
-// Future steps extend additively via new migrations.
+// Phase 1, Step 11 — adds Test, TestAttempt (reading generation + attempts)
+// and GenerationEvent (rate-limit counter).
 
 generator client {
   provider = "prisma-client-js"
@@ -12,6 +12,8 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// =============== Enums ===============
+
 enum UserRole {
   STUDENT
   TEACHER
@@ -22,6 +24,29 @@ enum ExamType {
   KET
   PET
 }
+
+enum TestKind {
+  READING
+  WRITING
+  LISTENING
+  SPEAKING
+  MOCK_FULL
+  MOCK_SECTION
+}
+
+enum TestMode {
+  PRACTICE
+  MOCK
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+  ABANDONED
+}
+
+// =============== Users + Auth (Auth.js) ===============
 
 model User {
   id            String    @id @default(cuid())
@@ -41,6 +66,9 @@ model User {
 
   ownedClasses     Class[]       @relation("TeacherClasses")
   classMemberships ClassMember[]
+
+  attempts         TestAttempt[]
+  generationEvents GenerationEvent[]
 }
 
 model Account {
@@ -87,6 +115,8 @@ model TeacherActivationCode {
   createdAt DateTime  @default(now())
 }
 
+// =============== Classes ===============
+
 model Class {
   id         String    @id @default(cuid())
   name       String
@@ -110,15 +140,14 @@ model ClassMember {
   @@id([classId, userId])
 }
 
-// Exam-point (考点) reference table. One row per part of each paper.
-// IDs use a stable human-readable scheme: "{examType}.{paperCode}.P{part}".
-// Seeded once from Cambridge-official format data in the implementation plan.
+// =============== Exam-point & difficulty-point reference tables ===============
+
 model ExamPoint {
   id            String   @id
   examType      ExamType
-  paperCode     String // "RW" (KET combined) | "R" | "W" | "L" | "S"
+  paperCode     String
   part          Int?
-  code          String // short code e.g. "R_P1_matching"
+  code          String
   label         String
   descriptionZh String
   skillTags     Json
@@ -128,17 +157,78 @@ model ExamPoint {
   @@index([examType])
 }
 
-// Difficulty-point (难点) reference table. Shared across KET + PET unless
-// examType is set. Seeded from the top-10 cross-exam difficulty list.
 model DifficultyPoint {
   id            String    @id
-  examType      ExamType? // null => applies to both KET and PET
+  examType      ExamType?
   code          String
   label         String
   descriptionZh String
-  category      String // "grammar" | "vocab" | "pronunciation" | "discourse"
+  category      String
   createdAt     DateTime  @default(now())
 
   @@index([examType])
   @@index([category])
+}
+
+// =============== Generated content + user attempts ===============
+
+// The generated test artifact. `payload` stores the ReadingTestResponse
+// JSON from the Python agent (passage + questions + answers +
+// explanations + exam_point_ids); validated on the Python side and
+// re-validated Pydantic-style on the Next.js side before save.
+model Test {
+  id           String   @id @default(cuid())
+  examType     ExamType
+  kind         TestKind
+  part         Int?
+  mode         TestMode
+  difficulty   String // "A2" | "B1"
+  payload      Json
+  timeLimitSec Int?
+  generatedBy  String // e.g. "deepseek-chat"
+  createdAt    DateTime @default(now())
+
+  attempts TestAttempt[]
+
+  @@index([examType, kind, part])
+  @@index([createdAt])
+}
+
+// A user's run of a Test. Multiple attempts against the same Test = redo.
+model TestAttempt {
+  id            String        @id @default(cuid())
+  userId        String
+  testId        String
+  status        AttemptStatus @default(IN_PROGRESS)
+  mode          TestMode
+  startedAt     DateTime      @default(now())
+  submittedAt   DateTime?
+  answers       Json?
+  rawScore      Int?
+  totalPossible Int?
+  scaledScore   Float?
+  weakPoints    Json?
+
+  user User @relation(fields: [userId], references: [id])
+  test Test @relation(fields: [testId], references: [id])
+
+  @@index([userId, startedAt])
+  @@index([testId])
+}
+
+// =============== Rate limiting ===============
+
+// Append-only log of generation calls. Rate-limit check = count rows
+// where userId=? AND bucket=? AND createdAt > now() - 1 hour.
+// Kept append-only (no expiry yet) — can be truncated by a cron job
+// once the table gets large.
+model GenerationEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  bucket    String // e.g. "reading_generate", "writing_generate"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, bucket, createdAt])
 }
