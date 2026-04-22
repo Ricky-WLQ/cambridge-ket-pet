@@ -22,6 +22,40 @@ class WritingTestRequest(BaseModel):
     seed_difficulty_points: list[str] = Field(default_factory=list)
 
 
+class RubricScores(BaseModel):
+    content: int = Field(..., ge=0, le=5, description="Content (0-5)")
+    communicative: int = Field(
+        ..., ge=0, le=5, description="Communicative Achievement (0-5)"
+    )
+    organisation: int = Field(..., ge=0, le=5, description="Organisation (0-5)")
+    language: int = Field(..., ge=0, le=5, description="Language (0-5)")
+
+
+class WritingGradeRequest(BaseModel):
+    exam_type: ExamType
+    part: int = Field(..., ge=1, le=7)
+    prompt: str = Field(..., description="The original task prompt")
+    content_points: list[str] = Field(default_factory=list)
+    scene_descriptions: list[str] = Field(default_factory=list)
+    chosen_option: Literal["A", "B"] | None = Field(
+        default=None, description="For PET Part 2 LETTER_OR_STORY — which choice"
+    )
+    student_response: str = Field(..., description="What the student wrote")
+
+
+class WritingGradeResponse(BaseModel):
+    scores: RubricScores
+    total_band: int = Field(..., ge=0, le=20, description="Sum of 4 criteria")
+    feedback_zh: str = Field(
+        ...,
+        description="1-3 sentence honest, encouraging Chinese feedback",
+    )
+    specific_suggestions_zh: list[str] = Field(
+        ...,
+        description="2-4 concrete Chinese improvement suggestions",
+    )
+
+
 class WritingTestResponse(BaseModel):
     task_type: WritingTaskType = Field(
         ...,

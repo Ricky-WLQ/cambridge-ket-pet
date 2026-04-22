@@ -8,21 +8,46 @@ from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
-from app.prompts.writing import build_system_prompt
-from app.schemas.writing import WritingTestRequest, WritingTestResponse
+from app.prompts.writing import build_grader_system_prompt, build_system_prompt
+from app.schemas.writing import (
+    WritingGradeRequest,
+    WritingGradeResponse,
+    WritingTestRequest,
+    WritingTestResponse,
+)
 
 
-def _build_deepseek_model() -> OpenAIChatModel:
+def _build_deepseek_provider() -> OpenAIProvider:
     api_key = os.environ.get("DEEPSEEK_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "DEEPSEEK_API_KEY is not set; cannot call the writing generator."
+            "DEEPSEEK_API_KEY is not set; cannot call the writing generator/grader."
         )
-    provider = OpenAIProvider(
+    return OpenAIProvider(
         base_url="https://api.deepseek.com/v1",
         api_key=api_key,
     )
-    return OpenAIChatModel(model_name="deepseek-chat", provider=provider)
+
+
+def _build_deepseek_model() -> OpenAIChatModel:
+    return OpenAIChatModel(
+        model_name="deepseek-chat", provider=_build_deepseek_provider()
+    )
+
+
+def _build_grader_model() -> OpenAIChatModel:
+    """Model used by the writing grader.
+
+    Plan originally picked deepseek-reasoner (R1) for its analytical
+    strength, but R1 rejects the `tool_choice` parameter pydantic-ai uses
+    to force structured output (verified 2026-04-23: returns 400
+    'deepseek-reasoner does not support this tool_choice'). deepseek-chat
+    (V3.2) supports structured output cleanly and is strong enough at
+    rubric-based grading for KET/PET; switching here.
+    """
+    return OpenAIChatModel(
+        model_name="deepseek-chat", provider=_build_deepseek_provider()
+    )
 
 
 async def generate_writing_test(req: WritingTestRequest) -> WritingTestResponse:
@@ -49,5 +74,30 @@ async def generate_writing_test(req: WritingTestRequest) -> WritingTestResponse:
         f"Generate a {req.exam_type} Writing Part {req.part} practice task.{pinning_block}"
     )
 
+    result = await agent.run(user_message)
+    return result.output
+
+
+async def grade_writing_response(req: WritingGradeRequest) -> WritingGradeResponse:
+    """Grade a student's writing submission."""
+    model = _build_grader_model()
+    agent: Agent[None, WritingGradeResponse] = Agent(
+        model=model,
+        output_type=WritingGradeResponse,
+        system_prompt=build_grader_system_prompt(
+            exam_type=req.exam_type,
+            part=req.part,
+            prompt_text=req.prompt,
+            content_points=req.content_points,
+            scene_descriptions=req.scene_descriptions,
+            chosen_option=req.chosen_option,
+        ),
+    )
+    user_message = (
+        "Grade the student's response below using the 4 criteria in the system prompt. "
+        "Return JSON matching the output schema.\n\n"
+        "STUDENT RESPONSE:\n"
+        f"{req.student_response}"
+    )
     result = await agent.run(user_message)
     return result.output

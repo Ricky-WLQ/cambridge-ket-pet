@@ -74,12 +74,49 @@ export async function generateWritingTest(
   return postToAi<WritingTestPayload>("/v1/writing/generate", req);
 }
 
-async function postToAi<T>(path: string, body: unknown): Promise<T> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(
-    () => controller.abort(),
-    DEFAULT_TIMEOUT_MS,
+export type WritingGradeRequest = {
+  exam_type: "KET" | "PET";
+  part: number;
+  prompt: string;
+  content_points: string[];
+  scene_descriptions: string[];
+  chosen_option: "A" | "B" | null;
+  student_response: string;
+};
+
+export type WritingRubricScores = {
+  content: number;
+  communicative: number;
+  organisation: number;
+  language: number;
+};
+
+export type WritingGradeResponse = {
+  scores: WritingRubricScores;
+  total_band: number; // 0-20
+  feedback_zh: string;
+  specific_suggestions_zh: string[];
+};
+
+const GRADE_TIMEOUT_MS = 120_000; // grader can run 30-90s on longer essays
+
+export async function gradeWriting(
+  req: WritingGradeRequest,
+): Promise<WritingGradeResponse> {
+  return postToAi<WritingGradeResponse>(
+    "/v1/writing/grade",
+    req,
+    GRADE_TIMEOUT_MS,
   );
+}
+
+async function postToAi<T>(
+  path: string,
+  body: unknown,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(`${INTERNAL_AI_URL}${path}`, {

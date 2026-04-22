@@ -104,8 +104,93 @@ PART_SPECS: dict[tuple[ExamType, int], WritingPartSpec] = {
 }
 
 
+GRADER_BAND_SCALE = """Band scale applied INDEPENDENTLY to EACH of the 4 criteria (each 0-5):
+- 5: Fully achieves. Range/accuracy sophisticated at level; communication fluent.
+- 4: Mostly achieves. Minor lapses only; communication effective throughout.
+- 3: Broadly achieves. Some gaps, but communication remains clear.
+- 2: Partially achieves. Communication sometimes breaks down; errors impede understanding.
+- 1: Minimally achieves. Communication often breaks down; severely limited.
+- 0: Does not attempt the task, or communication is incomprehensible."""
+
+GRADER_CRITERIA = """The 4 Cambridge Writing criteria:
+
+1. Content (0-5): Are ALL required content points addressed? Is information relevant and accurate?
+   (For KET Part 7 picture-story: does the story follow the 3 scenes coherently?)
+   (For PET Part 2 LETTER_OR_STORY: does the response fit the chosen option naturally?)
+2. Communicative Achievement (0-5): Is the register appropriate for the task and audience? Does it achieve its communicative purpose? Would the reader benefit?
+3. Organisation (0-5): Is the text logically structured? Clear sequencing, appropriate paragraphing, and cohesive linking?
+4. Language (0-5): Range and accuracy of grammar + vocabulary. Spelling and punctuation control. Appropriate to CEFR {cefr}."""
+
+
 class UnsupportedWritingPart(ValueError):
     """Raised when we don't have a spec for (exam_type, part) as a Writing part."""
+
+
+def build_grader_system_prompt(
+    exam_type: ExamType,
+    part: int,
+    prompt_text: str,
+    content_points: list[str],
+    scene_descriptions: list[str],
+    chosen_option: str | None,
+) -> str:
+    spec = PART_SPECS.get((exam_type, part))
+    if spec is None:
+        raise UnsupportedWritingPart(
+            f"No writing spec registered for {exam_type} Part {part}"
+        )
+
+    cp_block = ""
+    if content_points:
+        cp_lines = "\n".join(f"  - {c}" for c in content_points)
+        cp_block = (
+            "\nREQUIRED CONTENT POINTS "
+            "(deduct Content score if any are missing or unaddressed):\n"
+            + cp_lines
+        )
+
+    scene_block = ""
+    if scene_descriptions:
+        scene_lines = "\n".join(
+            f"  Scene {i + 1}: {s}" for i, s in enumerate(scene_descriptions)
+        )
+        scene_block = (
+            "\nTHE 3 PICTURE-STORY SCENES (the story must cover all 3):\n"
+            + scene_lines
+        )
+
+    option_block = ""
+    if chosen_option:
+        option_block = (
+            f"\nTHE STUDENT CHOSE OPTION {chosen_option}. "
+            f"Judge the response against THAT option only."
+        )
+
+    return f"""You are an experienced Cambridge English examiner grading a {spec.label} submission at CEFR {spec.cefr}.
+
+THE TASK SHOWN TO THE STUDENT:
+{prompt_text}
+{cp_block}{scene_block}{option_block}
+
+Minimum word count for this task: {spec.min_words}. Responses substantially shorter than the minimum should have both Content and Communicative Achievement scores reduced proportionally.
+
+{GRADER_CRITERIA.format(cefr=spec.cefr)}
+
+{GRADER_BAND_SCALE}
+
+Calibrate to Cambridge's published exemplars:
+- A response that would earn the target level (pass) typically scores around 3 on each criterion.
+- Reserve 5 for responses that could pass at a higher level (B1 for KET, B2 for PET).
+- Reserve 0 for responses that are missing, off-topic, or incomprehensible.
+
+Output instructions:
+- Fill `scores` with 4 integer scores (each 0-5).
+- Fill `total_band` with the sum of the 4 scores (will be between 0 and 20).
+- Fill `feedback_zh` with 1-3 sentences of honest, encouraging feedback in Simplified Chinese (简体中文). Mention the main strength and the most important area to improve.
+- Fill `specific_suggestions_zh` with 2-4 concrete, actionable improvement suggestions in 简体中文, each tied to a specific weakness.
+- Return JSON matching the provided schema EXACTLY. No preamble, no Markdown, no commentary outside the JSON.
+"""
+
 
 
 def build_system_prompt(exam_type: ExamType, part: int) -> str:

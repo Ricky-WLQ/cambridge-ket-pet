@@ -45,7 +45,6 @@ export default function WritingRunner({
   const [response, setResponse] = useState("");
   const [chosenOption, setChosenOption] = useState<"A" | "B" | "">("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const timerActive = mode === "MOCK" && timeLimitSec > 0;
@@ -90,8 +89,8 @@ export default function WritingRunner({
         submittedRef.current = false;
         return;
       }
-      setSubmitted(true);
-      setSubmitting(false);
+      const portal = examType === "KET" ? "ket" : "pet";
+      router.push(`/${portal}/writing/result/${attemptId}`);
     } catch {
       setError("网络错误，请重试");
       setSubmitting(false);
@@ -107,33 +106,14 @@ export default function WritingRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerActive, remaining]);
 
-  if (submitted) {
-    const portal = examType === "KET" ? "ket" : "pet";
+  if (submitting) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-12">
-        <div className="rounded-md border border-green-200 bg-green-50 p-6 text-center">
-          <div className="text-xl font-semibold text-green-800">
-            ✓ 已提交你的作文
-          </div>
-          <p className="mt-2 text-sm text-green-700">
-            AI 批改功能即将在下一步上线。你的作文已安全保存。
+      <div className="mx-auto max-w-2xl px-6 py-16 text-center">
+        <div className="rounded-md border border-neutral-200 bg-neutral-50 p-8">
+          <div className="text-lg font-medium">AI 批改中…</div>
+          <p className="mt-2 text-sm text-neutral-500">
+            通常需要 30-90 秒。批改完成后会自动跳转到成绩页面。
           </p>
-        </div>
-        <div className="mt-6 flex justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => router.push(`/${portal}/writing/new`)}
-            className="rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-100"
-          >
-            再写一篇
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
-          >
-            返回首页
-          </button>
         </div>
       </div>
     );

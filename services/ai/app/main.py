@@ -18,11 +18,16 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 
 from app.agents.reading import generate_reading_test
-from app.agents.writing import generate_writing_test
+from app.agents.writing import generate_writing_test, grade_writing_response
 from app.prompts.reading import UnsupportedReadingPart
 from app.prompts.writing import UnsupportedWritingPart
 from app.schemas.reading import ReadingTestRequest, ReadingTestResponse
-from app.schemas.writing import WritingTestRequest, WritingTestResponse
+from app.schemas.writing import (
+    WritingGradeRequest,
+    WritingGradeResponse,
+    WritingTestRequest,
+    WritingTestResponse,
+)
 from app.validators.reading import validate_reading_test
 from app.validators.writing import validate_writing_test
 
@@ -196,4 +201,28 @@ async def writing_generate(req: WritingTestRequest) -> WritingTestResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal error generating writing task",
+        ) from e
+
+
+@app.post(
+    "/v1/writing/grade",
+    response_model=WritingGradeResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def writing_grade(req: WritingGradeRequest) -> WritingGradeResponse:
+    """Grade a student's writing submission using DeepSeek R1 against the
+    4-criteria Cambridge rubric. Returns scores (each 0-5) + total_band
+    (0-20) + Chinese feedback + Chinese suggestions."""
+    try:
+        return await grade_writing_response(req)
+    except UnsupportedWritingPart as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    except Exception as e:  # noqa: BLE001
+        log.exception("writing_grade unexpected failure")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal error grading writing",
         ) from e

@@ -3,6 +3,9 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { gradeReading, type GradableQuestion } from "@/lib/grading";
+import { gradeWriting, type WritingTaskType } from "@/lib/aiClient";
+
+export const maxDuration = 150; // allow time for the writing grader (~30-90s)
 
 const submitSchema = z.object({
   // Generic string map: keyed by question-id for READING, or by
@@ -37,7 +40,14 @@ export async function POST(
   const attempt = await prisma.testAttempt.findUnique({
     where: { id: attemptId },
     include: {
-      test: { select: { kind: true, payload: true } },
+      test: {
+        select: {
+          examType: true,
+          kind: true,
+          part: true,
+          payload: true,
+        },
+      },
     },
   });
 
@@ -82,12 +92,14 @@ export async function POST(
     });
   }
 
-  // --------- WRITING: save response, flip to SUBMITTED; AI grader (Step 16) flips to GRADED later
+  // --------- WRITING: save response, then grade synchronously via AI, flip to GRADED
   if (attempt.test.kind === "WRITING") {
     const response = parsed.data.answers.response ?? "";
     if (!response.trim()) {
       return NextResponse.json({ error: "请先写下你的作文" }, { status: 400 });
     }
+
+    // Save response first so if the grader fails we still have the submission.
     await prisma.testAttempt.update({
       where: { id: attemptId },
       data: {
@@ -96,7 +108,63 @@ export async function POST(
         answers: parsed.data.answers,
       },
     });
-    return NextResponse.json({ attemptId, pending: "grading" });
+
+    const writingPayload = attempt.test.payload as unknown as {
+      task_type: WritingTaskType;
+      prompt: string;
+      content_points: string[];
+      scene_descriptions: string[];
+    };
+    const rawChosen = parsed.data.answers.chosenOption ?? null;
+    const chosen_option: "A" | "B" | null =
+      rawChosen === "A" || rawChosen === "B" ? rawChosen : null;
+
+    let grade;
+    try {
+      grade = await gradeWriting({
+        exam_type: attempt.test.examType,
+        part: attempt.test.part ?? 0,
+        prompt: writingPayload.prompt,
+        content_points: writingPayload.content_points ?? [],
+        scene_descriptions: writingPayload.scene_descriptions ?? [],
+        chosen_option,
+        student_response: response,
+      });
+    } catch (err) {
+      console.error("Writing grader failed:", err);
+      // Attempt stays at SUBMITTED; user can retry later via a re-grade flow (not in MVP).
+      return NextResponse.json(
+        {
+          error: "批改服务暂时不可用，你的作文已保存，请稍后再试。",
+          attemptId,
+        },
+        { status: 502 },
+      );
+    }
+
+    const totalPossible = 20; // 4 criteria × 5 max
+    const scaledScore = Math.round((grade.total_band / totalPossible) * 100);
+
+    await prisma.testAttempt.update({
+      where: { id: attemptId },
+      data: {
+        status: "GRADED",
+        rawScore: grade.total_band,
+        totalPossible,
+        scaledScore,
+        weakPoints: {
+          scores: grade.scores,
+          feedback_zh: grade.feedback_zh,
+          specific_suggestions_zh: grade.specific_suggestions_zh,
+        },
+      },
+    });
+
+    return NextResponse.json({
+      attemptId,
+      totalBand: grade.total_band,
+      scaledScore,
+    });
   }
 
   return NextResponse.json(
