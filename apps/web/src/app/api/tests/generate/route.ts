@@ -4,14 +4,30 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkAndRecordGeneration } from "@/lib/rateLimit";
 import { generateReadingTest } from "@/lib/aiClient";
+import { audioSemaphore, QueueFullError } from "@/lib/audio/queue";
+import {
+  fetchListeningPayload,
+  generateListeningAudio,
+} from "@/lib/audio/generate";
 
 const HOURLY_LIMIT = 20;
 
-const requestSchema = z.object({
+const readingSchema = z.object({
+  kind: z.literal("READING").optional(),
   examType: z.enum(["KET", "PET"]),
   part: z.number().int().min(1).max(7),
   mode: z.enum(["PRACTICE", "MOCK"]).default("PRACTICE"),
 });
+
+const listeningSchema = z.object({
+  kind: z.literal("LISTENING"),
+  examType: z.enum(["KET", "PET"]),
+  mode: z.enum(["PRACTICE", "MOCK"]),
+  scope: z.enum(["FULL", "PART"]),
+  part: z.number().int().min(1).max(5).optional(),
+});
+
+const requestSchema = z.union([listeningSchema, readingSchema]);
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -35,6 +51,98 @@ export async function POST(req: Request) {
     );
   }
 
+  // ============== LISTENING branch (Phase 2) ==============
+  if (parsed.data.kind === "LISTENING") {
+    const { examType, mode, scope, part } = parsed.data;
+
+    if (scope === "PART" && part === undefined) {
+      return NextResponse.json(
+        {
+          error: "invalid_request",
+          message: "scope=PART requires a part number",
+        },
+        { status: 400 },
+      );
+    }
+
+    // NOTE: rate-limit tracking via GenerationEvent comes in Task 35 — NOT HERE.
+
+    // Acquire semaphore BEFORE creating Test row (avoid leaking rows on overflow)
+    try {
+      await audioSemaphore().acquire();
+    } catch (err) {
+      if (err instanceof QueueFullError) {
+        return NextResponse.json(
+          { error: "queue_full", message: "系统繁忙，请稍后再试" },
+          { status: 503 },
+        );
+      }
+      throw err;
+    }
+
+    const test = await prisma.test.create({
+      data: {
+        examType,
+        kind: "LISTENING",
+        part: scope === "PART" ? part! : null,
+        mode,
+        difficulty: examType === "KET" ? "A2" : "B1",
+        payload: {},
+        generatedBy: "deepseek-chat",
+        audioStatus: "GENERATING",
+        audioGenStartedAt: new Date(),
+      },
+      select: { id: true },
+    });
+
+    // Fire-and-forget background job
+    setImmediate(async () => {
+      try {
+        const payload = await fetchListeningPayload({
+          examType,
+          scope,
+          part,
+          mode,
+        });
+        const ratePercent = examType === "KET" ? -5 : 0;
+        const { r2Key, segments } = await generateListeningAudio({
+          testId: test.id,
+          payload,
+          ratePercent,
+        });
+        await prisma.test.update({
+          where: { id: test.id },
+          data: {
+            payload: payload as unknown as object,
+            audioStatus: "READY",
+            audioR2Key: r2Key,
+            audioSegments: segments as unknown as object,
+            audioGenCompletedAt: new Date(),
+          },
+        });
+      } catch (err) {
+        console.error("Listening audio generation failed:", err);
+        await prisma.test.update({
+          where: { id: test.id },
+          data: {
+            audioStatus: "FAILED",
+            audioErrorMessage:
+              err instanceof Error ? err.message : String(err),
+            audioGenCompletedAt: new Date(),
+          },
+        });
+      } finally {
+        audioSemaphore().release();
+      }
+    });
+
+    return NextResponse.json({
+      testId: test.id,
+      audioStatus: "GENERATING",
+    });
+  }
+
+  // ============== READING branch (Phase 1, unchanged) ==============
   const { examType, part, mode } = parsed.data;
 
   const rate = await checkAndRecordGeneration(
