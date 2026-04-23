@@ -3,7 +3,8 @@ import * as path from "node:path";
 import { execFile } from "node:child_process";
 import ffmpegPath from "ffmpeg-static";
 import { PAUSE_SEC } from "./constants";
-import type { AudioSegment, ListeningPart } from "./types";
+import { RUBRIC } from "./rubric";
+import type { AudioSegment, ListeningPart, ListeningTestPayloadV2 } from "./types";
 
 function resolveFfmpeg(): string {
   const override = process.env.FFMPEG_BINARY;
@@ -238,6 +239,92 @@ export function buildConcatPlan(part: ListeningPart, _examType: "KET" | "PET"): 
     });
     push();
   }
+
+  return entries;
+}
+
+/**
+ * Build the full concat plan for an entire listening paper: opening rubric,
+ * per-part intro + body (via buildConcatPlan) + part_end with inter-part
+ * pauses, and the transfer block (transfer_start → 5-min pause →
+ * transfer_one_min → 1-min pause → closing).
+ */
+export function buildFullPlan(payload: ListeningTestPayloadV2): PlanEntry[] {
+  const entries: PlanEntry[] = [];
+  const rubric = payload.examType === "KET" ? RUBRIC.ket : RUBRIC.pet;
+
+  entries.push({
+    id: "opening",
+    kind: "rubric",
+    text: rubric.opening,
+    voiceTag: "proctor",
+  });
+  entries.push({
+    id: "post_opening",
+    kind: "pause",
+    durationMs: PAUSE_SEC.PRE_PART_INSTRUCTION * 1000,
+  });
+
+  for (let i = 0; i < payload.parts.length; i++) {
+    const part = payload.parts[i];
+    // Part intro (except for final: we still say "Now look at the instructions for Part N")
+    entries.push({
+      id: `part${part.partNumber}_intro`,
+      kind: "part_intro",
+      text: rubric.partIntro(part.partNumber),
+      voiceTag: "proctor",
+      partNumber: part.partNumber,
+    });
+    // Body
+    const partPlan = buildConcatPlan(part, payload.examType);
+    entries.push(...partPlan);
+    // Part end
+    entries.push({
+      id: `part${part.partNumber}_end`,
+      kind: "part_end",
+      text: rubric.partEnd(part.partNumber),
+      voiceTag: "proctor",
+      partNumber: part.partNumber,
+    });
+    // Inter-part pause (except after the last part — then we do transfer block)
+    if (i < payload.parts.length - 1) {
+      entries.push({
+        id: `inter_part_${i}`,
+        kind: "pause",
+        durationMs: PAUSE_SEC.INTER_PART * 1000,
+      });
+    }
+  }
+
+  // Transfer block
+  entries.push({
+    id: "transfer_start",
+    kind: "transfer_start",
+    text: rubric.transferStart,
+    voiceTag: "proctor",
+  });
+  entries.push({
+    id: "transfer_preamble_pause",
+    kind: "pause",
+    durationMs: PAUSE_SEC.TRANSFER_BLOCK_PREAMBLE * 1000,
+  });
+  entries.push({
+    id: "transfer_one_min",
+    kind: "transfer_one_min",
+    text: rubric.oneMinuteWarn,
+    voiceTag: "proctor",
+  });
+  entries.push({
+    id: "transfer_final_pause",
+    kind: "pause",
+    durationMs: PAUSE_SEC.TRANSFER_BLOCK_FINAL * 1000,
+  });
+  entries.push({
+    id: "closing",
+    kind: "closing",
+    text: rubric.closing,
+    voiceTag: "proctor",
+  });
 
   return entries;
 }

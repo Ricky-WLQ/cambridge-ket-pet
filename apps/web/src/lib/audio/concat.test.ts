@@ -97,3 +97,63 @@ describe("buildConcatPlan (PER_PART)", () => {
     expect(plan[0].durationMs).toBe(20000);
   });
 });
+
+import { buildFullPlan } from "./concat";
+import type { ListeningTestPayloadV2 } from "./types";
+
+describe("buildFullPlan", () => {
+  it("wraps parts with opening rubric, part intros, inter-part pauses, and transfer block", () => {
+    const payload: ListeningTestPayloadV2 = {
+      version: 2,
+      examType: "KET",
+      scope: "FULL",
+      cefrLevel: "A2",
+      generatedBy: "test",
+      parts: [
+        {
+          partNumber: 1,
+          kind: "MCQ_3_PICTURE",
+          instructionZh: "...",
+          previewSec: 5,
+          playRule: "PER_PART",
+          audioScript: [
+            { id: "p1_stim", kind: "question_stimulus", voiceTag: "S1_male", text: "Hi.", questionId: "q1" },
+          ],
+          questions: [],
+        },
+        {
+          partNumber: 2,
+          kind: "GAP_FILL_OPEN",
+          instructionZh: "...",
+          previewSec: 10,
+          playRule: "PER_PART",
+          audioScript: [
+            { id: "p2_stim", kind: "question_stimulus", voiceTag: "S1_male", text: "Lecture.", questionId: "q6" },
+          ],
+          questions: [],
+        },
+      ],
+    };
+
+    const plan = buildFullPlan(payload);
+    const kinds = plan.map((e) => e.kind);
+
+    // Head: rubric, pause, part_intro
+    expect(kinds[0]).toBe("rubric");
+    expect(kinds[1]).toBe("pause");
+    expect(kinds[2]).toBe("part_intro");
+
+    // Contains part_end + inter-part pause + next part_intro
+    const partEnds = kinds.filter((k) => k === "part_end");
+    expect(partEnds.length).toBe(2); // 2 parts
+
+    // Tail: transfer_start, long pause, transfer_one_min, pause, closing
+    expect(kinds.slice(-5)).toEqual([
+      "transfer_start",
+      "pause",
+      "transfer_one_min",
+      "pause",
+      "closing",
+    ]);
+  });
+});
