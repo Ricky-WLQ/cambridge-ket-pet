@@ -9,16 +9,9 @@ import { prisma } from "@/lib/prisma";
  * Returns audio-state fields plus (once READY) the payload + per-segment
  * timestamps so the client can render the player + transcript.
  *
- * Ownership model note: the `Test` row has no `userId` column (tests are
- * owned-through `TestAttempt`). For listening tests the attempt is only
- * created after the learner starts playing, so during the GENERATING window
- * there is no direct owner link to verify. We therefore:
- *   - Require authentication.
- *   - If any `TestAttempt` exists for this test, require one of them belongs
- *     to the current user.
- *   - Otherwise (common case for still-generating listening tests), accept
- *     the request — test IDs are unguessable cuids.
- * Non-owner requests get 404 (not 403) to prevent enumeration.
+ * Ownership: `Test.userId` is set at creation time, so we compare it
+ * directly to the session user. Non-owner requests get 404 (not 403)
+ * to prevent test-ID enumeration.
  */
 export async function GET(
   _req: Request,
@@ -36,6 +29,7 @@ export async function GET(
     where: { id: testId },
     select: {
       id: true,
+      userId: true,
       kind: true,
       payload: true,
       audioStatus: true,
@@ -43,23 +37,12 @@ export async function GET(
       audioSegments: true,
       audioErrorMessage: true,
       audioGenStartedAt: true,
-      attempts: {
-        select: { userId: true },
-      },
     },
   });
 
-  if (!test) {
-    return NextResponse.json({ error: "未找到测试" }, { status: 404 });
-  }
-
-  // If any attempts exist, require one of them to belong to the current user.
-  if (test.attempts.length > 0) {
-    const ownsAttempt = test.attempts.some((a) => a.userId === userId);
-    if (!ownsAttempt) {
-      // Return 404 rather than 403 to prevent test-ID enumeration.
-      return NextResponse.json({ error: "未找到测试" }, { status: 404 });
-    }
+  if (!test || test.userId !== userId) {
+    // Return 404 (not 403) to prevent test-ID enumeration.
+    return NextResponse.json({ error: "test_not_found" }, { status: 404 });
   }
 
   const base = {
