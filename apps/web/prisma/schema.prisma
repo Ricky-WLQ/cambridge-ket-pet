@@ -204,6 +204,14 @@ model Test {
   generatedBy  String // e.g. "deepseek-chat"
   createdAt    DateTime @default(now())
 
+  // Phase 2 Listening — audio artifact state
+  audioStatus          AudioStatus?
+  audioR2Key           String?
+  audioGenStartedAt    DateTime?
+  audioGenCompletedAt  DateTime?
+  audioSegments        Json?
+  audioErrorMessage    String?
+
   attempts TestAttempt[]
 
   @@index([examType, kind, part])
