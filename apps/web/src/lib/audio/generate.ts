@@ -2,6 +2,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
+import { generateListeningTest } from "../aiClient";
+
 import {
   buildFullPlan,
   buildConcatPlan,
@@ -103,4 +105,78 @@ export async function generateListeningAudio(args: GenerateArgs): Promise<Genera
       /* ignore */
     }
   }
+}
+
+export interface GenerateTestPayloadArgs {
+  examType: "KET" | "PET";
+  scope: "FULL" | "PART";
+  part?: number;
+  mode: "PRACTICE" | "MOCK";
+}
+
+/**
+ * Fetch a listening test payload from the Python AI service and convert
+ * its snake_case response shape to the camelCase {@link ListeningTestPayloadV2}
+ * consumed by the rest of the Node pipeline (plan builder, TTS, concat, etc.).
+ */
+export async function fetchListeningPayload(
+  args: GenerateTestPayloadArgs,
+): Promise<ListeningTestPayloadV2> {
+  const raw = await generateListeningTest({
+    exam_type: args.examType,
+    scope: args.scope,
+    part: args.part,
+    mode: args.mode,
+  });
+  return snakeToCamelListening(raw);
+}
+
+function snakeToCamelListening(
+  raw: Record<string, unknown>,
+): ListeningTestPayloadV2 {
+  const rawParts = raw.parts as Array<Record<string, unknown>>;
+  const parts: ListeningTestPayloadV2["parts"] = rawParts.map((p) => ({
+    partNumber: p.part_number as number,
+    kind: p.kind as ListeningTestPayloadV2["parts"][number]["kind"],
+    instructionZh: p.instruction_zh as string,
+    previewSec: p.preview_sec as number,
+    playRule: p.play_rule as ListeningTestPayloadV2["parts"][number]["playRule"],
+    audioScript: (p.audio_script as Array<Record<string, unknown>>).map(
+      (s) => ({
+        id: s.id as string,
+        kind: s.kind as AudioSegment["kind"],
+        voiceTag: (s.voice_tag as AudioSegment["voiceTag"]) ?? null,
+        text: (s.text as string | undefined) ?? undefined,
+        durationMs: (s.duration_ms as number | undefined) ?? undefined,
+        partNumber: (s.part_number as number | undefined) ?? undefined,
+        questionId: (s.question_id as string | undefined) ?? undefined,
+      }),
+    ),
+    questions: (p.questions as Array<Record<string, unknown>>).map((q) => ({
+      id: q.id as string,
+      prompt: q.prompt as string,
+      type: q.type as ListeningTestPayloadV2["parts"][number]["questions"][number]["type"],
+      options: (q.options as Array<Record<string, unknown>> | undefined)?.map(
+        (o) => ({
+          id: o.id as string,
+          text: o.text as string | undefined,
+          imageDescription: o.image_description as string | undefined,
+        }),
+      ),
+      answer: q.answer as string,
+      explanationZh: q.explanation_zh as string,
+      examPointId: q.exam_point_id as string,
+      difficultyPointId: q.difficulty_point_id as string | undefined,
+    })),
+  }));
+
+  return {
+    version: 2,
+    examType: raw.exam_type as "KET" | "PET",
+    scope: raw.scope as "FULL" | "PART",
+    part: raw.part as number | undefined,
+    cefrLevel: raw.cefr_level as "A2" | "B1",
+    generatedBy: (raw.generated_by as string) ?? "deepseek-chat",
+    parts,
+  };
 }
