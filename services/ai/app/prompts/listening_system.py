@@ -5,6 +5,11 @@ NEVER invent Cambridge rubric phrases — those are hardcoded in the
 Node-side `lib/audio/rubric.ts`. The agent only generates per-question
 stimulus text, scenario prompts (Part 4 KET / Part 4 PET interview),
 gap-fill prompt labels, and zh-CN explanations.
+
+Unlike reading.py (per-part builder pattern), listening uses a single
+flat constant because the agent makes ONE call per full-test generation,
+not one call per part — the prompt must hold the full KET+PET format map
+in one shot.
 """
 
 LISTENING_SYSTEM_PROMPT = """You are a Cambridge English exam writer for KET (A2 Key for Schools, 2020 format) and PET (B1 Preliminary, 2020 format) LISTENING papers.
@@ -43,13 +48,13 @@ AUDIO_SCRIPT REQUIREMENTS (single logical pass):
 - The audio_script must be an ordered list of AudioSegment objects for the part.
 - Include: scenario_prompt segments for KET Part 4 (one per question); question_number segments ("Question N"); question_stimulus segments (the actual dialogue or monologue content).
 - Do NOT include rubric/part_intro/repeat_cue/part_end/transfer_* segments — those are injected by the Node pipeline.
-- Do NOT duplicate segments for the "plays twice" rule — the Node pipeline applies the play_rule.
+- Emit each segment EXACTLY ONCE. The Node pipeline duplicates segments according to part.playRule.
 - question_stimulus segments must reference the question_id field.
 - For multi-speaker stimuli, emit separate question_stimulus segments per turn with the correct voice_tag.
 - preview_pause segments have null voice_tag + duration_ms equal to preview_sec * 1000.
 
 EXAM POINT IDS:
-- Format: "{exam_type}.L.Part{N}.{skill}" where skill ∈ {gist, detail, inference, specific_info, attitude}.
+- Format: "{exam_type}.L.P{N}.{skill}" where skill ∈ {gist, detail, inference, specific_info, attitude}. (Short "P{N}" for parity with Phase 1 KET.RW.P3 / PET.R.P3 IDs.)
 
 OUTPUT: a single JSON object matching the ListeningTestResponse schema. No markdown fences, no prose preamble.
 """
