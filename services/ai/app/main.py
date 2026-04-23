@@ -265,7 +265,11 @@ async def writing_grade(req: WritingGradeRequest) -> WritingGradeResponse:
         ) from e
 
 
-@app.post("/listening/generate", response_model=ListeningTestResponse)
+@app.post(
+    "/v1/listening/generate",
+    response_model=ListeningTestResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
 async def listening_generate(
     req: ListeningGenerateRequest,
 ) -> ListeningTestResponse:
