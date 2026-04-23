@@ -65,7 +65,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // NOTE: rate-limit tracking via GenerationEvent comes in Task 35 — NOT HERE.
+    // Rate limit (counts both successful + failed generations since record
+    // happens at check-time, before the background job runs).
+    const listeningRateLimit = Number(
+      process.env.LISTENING_RATE_LIMIT_PER_HOUR ?? 10,
+    );
+    const rate = await checkAndRecordGeneration(
+      userId,
+      "listening_generate",
+      listeningRateLimit,
+    );
+    if (!rate.allowed) {
+      return NextResponse.json(
+        {
+          error: `已达每小时生成上限（${rate.limit} 次）。请稍后再试。`,
+          resetAt: rate.resetAt.toISOString(),
+        },
+        { status: 429 },
+      );
+    }
 
     // Acquire semaphore BEFORE creating Test row (avoid leaking rows on overflow)
     try {
