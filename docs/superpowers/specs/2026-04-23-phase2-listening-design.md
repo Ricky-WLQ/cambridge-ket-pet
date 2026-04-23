@@ -628,7 +628,7 @@ R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET=cambridge-ket-pet-audio
-R2_ENDPOINT=https://{accountId}.r2.cloudflarestorage.com
+R2_ENDPOINT=https://<accountId>.r2.cloudflarestorage.com
 
 # ffmpeg
 FFMPEG_BINARY=auto        # "auto" uses ffmpeg-static; override for Zeabur if needed
