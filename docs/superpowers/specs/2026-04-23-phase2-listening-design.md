@@ -526,7 +526,7 @@ No changes — existing teacher→student messaging works across all kinds.
 
 Each step is browser-verified with user sign-off before moving on. Follows Phase 1's 27-step pattern.
 
-1. **Env + deps** — add `node-edge-tts`, `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`, `ffmpeg-static`; create R2 bucket (`cambridge-ket-pet-audio`), configure CORS (Zeabur origin only), 180-day lifecycle rule on `listening/` prefix; add env vars per Appendix C
+1. **Env + deps** — add `node-edge-tts`, `@aws-sdk/client-s3`, `ffmpeg-static`; create R2 bucket (`cambridge-ket-pet-audio`), configure CORS (Zeabur origin only), 180-day lifecycle rule on `listening/` prefix; add env vars per Appendix C
 2. **Prisma schema + migration** — add `AudioStatus` enum and 5 fields on `Test`; run migration; verify Phase 1 still works
 3. **Python `listening_generator` agent** — new module w/ Pydantic schemas + system prompt encoding §3 spec; unit tests
 4. **Python `POST /listening/generate` endpoint** — wire agent + validators + 3× regenerate; pytest

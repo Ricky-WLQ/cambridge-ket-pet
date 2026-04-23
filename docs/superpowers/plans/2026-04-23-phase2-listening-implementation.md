@@ -177,7 +177,7 @@ These are one-time operational steps the engineer must complete before coding be
 
   Run from repo root:
   ```bash
-  pnpm --filter web add node-edge-tts@^1.2.10 @aws-sdk/client-s3@^3 @aws-sdk/s3-request-presigner@^3 ffmpeg-static@^5
+  pnpm --filter web add node-edge-tts@^1.2.10 @aws-sdk/client-s3@^3 ffmpeg-static@^5
   ```
 
 - [ ] **Step 2: Install dev dependencies**
