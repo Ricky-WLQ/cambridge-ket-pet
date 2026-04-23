@@ -10,7 +10,7 @@ vi.mock("node-edge-tts", () => ({
   }),
 }));
 
-import { synthesizeSegment } from "./edge-tts-client";
+import { synthesizeSegment, synthesizeSegmentWithRetry } from "./edge-tts-client";
 
 describe("synthesizeSegment", () => {
   const tmp = path.join(os.tmpdir(), "ket-pet-tts-test");
@@ -47,4 +47,51 @@ describe("synthesizeSegment", () => {
       })
     ).rejects.toThrow("ECONNRESET");
   });
+});
+
+describe("synthesizeSegmentWithRetry", () => {
+  const tmp = path.join(os.tmpdir(), "ket-pet-tts-retry");
+
+  beforeEach(() => {
+    ttsPromiseMock.mockReset();
+    fs.rmSync(tmp, { recursive: true, force: true });
+    fs.mkdirSync(tmp, { recursive: true });
+  });
+
+  it("retries up to 3 times on ECONNRESET then succeeds", async () => {
+    const econn = new Error("ECONNRESET");
+    (econn as NodeJS.ErrnoException).code = "ECONNRESET";
+
+    ttsPromiseMock
+      .mockRejectedValueOnce(econn)
+      .mockRejectedValueOnce(econn)
+      .mockResolvedValueOnce(undefined);
+
+    await synthesizeSegmentWithRetry({
+      text: "Hello.",
+      voiceTag: "proctor",
+      ratePercent: 0,
+      outPath: path.join(tmp, "r1.mp3"),
+    });
+
+    expect(ttsPromiseMock).toHaveBeenCalledTimes(3);
+  }, 10000);
+
+  it("gives up after 3 consecutive failures", async () => {
+    const econn = new Error("ECONNRESET");
+    (econn as NodeJS.ErrnoException).code = "ECONNRESET";
+
+    ttsPromiseMock.mockRejectedValue(econn);
+
+    await expect(
+      synthesizeSegmentWithRetry({
+        text: "Hello.",
+        voiceTag: "proctor",
+        ratePercent: 0,
+        outPath: path.join(tmp, "r2.mp3"),
+      })
+    ).rejects.toThrow(/ECONNRESET/);
+
+    expect(ttsPromiseMock).toHaveBeenCalledTimes(3);
+  }, 10000);
 });
