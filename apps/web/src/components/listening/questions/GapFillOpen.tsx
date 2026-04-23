@@ -1,8 +1,8 @@
 "use client";
 
-import type { QuestionRendererProps } from "../QuestionRenderer";
+import type { QuestionLeafProps } from "../QuestionRenderer";
 
-export function GapFillOpen(props: QuestionRendererProps) {
+export function GapFillOpen(props: QuestionLeafProps) {
   const q = props.question;
   const selected = props.value ?? "";
   const isCorrect =

@@ -70,7 +70,6 @@ export default async function KetListeningResultPage({
                 key={q.id}
                 question={q}
                 value={answers[q.id]}
-                onChange={() => {}}
                 disabled={true}
                 showCorrectness={true}
                 correctAnswer={q.answer}

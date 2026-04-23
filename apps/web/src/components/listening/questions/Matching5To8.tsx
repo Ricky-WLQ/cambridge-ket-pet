@@ -1,8 +1,8 @@
 "use client";
 
-import type { QuestionRendererProps } from "../QuestionRenderer";
+import type { QuestionLeafProps } from "../QuestionRenderer";
 
-export function Matching5To8(props: QuestionRendererProps) {
+export function Matching5To8(props: QuestionLeafProps) {
   const q = props.question;
   const opts = q.options ?? [];
   const selected = props.value;

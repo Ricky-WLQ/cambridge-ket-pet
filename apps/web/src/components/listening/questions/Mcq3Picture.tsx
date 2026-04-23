@@ -1,8 +1,8 @@
 "use client";
 
-import type { QuestionRendererProps } from "../QuestionRenderer";
+import type { QuestionLeafProps } from "../QuestionRenderer";
 
-export function Mcq3Picture(props: QuestionRendererProps) {
+export function Mcq3Picture(props: QuestionLeafProps) {
   const q = props.question;
   const opts = q.options ?? [];
   return (
