@@ -4,7 +4,7 @@ Python FastAPI + Pydantic AI service for the Cambridge KET/PET app. Generates an
 
 For overall architecture and run order, see the [root README](../../README.md).
 
-## API surface (Phase 1)
+## API surface (Phase 1 + Phase 2)
 
 | Method | Path | Auth | Purpose |
 | ------ | ---- | ---- | ------- |
@@ -15,8 +15,28 @@ For overall architecture and run order, see the [root README](../../README.md).
 | POST | `/v1/writing/generate` | Bearer secret | Fresh KET/PET writing prompt (content points, word limits, part-specific format). |
 | POST | `/v1/writing/grade` | Bearer secret | 4-criteria Cambridge rubric scoring + Chinese feedback + suggestions. |
 | POST | `/v1/analysis/student` | Bearer secret | Teacher-style 4-field diagnostic (strengths / weaknesses / priority_actions / narrative_zh). |
+| POST | `/v1/listening/generate` | Bearer secret | **Phase 2.** Fresh KET/PET listening test (script + questions + per-segment voice tags). No audio bytes produced here — the Node side handles TTS + ffmpeg + R2. |
 
 All non-health endpoints require `Authorization: Bearer <INTERNAL_SHARED_SECRET>`. When the env var is empty/unset, auth is disabled so curl smoke tests work without the header — set it in any deployed environment.
+
+### `POST /v1/listening/generate`
+
+**Request body** (`ListeningGenerateRequest`):
+
+| Field | Type | Notes |
+|---|---|---|
+| `exam_type` | `"KET" \| "PET"` | required |
+| `scope` | `"FULL" \| "PART"` | required |
+| `part` | `int \| null` | required when `scope=PART` (KET 1–5, PET 1–4); ignored when `scope=FULL` |
+| `mode` | `"PRACTICE" \| "MOCK"` | default `"PRACTICE"` |
+| `seed_exam_points` | `list[str]` | optional exam-point ids to bias generation |
+
+**Response**: `ListeningTestResponse` — the full v2 listening payload (see `app/schemas/listening.py`): parts with `part_number`, `kind`, `instruction_zh`, `preview_sec`, `play_rule`, `audio_script` (per-segment `voice_tag`, `kind`, `text`, `duration_ms`), and per-part `questions`.
+
+**Error codes**:
+- `401 Unauthorized` — missing/incorrect `Authorization: Bearer <INTERNAL_SHARED_SECRET>`
+- `400 Bad Request` — `scope=PART` without a `part` number
+- `422 Unprocessable Entity` — the generator produced content that failed validation 3 times in a row (the validator message is included in the response body)
 
 ## Agent details
 
@@ -57,6 +77,16 @@ python -m pytest -q
 
 No live DeepSeek calls in unit tests — tests run in under 200ms.
 
+### Listening tests (Phase 2)
+
+To run only the listening suites:
+
+```bash
+pytest tests/test_listening_*.py
+```
+
+These cover the Pydantic schema round-trips (`app/schemas/listening.py`), the KET + PET per-part validators (`app/validators/listening.py` — item counts per part, question-type matching, `audio_script` voice-tag coverage), and the 3-retry regenerate loop on validation failure.
+
 ## Environment variables
 
 See the repo-root [`.env.example`](../../.env.example) for the full list. Relevant to this service:
@@ -65,8 +95,8 @@ See the repo-root [`.env.example`](../../.env.example) for the full list. Releva
 |---|---|
 | `INTERNAL_SHARED_SECRET` | Must match the web app's `INTERNAL_AI_SHARED_SECRET`. Required header for `/v1/*` in non-dev. |
 | `DEEPSEEK_API_KEY` | DeepSeek direct API — text generation + grading + analysis. Required. |
-| `SILICONFLOW_API_KEY` | Phase 2: CosyVoice2 TTS (Listening). Not used in Phase 1. |
-| `DASHSCOPE_API_KEY` | Phase 3: Qwen3.5-Omni Realtime (Speaking). Not used in Phase 1. |
+| `SILICONFLOW_API_KEY` | Legacy Phase-2 TTS slot. Not used — Phase 2 ships with `node-edge-tts` on the Node side (no Python TTS). |
+| `DASHSCOPE_API_KEY` | Phase 3: Qwen3.5-Omni Realtime (Speaking). Not used in Phases 1–2. |
 
 ## Docker
 
@@ -79,23 +109,27 @@ docker run --rm -p 8000:8000 --env-file services/ai/.env ketpet-ai:dev
 
 ```
 app/
-├── main.py              # FastAPI entry + bearer auth dependency + route registrations
-├── agents/              # Pydantic AI agents
-│   ├── reading.py       # reading test generator
-│   ├── writing.py       # writing prompt generator + writing grader
-│   └── analysis.py      # student-analysis agent (retry loop + pre-formatted summary)
-├── prompts/             # System prompts encoding Cambridge exam spec + scoring rules
+├── main.py                      # FastAPI entry + bearer auth dependency + route registrations
+├── agents/                      # Pydantic AI agents
+│   ├── reading.py               # reading test generator
+│   ├── writing.py               # writing prompt generator + writing grader
+│   ├── analysis.py              # student-analysis agent (retry loop + pre-formatted summary)
+│   └── listening_generator.py   # Phase 2 — listening test generator (3-retry regenerate)
+├── prompts/                     # System prompts encoding Cambridge exam spec + scoring rules
 │   ├── reading.py
 │   ├── writing.py
-│   └── analysis.py      # DO/DON'T examples forcing '25%' not '25 分'
-├── schemas/             # Pydantic request + response models
+│   ├── analysis.py              # DO/DON'T examples forcing '25%' not '25 分'
+│   └── listening.py             # Phase 2 — per-part listening spec + voice-tag conventions
+├── schemas/                     # Pydantic request + response models
 │   ├── reading.py
 │   ├── writing.py
-│   └── analysis.py
-└── validators/          # Post-generation format + anti-hallucination validators
+│   ├── analysis.py
+│   └── listening.py             # Phase 2 — ListeningTestResponse (mirrors apps/web/src/lib/audio/types.ts)
+└── validators/                  # Post-generation format + anti-hallucination validators
     ├── reading.py
     ├── writing.py
-    └── analysis.py
+    ├── analysis.py
+    └── listening.py             # Phase 2 — per-part item counts, question-type matching, script coverage
 ```
 
 ## Smoke test
