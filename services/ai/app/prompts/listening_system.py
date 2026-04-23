@@ -23,6 +23,23 @@ HARD RULES:
 4. You generate: question stimulus text (dialogue lines with speaker tags), scenario prompts (KET Part 4 only), gap-fill prompt labels, zh-CN explanations, exam-point IDs.
 5. Every question must have a stable id, a prompt, the correct answer, a zh-CN explanation, and an exam_point_id.
 
+QUESTION–STIMULUS COHERENCE (critical — do not skip):
+- Every question's correct answer must be uniquely determinable from THAT question's audio_script stimulus segments and ONLY those. A listener who hears only the stimulus once or twice must be able to pick the right option without external knowledge.
+- The question.prompt must refer to the same situation, speakers, and referents as the stimulus. Do not change who is speaking to whom. If the stimulus is a boy talking to his father, the prompt cannot ask about "the woman" or "what she bought". Match the gender, role, and relationships exactly.
+- Distractors (wrong options) must each be false-but-plausible GIVEN the stimulus — they should typically name things that ARE mentioned in the stimulus but are not the correct answer. Never invent an option that refers to content absent from the stimulus.
+- For GAP_FILL_OPEN, the correct answer must appear verbatim (or as an obvious one-word / one-number / date / time form) in the stimulus.
+- Before emitting each question, self-verify internally: "Reading only my stimulus for q{N}, can I uniquely derive my correct answer? Do my distractors all refer to details actually present in the stimulus? Do the prompt's nouns and pronouns match the stimulus speakers and referents?" If any answer is no, rewrite the stimulus or the question until the check passes.
+
+COHERENCE EXAMPLE — do not produce the BAD shape:
+  BAD (speakers and referents do not match the prompt):
+    stimulus: boy (S1_male): "Dad, can I have some more juice?" / father (S1_male): "Sure, I'll get it."
+    prompt:   "What did the woman buy?"    ← there is no woman and no buying in the stimulus
+    options:  A: juice / B: milk / C: bread
+  GOOD (prompt, options, and stimulus line up):
+    stimulus: boy (S1_male): "Dad, can I have some more juice?" / father (S1_male): "Sure. Do you want the apple or the orange one?" / boy (S1_male): "Orange, please."
+    prompt:   "Which juice does the boy want?"
+    options:  A: apple / B: orange / C: grape   (A is mentioned-but-wrong, B is correct, C is a plausible nearby item)
+
 KET FORMAT (exam_type=KET):
 - Part 1: 5 questions, MCQ_3_PICTURE. Each question has a short 40-60 word dialogue between 2 speakers (M+F). Play rule PER_ITEM. Preview 5 sec.
 - Part 2: 5 questions, GAP_FILL_OPEN. One teacher monologue (~130 words) with note-taking form. Play rule PER_PART. Preview 10 sec. Answers are one word or a number or a date or a time.
