@@ -15,6 +15,7 @@ const OPTIONS: Record<FilterKey, Array<{ value: string; label: string }>> = {
     { value: "ALL", label: "全部题型" },
     { value: "READING", label: "阅读" },
     { value: "WRITING", label: "写作" },
+    { value: "LISTENING", label: "听力" },
   ],
   mode: [
     { value: "ALL", label: "全部模式" },

@@ -42,6 +42,11 @@ export async function redoAttemptAction(formData: FormData) {
 
   revalidatePath("/history");
   const portal = oldAttempt.test.examType === "KET" ? "ket" : "pet";
-  const kindPath = oldAttempt.test.kind === "WRITING" ? "writing" : "reading";
+  const kindPath =
+    oldAttempt.test.kind === "WRITING"
+      ? "writing"
+      : oldAttempt.test.kind === "LISTENING"
+        ? "listening"
+        : "reading";
   redirect(`/${portal}/${kindPath}/runner/${newAttempt.id}`);
 }

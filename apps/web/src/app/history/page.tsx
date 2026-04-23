@@ -54,16 +54,20 @@ const STATUS_ZH: Record<
   ABANDONED: { label: "已放弃", className: "bg-neutral-100 text-neutral-600" },
 };
 
+function kindPathFor(kind: AttemptRow["test"]["kind"]): string {
+  if (kind === "WRITING") return "writing";
+  if (kind === "LISTENING") return "listening";
+  return "reading";
+}
+
 function runnerUrl(row: AttemptRow): string {
   const portal = row.test.examType === "KET" ? "ket" : "pet";
-  const kindPath = row.test.kind === "WRITING" ? "writing" : "reading";
-  return `/${portal}/${kindPath}/runner/${row.id}`;
+  return `/${portal}/${kindPathFor(row.test.kind)}/runner/${row.id}`;
 }
 
 function resultUrl(row: AttemptRow): string {
   const portal = row.test.examType === "KET" ? "ket" : "pet";
-  const kindPath = row.test.kind === "WRITING" ? "writing" : "reading";
-  return `/${portal}/${kindPath}/result/${row.id}`;
+  return `/${portal}/${kindPathFor(row.test.kind)}/result/${row.id}`;
 }
 
 function formatDate(d: Date): string {
@@ -296,10 +300,19 @@ export default async function HistoryPage({
               const statusMeta = STATUS_ZH[a.status];
               const part = a.test.part ?? 0;
               const kind = KIND_ZH[a.test.kind] ?? a.test.kind;
-              const scoreText =
-                a.rawScore !== null &&
-                a.totalPossible !== null &&
-                a.scaledScore !== null
+              const isListening = a.test.kind === "LISTENING";
+              const partLabel = isListening
+                ? a.test.part === null || a.test.part === undefined
+                  ? "完整模考"
+                  : `第 ${a.test.part} 部分`
+                : `Part ${part}`;
+              const scoreText = isListening
+                ? a.rawScore !== null && a.totalPossible !== null
+                  ? `${a.rawScore}/${a.totalPossible}`
+                  : null
+                : a.rawScore !== null &&
+                    a.totalPossible !== null &&
+                    a.scaledScore !== null
                   ? `${a.rawScore}/${a.totalPossible} · ${a.scaledScore}%`
                   : null;
 
@@ -310,8 +323,11 @@ export default async function HistoryPage({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+                        {a.test.examType}
+                      </span>
                       <span className="font-medium">
-                        {a.test.examType} {kind} · Part {part}
+                        {kind} · {partLabel}
                       </span>
                       <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
                         {MODE_ZH[a.mode]}
