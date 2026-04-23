@@ -101,7 +101,6 @@ services/ai/
 
 - `apps/web/prisma/schema.prisma` — add `AudioStatus` enum + 5 fields on `Test`
 - `.env.example` — R2 + listening env vars
-- `services/ai/.env.example` — unchanged (already has DEEPSEEK_API_KEY)
 - `apps/web/src/i18n/zh-CN.ts` — listening UI strings
 - `apps/web/src/app/history/page.tsx` — Listening filter chip
 - `apps/web/src/app/history/mistakes/page.tsx` — Listening filter chip

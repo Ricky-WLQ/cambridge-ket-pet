@@ -620,7 +620,7 @@ Drawn from `2020PET_Sample Test 1\2.真题答案\3.听力原文B1 Preliminary 20
 
 ## Appendix C — Environment variables
 
-Additions to `.env.example` (both `apps/web/` and `services/ai/`):
+Additions to the root `.env.example` (which has `# ========== apps/web ==========` and `# ========== services/ai ==========` sections):
 
 ```
 # R2 (apps/web)
