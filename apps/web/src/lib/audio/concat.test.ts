@@ -9,20 +9,30 @@ vi.mock("ffmpeg-static", () => ({ default: "/path/to/ffmpeg" }));
 import { probeDurationMs } from "./concat";
 
 describe("probeDurationMs", () => {
-  it("parses ffprobe duration output (e.g., '5.432')", async () => {
-    execFileMock.mockImplementation((_bin: string, _args: string[], cb: (e: Error | null, stdout: string) => void) => {
-      cb(null, "5.432\n");
+  it("parses Duration HH:MM:SS.xx from ffmpeg stderr (5.432 → 5432ms)", async () => {
+    execFileMock.mockImplementation((_bin: string, _args: string[], cb: (e: Error | null, stdout: string, stderr: string) => void) => {
+      // Simulate ffmpeg -i <file> -f null - : non-zero exit, Duration in stderr
+      const stderr = "Input #0, mp3, from 'fake.mp3':\n  Duration: 00:00:05.43, start: 0.000000, bitrate: 128 kb/s\n    Stream #0:0: Audio: mp3...\nOutput #0...\n";
+      cb(new Error("ffmpeg non-zero (expected)"), "", stderr);
     });
     const ms = await probeDurationMs("/tmp/fake.mp3");
-    expect(ms).toBe(5432);
+    expect(ms).toBe(5430);
   });
 
-  it("rounds fractional ms", async () => {
-    execFileMock.mockImplementation((_bin: string, _args: string[], cb: (e: Error | null, stdout: string) => void) => {
-      cb(null, "2.0017\n");
+  it("rounds fractional ms (HH:MM:SS.xxxx precision)", async () => {
+    execFileMock.mockImplementation((_bin: string, _args: string[], cb: (e: Error | null, stdout: string, stderr: string) => void) => {
+      const stderr = "  Duration: 00:00:02.00, start: 0.000000\n";
+      cb(new Error("expected-nonzero-exit"), "", stderr);
     });
     const ms = await probeDurationMs("/tmp/fake.mp3");
-    expect(ms).toBe(2002);
+    expect(ms).toBe(2000);
+  });
+
+  it("rejects when stderr has no Duration line", async () => {
+    execFileMock.mockImplementation((_bin: string, _args: string[], cb: (e: Error | null, stdout: string, stderr: string) => void) => {
+      cb(new Error("ffmpeg failed"), "", "No input or output specified");
+    });
+    await expect(probeDurationMs("/tmp/fake.mp3")).rejects.toThrow();
   });
 });
 

@@ -13,43 +13,36 @@ function resolveFfmpeg(): string {
   return ffmpegPath;
 }
 
-function resolveFfprobe(): string {
-  // ffmpeg-static ships ffmpeg only; for ffprobe we call ffmpeg with -show_entries via stream
-  // For simplicity here, use ffmpeg -i parse — but the cleaner path is @ffprobe-installer/ffprobe.
-  // We'll use ffmpeg's `-hide_banner -i <f> -f null -` and parse stderr for duration, OR use ffprobe if installed.
-  return resolveFfmpeg();
-}
-
 /**
- * Probe an audio file's duration in ms via ffprobe-style parsing.
- * Uses `ffmpeg -i <file> -f null -` and parses "Duration: HH:MM:SS.xx" from stderr.
+ * Probe an audio file's duration in milliseconds.
+ *
+ * Uses `ffmpeg -hide_banner -i <file> -f null -` — ffmpeg prints the
+ * file info (including Duration) to stderr then exits non-zero (because
+ * no output target is specified). We parse the Duration: HH:MM:SS.xx
+ * line from stderr regardless of the exit code.
+ *
+ * This keeps ffmpeg-static as the only binary dependency — no ffprobe
+ * required.
  */
 export function probeDurationMs(filePath: string): Promise<number> {
   return new Promise((resolve, reject) => {
     execFile(
-      resolveFfprobe(),
-      ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", filePath],
-      (err, stdout, stderr) => {
-        if (err) {
-          // Fallback: parse from ffmpeg -i stderr
-          const m = /Duration: (\d{2}):(\d{2}):(\d{2}\.\d+)/.exec(String(stderr ?? ""));
-          if (m) {
-            const hours = parseInt(m[1], 10);
-            const mins = parseInt(m[2], 10);
-            const secs = parseFloat(m[3]);
-            resolve(Math.round((hours * 3600 + mins * 60 + secs) * 1000));
-            return;
-          }
-          reject(err);
+      resolveFfmpeg(),
+      ["-hide_banner", "-i", filePath, "-f", "null", "-"],
+      (err, _stdout, stderr) => {
+        const m = /Duration: (\d{2}):(\d{2}):(\d{2}\.\d+)/.exec(String(stderr ?? ""));
+        if (m) {
+          const hours = parseInt(m[1], 10);
+          const mins = parseInt(m[2], 10);
+          const secs = parseFloat(m[3]);
+          resolve(Math.round((hours * 3600 + mins * 60 + secs) * 1000));
           return;
         }
-        const secs = parseFloat(String(stdout).trim());
-        if (Number.isNaN(secs)) {
-          reject(new Error(`Could not parse duration from ffprobe output: ${stdout}`));
-          return;
-        }
-        resolve(Math.round(secs * 1000));
-      },
+        reject(
+          err ??
+            new Error(`Could not parse duration from ffmpeg stderr: ${stderr}`)
+        );
+      }
     );
   });
 }
