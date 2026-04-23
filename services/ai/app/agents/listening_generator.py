@@ -17,6 +17,7 @@ a mock Agent.
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Literal
 
@@ -28,6 +29,8 @@ from app.prompts.listening_system import LISTENING_SYSTEM_PROMPT
 from app.schemas.listening import ListeningTestResponse
 from app.validators.listening import validate_listening_response
 from app.validators.reading import ValidationError
+
+log = logging.getLogger(__name__)
 
 
 def _build_agent() -> Agent[None, ListeningTestResponse]:
@@ -92,17 +95,35 @@ async def generate_listening_test(
     )
 
     last_errors: list[ValidationError] | None = None
+    last_response: ListeningTestResponse | None = None
     for _attempt in range(MAX_ATTEMPTS):
         agent = get_listening_generator()
         run = await agent.run(prompt)
         response: ListeningTestResponse = run.output
         errors = validate_listening_response(response)
         if not errors:
+            if _attempt > 0:
+                log.info(
+                    "generate_listening_test succeeded on attempt %d (after %d failed attempts)",
+                    _attempt + 1,
+                    _attempt,
+                )
             return response
         last_errors = errors
+        last_response = response
+        log.warning(
+            "generate_listening_test attempt %d failed format checks: %s",
+            _attempt + 1,
+            [f"{e.code}: {e.message}" for e in errors],
+        )
 
     assert last_errors is not None
     error_msgs = "; ".join(f"{e.code}: {e.message}" for e in last_errors)
+    log.error(
+        "generate_listening_test gave up after %d attempts; last response: %s",
+        MAX_ATTEMPTS,
+        last_response.model_dump_json()[:2000] if last_response else "None",
+    )
     raise ValueError(
         f"Listening generation validation failed after {MAX_ATTEMPTS} attempts: {error_msgs}"
     )
