@@ -479,8 +479,8 @@ export default async function StudentDetailPage({
                       <span className="truncate">
                         <span className="font-mono text-xs text-neutral-500">
                           {id}
-                        </span>{" "}
-                        · {label}
+                        </span>
+                        {label !== id && <> · {label}</>}
                       </span>
                       <span className="ml-3 shrink-0 text-sm font-semibold text-red-700">
                         {count} 错

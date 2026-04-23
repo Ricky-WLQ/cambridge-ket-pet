@@ -142,6 +142,10 @@ export async function POST(
 
     const payload = attempt.test.payload as unknown as ListeningTestPayloadV2;
     const result = gradeListening(payload.parts, parsed.data.answers);
+    const scaledScore =
+      result.totalPossible > 0
+        ? Math.round((result.rawScore / result.totalPossible) * 100)
+        : 0;
 
     // Build MistakeNote rows for wrong answers only. The grader's
     // ListeningQuestion already carries `explanationZh` so we can grab it
@@ -170,6 +174,7 @@ export async function POST(
           answers: parsed.data.answers,
           rawScore: result.rawScore,
           totalPossible: result.totalPossible,
+          scaledScore,
           weakPoints: {
             examPoints: result.weakPoints.examPoints,
             difficultyPoints: result.weakPoints.difficultyPoints,
@@ -181,7 +186,7 @@ export async function POST(
       }
     });
 
-    return NextResponse.json({ attemptId, result });
+    return NextResponse.json({ attemptId, result, scaledScore });
   }
 
   // --------- WRITING: save response, then grade synchronously via AI, flip to GRADED

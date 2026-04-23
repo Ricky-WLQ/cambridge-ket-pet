@@ -29,6 +29,10 @@ export async function forceSubmitExpired(now: Date = new Date()): Promise<number
     const payload = attempt.test.payload as unknown as ListeningTestPayloadV2;
     const answers = (attempt.answers ?? {}) as Record<string, string>;
     const result = gradeListening(payload.parts, answers);
+    const scaledScore =
+      result.totalPossible > 0
+        ? Math.round((result.rawScore / result.totalPossible) * 100)
+        : 0;
 
     const questionIndex = new Map(
       payload.parts.flatMap((p) => p.questions).map((q) => [q.id, q]),
@@ -53,6 +57,7 @@ export async function forceSubmitExpired(now: Date = new Date()): Promise<number
           submittedAt: now,
           rawScore: result.rawScore,
           totalPossible: result.totalPossible,
+          scaledScore,
           weakPoints: {
             examPoints: result.weakPoints.examPoints,
             difficultyPoints: result.weakPoints.difficultyPoints,
