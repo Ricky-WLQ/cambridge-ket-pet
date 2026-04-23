@@ -100,7 +100,7 @@ services/ai/
 ### Files to modify
 
 - `apps/web/prisma/schema.prisma` — add `AudioStatus` enum + 5 fields on `Test`
-- `apps/web/.env.example` — R2 + listening env vars
+- `.env.example` — R2 + listening env vars
 - `services/ai/.env.example` — unchanged (already has DEEPSEEK_API_KEY)
 - `apps/web/src/i18n/zh-CN.ts` — listening UI strings
 - `apps/web/src/app/history/page.tsx` — Listening filter chip
@@ -203,11 +203,11 @@ These are one-time operational steps the engineer must complete before coding be
 ### Task 2: Add env var documentation
 
 **Files:**
-- Modify: `apps/web/.env.example`
+- Modify: `.env.example`
 
 - [ ] **Step 1: Append listening/audio section**
 
-  Append to `apps/web/.env.example`:
+  Append to `.env.example`:
 
   ```
   # ========== Phase 2 Listening ==========
@@ -238,7 +238,7 @@ These are one-time operational steps the engineer must complete before coding be
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add apps/web/.env.example
+  git add .env.example
   git commit -m "docs(phase2): document listening + r2 env vars in .env.example"
   ```
 
@@ -5565,12 +5565,12 @@ These are one-time operational steps the engineer must complete before coding be
   }
   ```
 
-  Also add to `apps/web/.env.example`: `CRON_SECRET=` and instruct user to populate with a long random string.
+  Also add to `.env.example`: `CRON_SECRET=` and instruct user to populate with a long random string.
 
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add apps/web/src/lib/cron/ apps/web/src/app/api/cron/ apps/web/.env.example
+  git add apps/web/src/lib/cron/ apps/web/src/app/api/cron/ .env.example
   git commit -m "feat(cron): force-submit expired LISTENING attempts"
   ```
 
@@ -5607,13 +5607,13 @@ These are one-time operational steps the engineer must complete before coding be
 ### Task 51: Finalize `.env.example`
 
 **Files:**
-- Modify: `apps/web/.env.example`
+- Modify: `.env.example`
 
 - [ ] **Step 1: Review and ensure the .env.example is complete**
 
   Run:
   ```bash
-  grep -E "^[A-Z_]+=" apps/web/.env.example
+  grep -E "^[A-Z_]+=" .env.example
   ```
   Verify every env var referenced in Phase 2 code is present:
   - R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_ENDPOINT
@@ -5625,7 +5625,7 @@ These are one-time operational steps the engineer must complete before coding be
 - [ ] **Step 2: Commit if any changes**
 
   ```bash
-  git add apps/web/.env.example
+  git add .env.example
   git commit -m "docs: finalize Phase 2 env vars in .env.example"
   ```
 
