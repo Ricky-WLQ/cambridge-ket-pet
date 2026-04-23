@@ -4,16 +4,25 @@ import { useState } from "react";
 import { createAssignmentAction } from "@/lib/assignmentActions";
 
 type ExamType = "KET" | "PET";
-type Kind = "READING" | "WRITING";
+type Kind = "READING" | "WRITING" | "LISTENING";
 
 const PARTS: Record<ExamType, Record<Kind, number[]>> = {
-  KET: { READING: [1, 2, 3, 4, 5], WRITING: [6, 7] },
-  PET: { READING: [1, 2, 3, 4, 5, 6], WRITING: [1, 2] },
+  KET: {
+    READING: [1, 2, 3, 4, 5],
+    WRITING: [6, 7],
+    LISTENING: [1, 2, 3, 4, 5],
+  },
+  PET: {
+    READING: [1, 2, 3, 4, 5, 6],
+    WRITING: [1, 2],
+    LISTENING: [1, 2, 3, 4],
+  },
 };
 
 const KIND_LABEL: Record<Kind, string> = {
   READING: "阅读",
   WRITING: "写作",
+  LISTENING: "听力",
 };
 
 export default function NewAssignmentForm({
@@ -98,7 +107,7 @@ export default function NewAssignmentForm({
         <div>
           <label className="mb-1 block text-sm font-medium">题型</label>
           <div className="flex gap-2">
-            {(["READING", "WRITING"] as const).map((k) => (
+            {(["READING", "WRITING", "LISTENING"] as const).map((k) => (
               <button
                 key={k}
                 type="button"

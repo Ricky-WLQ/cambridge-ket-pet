@@ -247,12 +247,7 @@ export default async function ClassOverviewPage({
                   : Math.round((a.completedStudents / a.totalStudents) * 100);
               const overdue =
                 a.dueAt !== null && a.dueAt < new Date() && completionPct < 100;
-              const kindZh =
-                a.kind === "READING"
-                  ? "阅读"
-                  : a.kind === "WRITING"
-                    ? "写作"
-                    : a.kind;
+              const kindZh = KIND_ZH[a.kind] ?? a.kind;
               return (
                 <li
                   key={a.id}
