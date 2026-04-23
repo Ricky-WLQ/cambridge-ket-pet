@@ -4,8 +4,8 @@ from pydantic import ValidationError
 from app.schemas.listening import (
     AudioSegment,
     ListeningOption,
-    ListeningQuestion,
     ListeningPart,
+    ListeningQuestion,
     ListeningTestResponse,
 )
 
