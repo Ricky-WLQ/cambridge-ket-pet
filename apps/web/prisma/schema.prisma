@@ -79,6 +79,7 @@ model User {
   ownedClasses     Class[]       @relation("TeacherClasses")
   classMemberships ClassMember[]
 
+  tests            Test[]
   attempts         TestAttempt[]
   generationEvents GenerationEvent[]
   mistakeNotes     MistakeNote[]
@@ -194,6 +195,7 @@ model DifficultyPoint {
 // re-validated Pydantic-style on the Next.js side before save.
 model Test {
   id           String   @id @default(cuid())
+  userId       String?
   examType     ExamType
   kind         TestKind
   part         Int?
@@ -212,8 +214,10 @@ model Test {
   audioSegments        Json?
   audioErrorMessage    String?
 
+  user     User?         @relation(fields: [userId], references: [id])
   attempts TestAttempt[]
 
+  @@index([userId, createdAt])
   @@index([examType, kind, part])
   @@index([createdAt])
 }
