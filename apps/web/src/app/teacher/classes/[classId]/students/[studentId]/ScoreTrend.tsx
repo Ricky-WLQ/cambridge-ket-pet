@@ -104,6 +104,11 @@ export default function ScoreTrend({ attempts, classId, studentId }: Props) {
     return `${examType} ${KIND_ZH[kind] ?? kind}`;
   }, [filter]);
 
+  const isListeningFilter = useMemo(() => {
+    if (!filter) return false;
+    return filter.split("-")[1] === "LISTENING";
+  }, [filter]);
+
   if (buckets.length === 0) return null;
 
   return (
@@ -113,16 +118,21 @@ export default function ScoreTrend({ attempts, classId, studentId }: Props) {
           {buckets.map((b) => {
             const [examType, kind] = b.key.split("-");
             const label = `${examType} ${KIND_ZH[kind] ?? kind}`;
+            const isListening = kind === "LISTENING";
+            const isActive = filter === b.key;
+            const className = isActive
+              ? isListening
+                ? "border-purple-700 bg-purple-700 text-white"
+                : "border-neutral-900 bg-neutral-900 text-white"
+              : isListening
+                ? "border-purple-300 bg-purple-50 text-purple-800 hover:border-purple-700"
+                : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-900";
             return (
               <button
                 key={b.key}
                 type="button"
                 onClick={() => setFilter(b.key)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                  filter === b.key
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-900"
-                }`}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${className}`}
               >
                 {label} ({b.count})
               </button>
@@ -155,7 +165,11 @@ export default function ScoreTrend({ attempts, classId, studentId }: Props) {
         </div>
       </div>
 
-      <div className="rounded-md border border-neutral-200 p-4">
+      <div
+        className={`rounded-md border p-4 ${
+          isListeningFilter ? "border-purple-300 bg-purple-50/30" : "border-neutral-200"
+        }`}
+      >
         {filteredChrono.length === 0 ? (
           <div className="py-8 text-center text-sm text-neutral-500">
             当前筛选下暂无已批改答卷
