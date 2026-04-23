@@ -12,6 +12,7 @@ import {
   probeDurationMs,
   type PlanEntry,
 } from "./concat";
+import { mapWithConcurrency } from "./concurrency";
 import { synthesizeSegmentWithRetry } from "./edge-tts-client";
 import { uploadAudioToR2 } from "./r2-client";
 import { computeSegmentRecords, type ConcatEntry } from "./segments";
@@ -20,6 +21,10 @@ import type {
   AudioSegmentRecord,
   ListeningTestPayloadV2,
 } from "./types";
+
+const SEGMENT_SYNTHESIS_CONCURRENCY = Number(
+  process.env.LISTENING_SEGMENT_CONCURRENCY ?? 4,
+);
 
 export interface GenerateArgs {
   testId: string;
@@ -47,44 +52,50 @@ export async function generateListeningAudio(args: GenerateArgs): Promise<Genera
       plan = buildConcatPlan(payload.parts[0], payload.examType);
     }
 
-    // 2. For each entry, produce a file on disk (synthesized TTS or silence)
-    const filePaths: string[] = [];
-    const concatEntries: ConcatEntry[] = [];
+    // 2. Produce all segment files in parallel (synthesis OR silence), probe durations.
+    const produced = await mapWithConcurrency(
+      plan,
+      SEGMENT_SYNTHESIS_CONCURRENCY,
+      async (entry, i) => {
+        const filePath = path.join(
+          workDir,
+          `seg-${String(i).padStart(4, "0")}.mp3`,
+        );
 
-    for (let i = 0; i < plan.length; i++) {
-      const entry = plan[i];
-      const filePath = path.join(workDir, `seg-${String(i).padStart(4, "0")}.mp3`);
-
-      if (entry.kind === "pause" || entry.kind === "preview_pause") {
-        const durSec = Math.max(0.1, (entry.durationMs ?? 0) / 1000);
-        await generateSilenceMp3(durSec, filePath);
-      } else {
-        if (!entry.text || entry.voiceTag == null) {
-          throw new Error(
-            `Plan entry ${entry.id} of kind ${entry.kind} missing text or voiceTag`,
-          );
+        if (entry.kind === "pause" || entry.kind === "preview_pause") {
+          const durSec = Math.max(0.1, (entry.durationMs ?? 0) / 1000);
+          await generateSilenceMp3(durSec, filePath);
+        } else {
+          if (!entry.text || entry.voiceTag == null) {
+            throw new Error(
+              `Plan entry ${entry.id} of kind ${entry.kind} missing text or voiceTag`,
+            );
+          }
+          await synthesizeSegmentWithRetry({
+            text: entry.text,
+            voiceTag: entry.voiceTag,
+            ratePercent,
+            outPath: filePath,
+          });
         }
-        await synthesizeSegmentWithRetry({
-          text: entry.text,
-          voiceTag: entry.voiceTag,
-          ratePercent,
-          outPath: filePath,
-        });
-      }
 
-      filePaths.push(filePath);
+        const durationMs = await probeDurationMs(filePath);
+        const seg: AudioSegment = {
+          id: entry.id,
+          kind: entry.kind,
+          voiceTag: entry.voiceTag ?? null,
+          questionId: entry.questionId,
+          partNumber: entry.partNumber,
+        };
+        return { filePath, segment: seg, durationMs };
+      },
+    );
 
-      // Record actual duration for timestamping
-      const dur = await probeDurationMs(filePath);
-      const seg: AudioSegment = {
-        id: entry.id,
-        kind: entry.kind,
-        voiceTag: entry.voiceTag ?? null,
-        questionId: entry.questionId,
-        partNumber: entry.partNumber,
-      };
-      concatEntries.push({ segment: seg, durationMs: dur });
-    }
+    const filePaths: string[] = produced.map((p) => p.filePath);
+    const concatEntries: ConcatEntry[] = produced.map((p) => ({
+      segment: p.segment,
+      durationMs: p.durationMs,
+    }));
 
     // 3. Concatenate all files into a single mp3
     const outputMp3 = path.join(workDir, "listening.mp3");
