@@ -39,7 +39,7 @@ export function NewListeningPicker(props: NewListeningPickerProps) {
     const { testId } = await res.json();
 
     // Create attempt
-    const a = await fetch(`/api/tests/${testId}/attempt`, { method: "POST" });
+    const a = await fetch(`/api/listening/tests/${testId}/attempt`, { method: "POST" });
     if (!a.ok) {
       const data = await a.json().catch(() => ({}));
       setErr(data.message ?? data.error ?? "创建 attempt 失败");

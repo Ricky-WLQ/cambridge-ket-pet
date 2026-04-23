@@ -38,7 +38,7 @@ export function ListeningRunner(props: ListeningRunnerProps) {
     const t0 = Date.now();
     const poll = async () => {
       setElapsedSec(Math.floor((Date.now() - t0) / 1000));
-      const res = await fetch(`/api/tests/${props.testId}/status`, {
+      const res = await fetch(`/api/listening/tests/${props.testId}/status`, {
         cache: "no-store",
       });
       const data = await res.json();

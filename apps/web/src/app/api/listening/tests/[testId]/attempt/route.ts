@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 /**
- * POST /api/tests/[testId]/attempt
+ * POST /api/listening/tests/[testId]/attempt
  *
  * Creates a TestAttempt row for the given Test. Used by the listening flow:
  * the READING branch of /api/tests/generate creates the test and the attempt

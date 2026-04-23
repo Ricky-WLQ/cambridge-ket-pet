@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 /**
- * GET /api/tests/[testId]/status
+ * GET /api/listening/tests/[testId]/status
  *
  * Used by the listening UI to poll for audio generation progress.
  * Returns audio-state fields plus (once READY) the payload + per-segment
