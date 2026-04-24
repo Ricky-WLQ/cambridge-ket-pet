@@ -20,7 +20,7 @@ def _build_deepseek_model() -> OpenAIChatModel:
         raise RuntimeError("DEEPSEEK_API_KEY is not set; cannot build scorer model")
     return OpenAIChatModel(
         model_name="deepseek-chat",
-        provider=OpenAIProvider(base_url="https://api.deepseek.com", api_key=api_key),
+        provider=OpenAIProvider(base_url="https://api.deepseek.com/v1", api_key=api_key),
     )
 
 
