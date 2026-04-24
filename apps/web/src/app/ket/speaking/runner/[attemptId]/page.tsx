@@ -1,4 +1,4 @@
-import { SpeakingRunner } from "@/components/speaking/SpeakingRunner";
+import { ClientSpeakingRunner } from "@/components/speaking/ClientSpeakingRunner";
 
 export default async function Page({
   params,
@@ -6,5 +6,5 @@ export default async function Page({
   params: Promise<{ attemptId: string }>;
 }) {
   const { attemptId } = await params;
-  return <SpeakingRunner attemptId={attemptId} level="KET" />;
+  return <ClientSpeakingRunner attemptId={attemptId} level="KET" />;
 }

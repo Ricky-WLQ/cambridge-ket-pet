@@ -1,5 +1,5 @@
-import { SpeakingNewPage } from "@/components/speaking/SpeakingNewPage";
+import { ClientSpeakingNewPage } from "@/components/speaking/ClientSpeakingNewPage";
 
 export default function Page() {
-  return <SpeakingNewPage level="KET" />;
+  return <ClientSpeakingNewPage level="KET" />;
 }

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import TRTC from "trtc-sdk-v5";
+import { useRef } from "react";
 
 interface Props {
   remoteUserId: string | null;
