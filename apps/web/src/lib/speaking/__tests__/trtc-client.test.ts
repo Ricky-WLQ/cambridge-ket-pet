@@ -16,7 +16,7 @@ vi.mock("trtc-sdk-v5", () => ({
     REMOTE_VIDEO_AVAILABLE: "remote-video-available",
     CUSTOM_MESSAGE: "custom-message",
     KICKED_OUT: "kicked-out",
-    ROOM_DISCONNECTED: "room-disconnected",
+    CONNECTION_STATE_CHANGED: "connection-state-changed",
   } },
 }));
 

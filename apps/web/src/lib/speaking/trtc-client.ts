@@ -63,10 +63,19 @@ export async function createMinaTrtcSession(args: {
     );
   }
   if (args.onDisconnected) {
-    // TRTC v5 type declarations do not enumerate ROOM_DISCONNECTED on
-    // TRTC.EVENT, but the runtime constant and event are emitted. Cast to any
-    // to access the constant without wrestling the declaration files.
-    client.on((TRTC.EVENT as any).ROOM_DISCONNECTED, args.onDisconnected);
+    // TRTC v5.17 surfaces unexpected disconnects via CONNECTION_STATE_CHANGED
+    // (event string "connection-state-changed"). Fire onDisconnected only on
+    // CONNECTED → DISCONNECTED transitions so reconnect attempts (DISCONNECTED →
+    // CONNECTING) don't spam the callback. The KICKED_OUT event is separate
+    // and always indicates a hard disconnect.
+    client.on(
+      TRTC.EVENT.CONNECTION_STATE_CHANGED,
+      (event: { state: string; prevState: string }) => {
+        if (event.state === "DISCONNECTED" && event.prevState === "CONNECTED") {
+          args.onDisconnected!();
+        }
+      },
+    );
     client.on(TRTC.EVENT.KICKED_OUT, args.onDisconnected);
   }
 
