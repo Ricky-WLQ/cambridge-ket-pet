@@ -44,8 +44,8 @@ importers:
         specifier: ^0.0.1
         version: 0.0.1
       trtc-sdk-v5:
-        specifier: ^5.17.1
-        version: 5.17.1
+        specifier: ^5.10.0
+        version: 5.10.0
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -2895,8 +2895,8 @@ packages:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
 
-  trtc-sdk-v5@5.17.1:
-    resolution: {integrity: sha512-IzThYEcuw8Gr9oogvSYXh04zjh3rQEjtLloCQeUvXDxxiUCbVCKnB4dN3FyKk2TsDbOJrkvygvSdWrpeJsIlTQ==}
+  trtc-sdk-v5@5.10.0:
+    resolution: {integrity: sha512-RO8L6tazGXdV8YVd9xGRwKPU5nU1DY0C9DGOgloXB7N78Zep74FS7ThqP0kSyXk4X7GA9Oh8QxVvU0VA6tSPcA==}
 
   ts-api-utils@2.5.0:
     resolution: {integrity: sha512-OJ/ibxhPlqrMM0UiNHJ/0CKQkoKF243/AEmplt3qpRgkW8VG7IfOS41h7V8TjITqdByHzrjcS/2si+y4lIh8NA==}
@@ -3056,8 +3056,8 @@ packages:
       jsdom:
         optional: true
 
-  webrtc-adapter@9.0.5:
-    resolution: {integrity: sha512-U9vjByy/sK2OMXu5mmfuZFKTMIUQe34c0JXRO+oDrxJTsntdYT2iIFwYMOV7HhMTuktcZLGf2W1N/OcSf9ssWg==}
+  webrtc-adapter@8.2.4:
+    resolution: {integrity: sha512-VwtwbYNKnVQW8koB9qb8YcxNwpSVHTvvKEZLzY6uQ3gFrA9E87VPbB5xE+m1AGwUjL1UgN35jRR9hQgteZI5bg==}
     engines: {node: '>=6.0.0', npm: '>=3.10.0'}
 
   which-boxed-primitive@1.1.1:
@@ -6448,9 +6448,9 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
-  trtc-sdk-v5@5.17.1:
+  trtc-sdk-v5@5.10.0:
     dependencies:
-      webrtc-adapter: 9.0.5
+      webrtc-adapter: 8.2.4
 
   ts-api-utils@2.5.0(typescript@5.9.3):
     dependencies:
@@ -6610,7 +6610,7 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  webrtc-adapter@9.0.5:
+  webrtc-adapter@8.2.4:
     dependencies:
       sdp: 3.2.2
 
