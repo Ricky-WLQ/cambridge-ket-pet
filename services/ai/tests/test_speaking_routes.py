@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient, ASGITransport
 
-from app.main import app
+from app.main import app, verify_internal_auth
 from app.schemas.speaking import (
     SpeakingPrompts,
     SpeakingExaminerReply,
@@ -14,8 +14,14 @@ from app.schemas.speaking import (
 
 @pytest.fixture
 async def client():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        yield c
+    # Bypass Authorization: Bearer <INTERNAL_SHARED_SECRET> in tests.
+    # Production still enforces the dependency via the route decorators.
+    app.dependency_overrides[verify_internal_auth] = lambda: None
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+            yield c
+    finally:
+        app.dependency_overrides.pop(verify_internal_auth, None)
 
 
 @pytest.mark.asyncio

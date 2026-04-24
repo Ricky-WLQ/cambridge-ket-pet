@@ -3140,7 +3140,7 @@ export async function scoreSpeakingAttempt(args: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-internal-shared-secret": process.env.INTERNAL_AI_SHARED_SECRET ?? "",
+      Authorization: `Bearer ${process.env.INTERNAL_AI_SHARED_SECRET ?? ""}`,
     },
     body: JSON.stringify({
       level: args.level,
@@ -3374,7 +3374,7 @@ export async function POST(req: Request) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-internal-shared-secret": process.env.INTERNAL_AI_SHARED_SECRET ?? "",
+      Authorization: `Bearer ${process.env.INTERNAL_AI_SHARED_SECRET ?? ""}`,
     },
     body: JSON.stringify({ level: body.level, photo_briefs: photoBriefs }),
     cache: "no-store",
@@ -3900,7 +3900,7 @@ export async function POST(req: Request, ctx: RouteCtx) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-internal-shared-secret": process.env.INTERNAL_AI_SHARED_SECRET ?? "",
+          Authorization: `Bearer ${process.env.INTERNAL_AI_SHARED_SECRET ?? ""}`,
         },
         body: JSON.stringify({
           prompts: test.speakingPrompts,

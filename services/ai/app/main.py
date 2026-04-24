@@ -324,20 +324,31 @@ class SpeakingScoreBody(BaseModel):
     transcript: list[dict[str, Any]]
 
 
-@app.post("/speaking/examiner-warmup")
+@app.post(
+    "/speaking/examiner-warmup",
+    dependencies=[Depends(verify_internal_auth)],
+)
 async def speaking_examiner_warmup() -> dict:
     """No-op: primes the DeepSeek HTTP client on runner mount."""
     return {"ok": True}
 
 
-@app.post("/speaking/generate", response_model=SpeakingPrompts)
+@app.post(
+    "/speaking/generate",
+    response_model=SpeakingPrompts,
+    dependencies=[Depends(verify_internal_auth)],
+)
 async def speaking_generate(body: SpeakingGenerateBody) -> SpeakingPrompts:
     return await generate_speaking_prompts(
         level=body.level, photo_briefs=body.photo_briefs
     )
 
 
-@app.post("/speaking/examiner", response_model=SpeakingExaminerReply)
+@app.post(
+    "/speaking/examiner",
+    response_model=SpeakingExaminerReply,
+    dependencies=[Depends(verify_internal_auth)],
+)
 async def speaking_examiner(body: SpeakingExaminerBody) -> SpeakingExaminerReply:
     return await run_examiner_turn(
         prompts=body.prompts,
@@ -346,7 +357,11 @@ async def speaking_examiner(body: SpeakingExaminerBody) -> SpeakingExaminerReply
     )
 
 
-@app.post("/speaking/score", response_model=SpeakingScore)
+@app.post(
+    "/speaking/score",
+    response_model=SpeakingScore,
+    dependencies=[Depends(verify_internal_auth)],
+)
 async def speaking_score(body: SpeakingScoreBody) -> SpeakingScore:
     return await score_speaking_attempt(
         level=body.level, transcript=body.transcript
