@@ -57,20 +57,22 @@ export async function createMinaTrtcSession(args: {
   // Auto-subscribe both inside the SDK-event handler (where `client` is a
   // closure-captured local) so the consumer doesn't have to chase the client
   // through the not-yet-assigned `session` const.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const trtcAny = client as any;
+  //
+  // TRTC v5's method to render a remote stream is `startRemoteVideo` (NOT
+  // `subscribeRemoteVideo` — that's a name from earlier SDK generations).
+  // Also: `autoReceiveVideo` defaults to false, so without an explicit
+  // startRemoteVideo() call the SDK won't even DECODE the remote track,
+  // and the avatar div stays black.
   client.on(TRTC.EVENT.REMOTE_VIDEO_AVAILABLE, (e: { userId: string }) => {
-    if (typeof trtcAny.subscribeRemoteVideo === "function") {
-      Promise.resolve(
-        trtcAny.subscribeRemoteVideo({
-          userId: e.userId,
-          view: "mina-video",
-          streamType: 0,
-        }),
-      ).catch((err: unknown) =>
-        console.warn("[trtc] subscribeRemoteVideo failed", err),
+    client
+      .startRemoteVideo({
+        userId: e.userId,
+        streamType: TRTC.TYPE.STREAM_TYPE_MAIN,
+        view: "mina-video",
+      })
+      .catch((err: unknown) =>
+        console.warn("[trtc] startRemoteVideo failed", err),
       );
-    }
     if (args.onRemoteVideoAvailable) {
       try {
         args.onRemoteVideoAvailable(e.userId);
@@ -80,14 +82,14 @@ export async function createMinaTrtcSession(args: {
     }
   });
   client.on(TRTC.EVENT.REMOTE_AUDIO_AVAILABLE, (e: { userId: string }) => {
-    // Defensive: explicitly unmute Akool's audio track. Default is auto-play
-    // but autoplay policies can silently mute it; this is idempotent.
-    if (typeof trtcAny.muteRemoteAudio === "function") {
-      Promise.resolve(trtcAny.muteRemoteAudio(e.userId, false)).catch(
-        (err: unknown) =>
-          console.warn("[trtc] muteRemoteAudio(false) failed", err),
+    // Defensive unmute. TRTC v5 default is auto-play remote audio, but
+    // browser autoplay policy can silently mute it; muteRemoteAudio(false)
+    // is idempotent and ensures Mina's voice plays.
+    client
+      .muteRemoteAudio(e.userId, false)
+      .catch((err: unknown) =>
+        console.warn("[trtc] muteRemoteAudio(false) failed", err),
       );
-    }
     if (args.onRemoteAudioAvailable) {
       try {
         args.onRemoteAudioAvailable(e.userId);
