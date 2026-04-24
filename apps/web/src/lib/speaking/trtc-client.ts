@@ -129,7 +129,7 @@ export async function createMinaTrtcSession(args: {
 
   async function sendRaw(msg: StreamMessage): Promise<void> {
     const encoded = new TextEncoder().encode(JSON.stringify(msg));
-    // TRTC v5.17 sendCustomMessage requires { cmdId: number 1..10, data: ArrayBuffer }.
+    // TRTC v5 sendCustomMessage requires { cmdId: number 1..10, data: ArrayBuffer }.
     // cmdId=1 is fine — Akool reads the JSON body, not the cmdId channel.
     // Convert the Uint8Array view to its underlying ArrayBuffer with a slice
     // so we don't accidentally forward over-allocated bytes.
@@ -139,6 +139,23 @@ export async function createMinaTrtcSession(args: {
     ) as ArrayBuffer;
     await client.sendCustomMessage({ cmdId: 1, data: buffer });
   }
+
+  // Defensive runtime pin: in addition to mode_type:1 at session/create time,
+  // re-assert mode=1 (Retelling) via the runtime set-params command. Reports
+  // from the field have shown the create-time mode_type does not always
+  // stick on Akool's side, leaving the avatar in Dialogue mode where it
+  // runs its own LLM and echoes / freelances. Sending set-params after
+  // enterRoom guarantees the avatar will only TTS what we push via
+  // sendChat() and won't auto-respond to user STT.
+  await sendRaw({
+    v: 2,
+    type: "command",
+    mid: `cmd-${Date.now()}-pin-mode`,
+    pld: {
+      cmd: "set-params",
+      data: { mode: 1, lang: "en" },
+    } as StreamMessage["pld"],
+  });
 
   return {
     async sendChat(text: string) {
