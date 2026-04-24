@@ -136,27 +136,28 @@ export function SpeakingRunner({ attemptId, level }: Props) {
   );
 
   // Bootstrap. React Strict Mode runs effects twice in dev, which would
-  // create two Akool sessions + two TRTC peer connections — the cleanup
-  // of the first then tears down WebRTC mid-negotiation. Use a ref-guarded
-  // latch so the second strict-mode invocation is a no-op.
+  // create two Akool sessions + two TRTC peer connections (the first's
+  // cleanup tears down WebRTC mid-negotiation). Use a ref-guarded latch so
+  // the second strict-mode invocation is a no-op.
   //
-  // We do NOT cancel the bootstrap or close the session in the cleanup
-  // function because Strict Mode's between-mounts cleanup would prematurely
-  // tear down the just-created session before the latch can no-op the second
-  // mount. Real-unmount cleanup is handled by:
+  // The cleanup function is intentionally a no-op: Strict Mode's
+  // between-mounts cleanup must NOT cancel the in-flight fetch or close
+  // the just-created Akool/TRTC session — doing so would tear down work
+  // the latch is supposed to preserve. (We tried AbortController here in
+  // a previous iteration; it killed the fetch before it could return,
+  // leaving the page hung in "正在连接".)
+  //
+  // Real-unmount cleanup of side effects is handled by:
   //   - safetyCap timer (Task 22) → submit() if elapsed > target+3
   //   - beforeunload beacon → submit()
   //   - End Test button → submit()
-  //   - onDisconnected callback → setError + setStatus("ended")
-  // and Akool's 15-min session-duration safety net.
-  //
-  // The fetch is wrapped in an AbortController so a real unmount cancels
-  // the in-flight bootstrap if it hasn't reached the TRTC step yet.
+  //   - onDisconnected callback → fire-and-forget /submit
+  //   - bootstrap-error catch → fire-and-forget /submit
+  // plus Akool's 15-min session-duration safety net for any edge case.
   const bootstrappedRef = useRef(false);
   useEffect(() => {
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
-    const abortController = new AbortController();
 
     (async () => {
       try {
@@ -164,7 +165,6 @@ export function SpeakingRunner({ attemptId, level }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: "{}",
-          signal: abortController.signal,
         });
         if (!res.ok) throw new Error(`/session HTTP ${res.status}`);
         const init = (await res.json()) as SessionInit;
@@ -208,7 +208,6 @@ export function SpeakingRunner({ attemptId, level }: Props) {
 
         if (init.test.initialGreeting) await session.sendChat(init.test.initialGreeting);
       } catch (err) {
-        if ((err as Error).name === "AbortError") return;
         console.error("[runner] bootstrap failed", err);
         setError((err as Error).message);
         // Close any Akool session that /session managed to create before the
@@ -224,7 +223,9 @@ export function SpeakingRunner({ attemptId, level }: Props) {
     })();
 
     return () => {
-      abortController.abort();
+      // Intentional no-op — see block comment above. Side-effect cleanup
+      // is owned by other handlers, not by Strict Mode's between-mounts
+      // cleanup which fires whether we want it to or not.
     };
   }, [attemptId, handleMessage]);
 
