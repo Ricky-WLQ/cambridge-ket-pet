@@ -1,0 +1,6 @@
+{
+  "note": "Drop JPEGs/PNGs/WebPs here with basenames matching the keys in src/lib/speaking/photo-library.ts (e.g. daily-life-01.jpg). Run `pnpm seed:speaking-photos` to upload to R2.",
+  "source": "curated stock library — pick images you have license to use; spec §2.2 defers AI generation",
+  "target_count": 50,
+  "last_updated": "2026-04-25"
+}
