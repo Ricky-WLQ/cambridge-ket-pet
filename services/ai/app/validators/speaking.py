@@ -1,0 +1,87 @@
+"""Post-LLM guardrails for Phase 3 Speaking — sentinel parsing + reply caps."""
+
+from __future__ import annotations
+
+import re
+
+from pydantic import BaseModel
+
+
+class SentinelParseError(ValueError):
+    pass
+
+
+class ParsedExaminerOutput(BaseModel):
+    reply: str
+    advancePart: int | None
+    sessionEnd: bool
+
+
+_PART_RE = re.compile(r"\[\[PART:(\d+)\]\]")
+_END_RE = re.compile(r"\[\[SESSION_END\]\]")
+
+
+def parse_examiner_output(raw: str, *, current_part: int, last_part: int) -> ParsedExaminerOutput:
+    """Extract [[PART:N]] + [[SESSION_END]] sentinels; return cleaned reply + flags."""
+    advance_part: int | None = None
+    part_match = _PART_RE.search(raw)
+    if part_match:
+        n = int(part_match.group(1))
+        if n <= current_part:
+            raise SentinelParseError(
+                f"[[PART:{n}]] is not ahead of current part {current_part}"
+            )
+        if n > last_part:
+            raise SentinelParseError(
+                f"[[PART:{n}]] exceeds last part {last_part}"
+            )
+        advance_part = n
+
+    session_end = bool(_END_RE.search(raw))
+
+    cleaned = _PART_RE.sub("", raw)
+    cleaned = _END_RE.sub("", cleaned)
+    cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+
+    if not cleaned:
+        raise SentinelParseError("reply was empty after stripping sentinels")
+
+    return ParsedExaminerOutput(
+        reply=cleaned, advancePart=advance_part, sessionEnd=session_end
+    )
+
+
+def enforce_reply_caps(text: str, *, soft_words: int = 40, hard_words: int = 60) -> str:
+    """Clamp the reply length without leaking mid-sentence cuts when avoidable.
+
+    Strategy: if the reply is already at or under the soft cap, return it as-is.
+    If it's over the soft cap, prefer to cut at the last sentence boundary that
+    keeps us within the soft limit; if no such boundary exists, word-truncate
+    at the hard cap and append an ellipsis.
+    """
+    words = text.split()
+    if len(words) <= soft_words:
+        return text.strip()
+
+    # Sentence-boundary search up to soft_words worth of tokens.
+    # Build cumulative word indices by scanning the original string.
+    accumulated: list[tuple[int, int]] = []  # (word_count_at_end_of_sentence, char_index)
+    word_count = 0
+    last_sentence_end_char = -1
+    for i, ch in enumerate(text):
+        if ch in ".!?":
+            # Count words up to and including this char.
+            prefix = text[: i + 1]
+            word_count = len(prefix.split())
+            last_sentence_end_char = i
+            accumulated.append((word_count, i))
+
+    for wc, ci in reversed(accumulated):
+        if wc <= soft_words:
+            return text[: ci + 1].strip()
+
+    # No sentence boundary fits — truncate at the soft cap.
+    # (hard_words is retained as the Pydantic-side ceiling; this fallback
+    # clamps to soft_words so callers never emit replies above the target.)
+    truncated = " ".join(words[:soft_words]).rstrip(".,; ") + "…"
+    return truncated
