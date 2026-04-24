@@ -39,6 +39,41 @@ export async function createMinaTrtcSession(args: {
 }): Promise<MinaTrtcSession> {
   const client = TRTC.create();
 
+  async function sendRaw(msg: StreamMessage): Promise<void> {
+    const encoded = new TextEncoder().encode(JSON.stringify(msg));
+    // TRTC v5 sendCustomMessage requires { cmdId: number 1..10, data: ArrayBuffer }.
+    // cmdId=1 is fine — Akool reads the JSON body, not the cmdId channel.
+    // Convert the Uint8Array view to its underlying ArrayBuffer with a slice
+    // so we don't accidentally forward over-allocated bytes.
+    const buffer = encoded.buffer.slice(
+      encoded.byteOffset,
+      encoded.byteOffset + encoded.byteLength,
+    ) as ArrayBuffer;
+    await client.sendCustomMessage({ cmdId: 1, data: buffer });
+  }
+
+  // Re-assert Retelling mode (mode:1) via runtime set-params command. We fire
+  // this twice: once after enterRoom and again on REMOTE_VIDEO_AVAILABLE. The
+  // second fire is the load-bearing one — TRTC's sendCustomMessage broadcasts
+  // only to currently-joined users, so a late-joining avatar would miss the
+  // boot-time fire. Per Akool's docs §8 (BYO LLM guide), set-params with
+  // mode:1 is the documented way to force Retelling at runtime.
+  async function pinRetellingMode(): Promise<void> {
+    try {
+      await sendRaw({
+        v: 2,
+        type: "command",
+        mid: `cmd-${Date.now()}-pin-mode`,
+        pld: {
+          cmd: "set-params",
+          data: { mode: 1, lang: "en" },
+        } as StreamMessage["pld"],
+      });
+    } catch (err) {
+      console.warn("[trtc] set-params(mode:1) failed", err);
+    }
+  }
+
   client.on(TRTC.EVENT.CUSTOM_MESSAGE, (event: { data: Uint8Array | ArrayBuffer }) => {
     try {
       const buf = event.data instanceof ArrayBuffer
@@ -46,6 +81,16 @@ export async function createMinaTrtcSession(args: {
         : (event.data as Uint8Array);
       const text = new TextDecoder().decode(buf);
       const msg = JSON.parse(text) as StreamMessage;
+      // Surface command ACKs in the console so we can verify mode-pin success.
+      // Akool ACKs commands as { type: "command", pld: { code, msg } }.
+      if (msg.type === "command") {
+        const code = msg.pld?.code;
+        if (code != null && code !== 1000) {
+          console.warn("[trtc] command ACK failed", msg.pld);
+        } else if (code === 1000) {
+          console.log("[trtc] command ACK ok", msg.mid ?? "");
+        }
+      }
       args.onMessage(msg);
     } catch (err) {
       console.warn("[trtc] failed to parse custom message", err);
@@ -73,6 +118,9 @@ export async function createMinaTrtcSession(args: {
       .catch((err: unknown) =>
         console.warn("[trtc] startRemoteVideo failed", err),
       );
+    // Re-pin mode now that we know the avatar is in the room. This is the
+    // reliable fire — late-joiners would have missed the post-enterRoom one.
+    void pinRetellingMode();
     if (args.onRemoteVideoAvailable) {
       try {
         args.onRemoteVideoAvailable(e.userId);
@@ -127,35 +175,9 @@ export async function createMinaTrtcSession(args: {
 
   let sentCount = 0;
 
-  async function sendRaw(msg: StreamMessage): Promise<void> {
-    const encoded = new TextEncoder().encode(JSON.stringify(msg));
-    // TRTC v5 sendCustomMessage requires { cmdId: number 1..10, data: ArrayBuffer }.
-    // cmdId=1 is fine — Akool reads the JSON body, not the cmdId channel.
-    // Convert the Uint8Array view to its underlying ArrayBuffer with a slice
-    // so we don't accidentally forward over-allocated bytes.
-    const buffer = encoded.buffer.slice(
-      encoded.byteOffset,
-      encoded.byteOffset + encoded.byteLength,
-    ) as ArrayBuffer;
-    await client.sendCustomMessage({ cmdId: 1, data: buffer });
-  }
-
-  // Defensive runtime pin: in addition to mode_type:1 at session/create time,
-  // re-assert mode=1 (Retelling) via the runtime set-params command. Reports
-  // from the field have shown the create-time mode_type does not always
-  // stick on Akool's side, leaving the avatar in Dialogue mode where it
-  // runs its own LLM and echoes / freelances. Sending set-params after
-  // enterRoom guarantees the avatar will only TTS what we push via
-  // sendChat() and won't auto-respond to user STT.
-  await sendRaw({
-    v: 2,
-    type: "command",
-    mid: `cmd-${Date.now()}-pin-mode`,
-    pld: {
-      cmd: "set-params",
-      data: { mode: 1, lang: "en" },
-    } as StreamMessage["pld"],
-  });
+  // First fire of mode-pin (will fire again on REMOTE_VIDEO_AVAILABLE — the
+  // second fire is the load-bearing one when the avatar joins late).
+  await pinRetellingMode();
 
   return {
     async sendChat(text: string) {
