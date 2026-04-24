@@ -135,8 +135,15 @@ export function SpeakingRunner({ attemptId, level }: Props) {
     [attemptId, submit],
   );
 
-  // Bootstrap
+  // Bootstrap. React Strict Mode runs effects twice in dev, which would
+  // create two Akool sessions + two TRTC peer connections — the cleanup
+  // of the first then tears down WebRTC mid-negotiation, surfacing as
+  // "Cannot read properties of null (reading 'type')" in the SDK. Use a
+  // ref-guarded latch so the second strict-mode invocation is a no-op.
+  const bootstrappedRef = useRef(false);
   useEffect(() => {
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
     let cancelled = false;
     (async () => {
       try {
