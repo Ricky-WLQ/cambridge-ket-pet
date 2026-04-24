@@ -245,7 +245,7 @@ No new tables. `weakPoints`, `rawScore`, `scaledScore` are reused from Phase 2. 
      }
    }
    ```
-   `stream_type` is the official enum field per the [create-session API reference](https://docs.akool.com/ai-tools-suite/live-avatar/create-session) — options `"agora" | "livekit" | "trtc"`, default `"agora"`. We set `"trtc"` for China reachability. `mode_type: 1` (Retelling) is set at create time so the avatar boots already pinned to "speak only what we push" — no runtime `set-params` round-trip. Same for `voice_params.turn_detection`. Response includes `code: 1000` and `data.credentials` with TRTC-specific fields: `trtc_sdk_app_id`, `trtc_sdk_room_id`, `trtc_sdk_user_id`, `trtc_sdk_user_sig` (and Akool's returned Agora/LiveKit fields are unused when `stream_type: "trtc"`).
+   `stream_type` is the official enum field per the [create-session API reference](https://docs.akool.com/ai-tools-suite/live-avatar/create-session) — options `"agora" | "livekit" | "trtc"`, default `"agora"`. We set `"trtc"` for China reachability. `mode_type: 1` (Retelling) is set at create time so the avatar boots already pinned to "speak only what we push" — no runtime `set-params` round-trip. Same for `voice_params.turn_detection`. Response includes `code: 1000` and `data.credentials` with TRTC-specific fields: `trtc_app_id`, `trtc_room_id`, `trtc_user_id`, `trtc_user_sig` (and Akool's returned Agora/LiveKit fields are unused when `stream_type: "trtc"`).
    
    The server persists `akoolSessionId` on the `TestAttempt` and returns the TRTC credentials + Akool session id to the browser. The Akool JWT is **not** returned.
 

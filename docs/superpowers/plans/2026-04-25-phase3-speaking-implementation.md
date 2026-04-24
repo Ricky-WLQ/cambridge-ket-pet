@@ -2026,10 +2026,10 @@ async function main() {
   // Sanity-check the TRTC-shaped fields are populated (when trtc is chosen).
   if ((env.AKOOL_STREAM_TYPE || "trtc") === "trtc") {
     for (const f of [
-      "trtc_sdk_app_id",
-      "trtc_sdk_room_id",
-      "trtc_sdk_user_id",
-      "trtc_sdk_user_sig",
+      "trtc_app_id",
+      "trtc_room_id",
+      "trtc_user_id",
+      "trtc_user_sig",
     ]) {
       if (creds[f] == null || creds[f] === "") {
         console.error(`   WARN: TRTC credential field \`${f}\` is missing.`);
@@ -2089,7 +2089,7 @@ node scripts/akool-smoke-test.mjs
 
 Expected:
 - `>> POST /api/open/v3/getToken` → `got token: eyJ... …`
-- `>> POST /api/open/v4/liveAvatar/session/create` → response has `code: 1000` and `data.credentials` populated with `trtc_sdk_app_id`, `trtc_sdk_room_id`, `trtc_sdk_user_id`, `trtc_sdk_user_sig`.
+- `>> POST /api/open/v4/liveAvatar/session/create` → response has `code: 1000` and `data.credentials` populated with `trtc_app_id`, `trtc_room_id`, `trtc_user_id`, `trtc_user_sig`.
 - `>> POST /api/open/v4/liveAvatar/session/close` → `code: 1000`.
 - Final line: `OK — Akool plumbing is healthy.`
 
@@ -2200,10 +2200,10 @@ describe("createAkoolSession", () => {
             status: 1,
             stream_type: "trtc",
             credentials: {
-              trtc_sdk_app_id: 111,
-              trtc_sdk_room_id: "room-1",
-              trtc_sdk_user_id: "user-1",
-              trtc_sdk_user_sig: "sig-1",
+              trtc_app_id: 111,
+              trtc_room_id: "room-1",
+              trtc_user_id: "user-1",
+              trtc_user_sig: "sig-1",
             },
           },
         }), { status: 200 });
@@ -2471,10 +2471,10 @@ export async function createAkoolSession(
 
   if (streamType === "trtc") {
     out.trtc = {
-      sdkAppId: Number(creds.trtc_sdk_app_id),
-      roomId: String(creds.trtc_sdk_room_id ?? ""),
-      userId: String(creds.trtc_sdk_user_id ?? ""),
-      userSig: String(creds.trtc_sdk_user_sig ?? ""),
+      sdkAppId: Number(creds.trtc_app_id),
+      roomId: String(creds.trtc_room_id ?? ""),
+      userId: String(creds.trtc_user_id ?? ""),
+      userSig: String(creds.trtc_user_sig ?? ""),
     };
   } else if (streamType === "agora") {
     out.agora = {
