@@ -11,6 +11,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from app.prompts.speaking_scorer_system import SCORER_SYSTEM_PROMPT
 from app.schemas.speaking import SpeakingScore
+from app.validators.speaking import extract_json_object
 
 
 def _build_deepseek_model() -> OpenAIChatModel:
@@ -28,21 +29,36 @@ def _build_deepseek_model() -> OpenAIChatModel:
 async def _run_scorer_agent(
     *, level: str, transcript: list[dict]
 ) -> SpeakingScore:
-    agent = Agent(
+    """Same plain-JSON-mode + manual-extraction pattern as speaking_generator —
+    DeepSeek's tool-call output for nested-object schemas occasionally emits a
+    trailing `}` that strict tool-call validation rejects.
+    """
+    agent: Agent[None, str] = Agent(
         model=_build_deepseek_model(),
-        output_type=SpeakingScore,
         system_prompt=SCORER_SYSTEM_PROMPT.format(level=level),
-        # DeepSeek occasionally emits trailing characters after the JSON
-        # closing brace; pydantic-ai's strict json validator rejects them.
-        # 3 retries lets the model re-roll on transient malformed JSON.
-        retries=3,
     )
     user_prompt = json.dumps(
         {"level": level, "transcript": transcript},
         ensure_ascii=False,
     )
-    result = await agent.run(user_prompt)
-    return result.output
+
+    last_error: Exception | None = None
+    for _attempt in range(3):
+        try:
+            result = await agent.run(
+                user_prompt,
+                model_settings={"response_format": {"type": "json_object"}},
+            )
+            raw = str(result.output)
+            cleaned = extract_json_object(raw)
+            return SpeakingScore.model_validate_json(cleaned)
+        except (ValueError, Exception) as e:  # noqa: BLE001
+            last_error = e
+            continue
+
+    raise RuntimeError(
+        f"speaking_scorer failed after 3 attempts: {last_error}"
+    )
 
 
 async def score_speaking_attempt(

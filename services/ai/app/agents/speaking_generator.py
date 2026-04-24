@@ -18,6 +18,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 from app.prompts.speaking_generator_system import GENERATOR_SYSTEM_PROMPT
 from app.schemas.speaking import SpeakingPrompts
+from app.validators.speaking import extract_json_object
 
 
 def _build_deepseek_model() -> OpenAIChatModel:
@@ -38,21 +39,43 @@ async def run_pydantic_agent(
     level: str,
     photo_briefs: list[dict],
 ) -> SpeakingPrompts:
-    agent: Agent[None, SpeakingPrompts] = Agent(
+    """Call DeepSeek for SpeakingPrompts via plain JSON-mode output.
+
+    We bypass pydantic-ai's tool-call output_type because DeepSeek's
+    tool-call args occasionally include trailing characters after the
+    closing `}` (observed live: one stray `}` after `"parts": [...]}`).
+    Strict json validation rejects them. Instead we ask DeepSeek for a
+    plain JSON-mode string, strip any markdown fences and trailing junk
+    via brace-counting, then validate against SpeakingPrompts manually.
+    Retries up to 3 attempts on parse/validation failure.
+    """
+    # Plain string output — no output_type → no tool-call validation.
+    agent: Agent[None, str] = Agent(
         model=_build_deepseek_model(),
-        output_type=SpeakingPrompts,
         system_prompt=GENERATOR_SYSTEM_PROMPT.format(level=level),
-        # DeepSeek occasionally emits trailing characters after the JSON
-        # closing brace, which pydantic-ai's strict json validator rejects.
-        # 3 retries lets the model re-roll on transient malformed JSON.
-        retries=3,
     )
     user_prompt = json.dumps(
         {"level": level, "photo_briefs": photo_briefs},
         ensure_ascii=False,
     )
-    result = await agent.run(user_prompt)
-    return result.output
+
+    last_error: Exception | None = None
+    for _attempt in range(3):
+        try:
+            result = await agent.run(
+                user_prompt,
+                model_settings={"response_format": {"type": "json_object"}},
+            )
+            raw = str(result.output)
+            cleaned = extract_json_object(raw)
+            return SpeakingPrompts.model_validate_json(cleaned)
+        except (ValueError, Exception) as e:  # noqa: BLE001 — pydantic ValidationError is intentional
+            last_error = e
+            continue
+
+    raise RuntimeError(
+        f"speaking_generator failed after 3 attempts: {last_error}"
+    )
 
 
 async def generate_speaking_prompts(

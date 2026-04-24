@@ -22,6 +22,58 @@ _PART_LOOSE_RE = re.compile(r"\[\[PART:[^\]]*\]\]")
 _END_RE = re.compile(r"\[\[SESSION_END\]\]")
 
 
+def extract_json_object(raw: str) -> str:
+    """Extract the first balanced JSON object from a model response.
+
+    Tolerates:
+    - markdown code fences (```json ... ``` or ``` ... ```)
+    - trailing characters/extra braces after the matched closing `}` (DeepSeek
+      occasionally emits one extra `}` after a structured-output response)
+    - leading/trailing whitespace
+
+    Returns the substring containing exactly one balanced `{...}`. Raises
+    ValueError if no balanced object is found.
+    """
+    s = raw.strip()
+    # Strip markdown fence wrapping if present.
+    if s.startswith("```"):
+        nl = s.find("\n")
+        if nl > 0:
+            s = s[nl + 1 :]
+        if s.endswith("```"):
+            s = s[:-3]
+        s = s.strip()
+
+    start = s.find("{")
+    if start < 0:
+        raise ValueError("no `{` found in model output")
+
+    depth = 0
+    in_string = False
+    escape = False
+    for i in range(start, len(s)):
+        ch = s[i]
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return s[start : i + 1]
+
+    raise ValueError("unbalanced JSON: no matching `}` for opening `{`")
+
+
 def parse_examiner_output(raw: str, *, current_part: int, last_part: int) -> ParsedExaminerOutput:
     """Extract [[PART:N]] + [[SESSION_END]] sentinels; return cleaned reply + flags."""
     loose_tokens = _PART_LOOSE_RE.findall(raw)

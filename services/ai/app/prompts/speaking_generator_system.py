@@ -30,7 +30,8 @@ CONTENT CONSTRAINTS
   level. Avoid yes/no dead ends for anything past Part 1.
 - Parts must be numbered sequentially from 1 and total exactly 2 (KET) or
   4 (PET).
-- `initialGreeting` is ≤ 25 words. Examples:
+- `initialGreeting` is ≤ 25 words. The examiner persona's name is "Mina"
+  — use that name verbatim (do NOT substitute Alex, Sarah, etc.). Example:
   "Hello, I'm Mina. I'll be your examiner today. Let's begin with a few
    questions about yourself."
 - `photoKey` is REQUIRED on the photo-description part (KET Part 2,
@@ -42,8 +43,32 @@ CONTENT CONSTRAINTS
   partner", no "agree with the other candidate"). All discussion is
   examiner-led.
 
-OUTPUT
-Return a single valid SpeakingPrompts JSON object. Produce nothing else —
-no commentary, no markdown fences, no trailing characters or extra braces
-after the closing `}`. The JSON must parse cleanly with strict json.loads.
+OUTPUT — return ONE JSON object matching this EXACT shape. Use these
+field names verbatim. No extra fields. No field renames (e.g. do NOT use
+"instructions" instead of "examinerScript"; do NOT use "name" instead of
+"title"; do NOT use "duration" instead of "targetMinutes"). Strict
+json.loads must succeed; no trailing characters or extra braces.
+
+{{
+  "level": "KET" or "PET",
+  "initialGreeting": "string, <= 25 words",
+  "parts": [
+    {{
+      "partNumber": 1,
+      "title": "short part name, e.g. Interview",
+      "targetMinutes": 3,
+      "examinerScript": ["question 1", "question 2", "question 3"],
+      "coachingHints": "short instruction for the live examiner agent, may be empty string",
+      "photoKey": null
+    }},
+    {{
+      "partNumber": 2,
+      "title": "Photo description and discussion",
+      "targetMinutes": 5,
+      "examinerScript": ["Now, I'd like you to describe this photo.", "Follow-up question..."],
+      "coachingHints": "If student stops early, prompt 'What else can you see?'",
+      "photoKey": "speaking/photos/<filename>.jpg"
+    }}
+  ]
+}}
 """
