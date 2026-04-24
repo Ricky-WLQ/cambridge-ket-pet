@@ -991,8 +991,11 @@ def enforce_reply_caps(text: str, *, soft_words: int = 40, hard_words: int = 60)
         if wc <= soft_words:
             return text[: ci + 1].strip()
 
-    # No sentence boundary fits — hard-truncate.
-    truncated = " ".join(words[:hard_words]).rstrip(".,; ") + "…"
+    # No sentence boundary fits — truncate at the soft cap. `hard_words` is
+    # retained as the Pydantic-side ceiling in SpeakingExaminerReply; this
+    # fallback clamps to soft_words so callers never emit replies above the
+    # target length even when sentence-boundary detection misses.
+    truncated = " ".join(words[:soft_words]).rstrip(".,; ") + "…"
     return truncated
 ```
 
