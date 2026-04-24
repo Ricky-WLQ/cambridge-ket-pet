@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   // bundle so their internal filesystem paths (e.g. ffmpeg-static's exported
   // absolute path to ffmpeg.exe) resolve at runtime instead of being rewritten
   // to Turbopack's virtual \ROOT\ prefix.
-  serverExternalPackages: ["ffmpeg-static", "node-edge-tts", "@aws-sdk/client-s3"],
+  serverExternalPackages: ["ffmpeg-static", "node-edge-tts", "@aws-sdk/client-s3", "trtc-sdk-v5"],
   turbopack: {
     root: path.resolve(import.meta.dirname, "..", ".."),
   },
