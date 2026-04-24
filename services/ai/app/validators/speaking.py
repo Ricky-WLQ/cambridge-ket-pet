@@ -18,15 +18,30 @@ class ParsedExaminerOutput(BaseModel):
 
 
 _PART_RE = re.compile(r"\[\[PART:(\d+)\]\]")
+_PART_LOOSE_RE = re.compile(r"\[\[PART:[^\]]*\]\]")
 _END_RE = re.compile(r"\[\[SESSION_END\]\]")
 
 
 def parse_examiner_output(raw: str, *, current_part: int, last_part: int) -> ParsedExaminerOutput:
     """Extract [[PART:N]] + [[SESSION_END]] sentinels; return cleaned reply + flags."""
+    loose_tokens = _PART_LOOSE_RE.findall(raw)
+    strict_matches = _PART_RE.findall(raw)
+
+    # Fix 2: any loose match that isn't also a strict match is malformed —
+    # surface it rather than silently leaking the sentinel into the avatar's speech.
+    if len(loose_tokens) != len(strict_matches):
+        bad = next(t for t in loose_tokens if not _PART_RE.fullmatch(t))
+        raise SentinelParseError(f"malformed [[PART:…]] sentinel: {bad}")
+
+    # Fix 1: more than one valid sentinel in a single reply is a conflict — reject.
+    if len(strict_matches) > 1:
+        raise SentinelParseError(
+            f"multiple [[PART:N]] sentinels in one reply: {strict_matches}"
+        )
+
     advance_part: int | None = None
-    part_match = _PART_RE.search(raw)
-    if part_match:
-        n = int(part_match.group(1))
+    if strict_matches:
+        n = int(strict_matches[0])
         if n <= current_part:
             raise SentinelParseError(
                 f"[[PART:{n}]] is not ahead of current part {current_part}"
@@ -39,8 +54,11 @@ def parse_examiner_output(raw: str, *, current_part: int, last_part: int) -> Par
 
     session_end = bool(_END_RE.search(raw))
 
-    cleaned = _PART_RE.sub("", raw)
-    cleaned = _END_RE.sub("", cleaned)
+    # Fix 3: substitute a space (not empty) so sentinels adjacent to words don't
+    # weld tokens together (e.g. "Thank[[SESSION_END]]you" → "Thank you"). The
+    # \s{2,} collapse below normalises any double spaces the substitution creates.
+    cleaned = _PART_RE.sub(" ", raw)
+    cleaned = _END_RE.sub(" ", cleaned)
     cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
 
     if not cleaned:
