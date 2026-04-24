@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createMinaTrtcSession,
@@ -14,14 +14,19 @@ import {
 } from "@/lib/speaking/client-transcript-buffer";
 import { MinaAvatarPanel } from "./MinaAvatarPanel";
 import { StatusPill, type SpeakingStatusLabel } from "./StatusPill";
+import { PhotoPanel } from "./PhotoPanel";
+import { PartProgressBar } from "./PartProgressBar";
+import { EndTestButton } from "./EndTestButton";
+
+interface SpeakingPart {
+  partNumber: number;
+  title: string;
+  targetMinutes: number;
+  photoKey: string | null;
+}
 
 interface SpeakingTestContext {
-  parts: Array<{
-    partNumber: number;
-    title: string;
-    targetMinutes: number;
-    photoKey: string | null;
-  }>;
+  parts: SpeakingPart[];
   initialGreeting: string;
   photoUrls: Record<string, string>;
   level: "KET" | "PET";
@@ -39,24 +44,31 @@ interface Props {
   level: "KET" | "PET";
 }
 
+function targetTotalMinutes(parts: SpeakingPart[]) {
+  return parts.reduce((a, p) => a + p.targetMinutes, 0);
+}
+
 export function SpeakingRunner({ attemptId, level }: Props) {
   const [status, setStatus] = useState<SpeakingStatusLabel>("connecting");
   const [remoteUserId, setRemoteUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentPart, setCurrentPart] = useState(1);
+  const [testCtx, setTestCtx] = useState<SpeakingTestContext | null>(null);
   const sessionRef = useRef<MinaTrtcSession | null>(null);
   const bufRef = useRef<ClientTranscriptBuffer>(createClientTranscriptBuffer());
   const currentPartRef = useRef(1);
-  const testCtxRef = useRef<SpeakingTestContext | null>(null);
   const endedRef = useRef(false);
+  const startedAtRef = useRef<number>(0);
+  const submittedRef = useRef(false);
 
-  // Sync currentPart → buffer
   useEffect(() => {
     currentPartRef.current = currentPart;
     bufRef.current.setCurrentPart(currentPart);
   }, [currentPart]);
 
-  const submitAndNavigate = useCallback(async () => {
+  const submit = useCallback(async () => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
     try {
       await fetch(`/api/speaking/${attemptId}/submit`, {
         method: "POST",
@@ -66,62 +78,64 @@ export function SpeakingRunner({ attemptId, level }: Props) {
       });
     } finally {
       await sessionRef.current?.close();
-      const resultBase = level === "KET" ? "/ket" : "/pet";
-      window.location.href = `${resultBase}/speaking/result/${attemptId}`;
+      const base = level === "KET" ? "/ket" : "/pet";
+      window.location.href = `${base}/speaking/result/${attemptId}`;
     }
   }, [attemptId, level]);
 
-  const handleMessage = useCallback(async (msg: StreamMessage) => {
-    if (endedRef.current) return;
-    bufRef.current.captureStreamMessage(msg);
+  const handleMessage = useCallback(
+    async (msg: StreamMessage) => {
+      if (endedRef.current) return;
+      bufRef.current.captureStreamMessage(msg);
+      if (msg.type !== "chat" || !msg.fin) return;
+      if (msg.pld.from !== "user" || !msg.pld.text) return;
 
-    // Only trigger /reply on the end of a USER turn.
-    if (msg.type !== "chat" || !msg.fin) return;
-    if (msg.pld.from !== "user") return;
-    if (!msg.pld.text) return;
+      setStatus("thinking");
+      const history = bufRef.current.snapshot().map((t) => ({
+        role: t.role,
+        content: t.content,
+      }));
 
-    setStatus("thinking");
+      try {
+        const res = await fetch(`/api/speaking/${attemptId}/reply`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: history,
+            currentPart: currentPartRef.current,
+          }),
+        });
+        if (!res.ok) throw new Error(`/reply HTTP ${res.status}`);
+        const json = (await res.json()) as {
+          reply: string;
+          flags: {
+            advancePart: number | null;
+            sessionEnd: boolean;
+            retry?: boolean;
+          };
+        };
 
-    // Build full history from the local buffer (user + bot turns).
-    const history = bufRef.current.snapshot().map((t) => ({
-      role: t.role,
-      content: t.content,
-    }));
+        if (json.flags.advancePart != null) setCurrentPart(json.flags.advancePart);
 
-    try {
-      const res = await fetch(`/api/speaking/${attemptId}/reply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, currentPart: currentPartRef.current }),
-      });
-      if (!res.ok) throw new Error(`/reply HTTP ${res.status}`);
-      const json = await res.json() as {
-        reply: string;
-        flags: { advancePart: number | null; sessionEnd: boolean; retry?: boolean };
-      };
+        setStatus("speaking");
+        await sessionRef.current?.sendChat(json.reply);
 
-      if (json.flags.advancePart != null) {
-        setCurrentPart(json.flags.advancePart);
-      }
-      setStatus("speaking");
-      await sessionRef.current?.sendChat(json.reply);
-
-      if (json.flags.sessionEnd) {
-        endedRef.current = true;
-        setStatus("ended");
-        // Small delay so Akool finishes TTS.
-        setTimeout(() => void submitAndNavigate(), 1200);
-      } else {
-        // Listening resumes when Akool STT fires the next user turn.
+        if (json.flags.sessionEnd) {
+          endedRef.current = true;
+          setStatus("ended");
+          setTimeout(() => void submit(), 1200);
+        } else {
+          setStatus("listening");
+        }
+      } catch (err) {
+        console.error("[runner] reply failed", err);
         setStatus("listening");
       }
-    } catch (err) {
-      console.error("[runner] reply failed", err);
-      setStatus("listening");
-    }
-  }, [attemptId, submitAndNavigate]);
+    },
+    [attemptId, submit],
+  );
 
-  // Mount: create session → TRTC join → start listening
+  // Bootstrap
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -134,27 +148,25 @@ export function SpeakingRunner({ attemptId, level }: Props) {
         if (!res.ok) throw new Error(`/session HTTP ${res.status}`);
         const init = (await res.json()) as SessionInit;
         if (cancelled) return;
-        testCtxRef.current = init.test;
-
-        // NOTE: The plan's client-side warmup ping to `/api/speaking/warmup` has
-        // been skipped. The actual examiner-warmup route requires
-        // INTERNAL_SHARED_SECRET auth, so a browser fetch would 401. Warmup
-        // should happen server-side before the route is hit — deferred to a
-        // future optimisation.
+        setTestCtx(init.test);
+        startedAtRef.current = Date.now();
 
         const session = await createMinaTrtcSession({
           credentials: init.trtc,
           onMessage: handleMessage,
           onRemoteVideoAvailable: (userId) => {
             setRemoteUserId(userId);
-            // Bind the remote video track to #mina-video. The TRTC session's
-            // `_client` is a private field not exposed in the public types;
-            // the `as any` cast is necessary to reach the underlying SDK
-            // client's subscribeRemoteVideo method.
+            // The TRTC session's `_client` is a private field not exposed in
+            // the public types; the `as any` cast is necessary to reach the
+            // underlying SDK client's subscribeRemoteVideo method.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const client = (session as any)._client ?? null;
             if (client?.subscribeRemoteVideo) {
-              client.subscribeRemoteVideo({ userId, view: "mina-video", streamType: 0 });
+              client.subscribeRemoteVideo({
+                userId,
+                view: "mina-video",
+                streamType: 0,
+              });
             }
           },
           onDisconnected: () => {
@@ -165,10 +177,7 @@ export function SpeakingRunner({ attemptId, level }: Props) {
         sessionRef.current = session;
         setStatus("listening");
 
-        // Send the initial greeting so Mina opens the conversation.
-        if (init.test.initialGreeting) {
-          await session.sendChat(init.test.initialGreeting);
-        }
+        if (init.test.initialGreeting) await session.sendChat(init.test.initialGreeting);
       } catch (err) {
         console.error("[runner] bootstrap failed", err);
         setError((err as Error).message);
@@ -180,21 +189,82 @@ export function SpeakingRunner({ attemptId, level }: Props) {
     };
   }, [attemptId, handleMessage]);
 
+  // Safety cap: auto-submit if elapsed > (target + 3 min)
+  useEffect(() => {
+    if (!testCtx) return;
+    const capMs = (targetTotalMinutes(testCtx.parts) + 3) * 60_000;
+    const t = setInterval(() => {
+      if (!startedAtRef.current) return;
+      if (Date.now() - startedAtRef.current > capMs && !endedRef.current) {
+        endedRef.current = true;
+        setStatus("ended");
+        void submit();
+      }
+    }, 5_000);
+    return () => clearInterval(t);
+  }, [testCtx, submit]);
+
+  // beforeunload → beacon submit
+  useEffect(() => {
+    const handler = () => {
+      if (submittedRef.current) return;
+      try {
+        const body = JSON.stringify({ clientTranscript: bufRef.current.snapshot() });
+        navigator.sendBeacon(
+          `/api/speaking/${attemptId}/submit`,
+          new Blob([body], { type: "application/json" }),
+        );
+        submittedRef.current = true;
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [attemptId]);
+
+  const currentPartObj = useMemo(
+    () => testCtx?.parts.find((p) => p.partNumber === currentPart) ?? null,
+    [testCtx, currentPart],
+  );
+  const photoUrl = currentPartObj?.photoKey
+    ? testCtx?.photoUrls[currentPartObj.photoKey] ?? null
+    : null;
+
   if (error) {
     return (
       <div className="mx-auto max-w-md p-6 text-center">
         <p className="text-red-500">{error}</p>
-        <a className="mt-4 inline-block underline" href={`/${level.toLowerCase()}/speaking/new`}>返回</a>
+        <a
+          className="mt-4 inline-block underline"
+          href={`/${level.toLowerCase()}/speaking/new`}
+        >
+          返回
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 p-6">
-      <div className="flex w-full justify-end">
-        <StatusPill status={status} />
+    <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 p-4 md:p-6">
+      <div className="flex w-full items-center justify-between gap-2">
+        {testCtx && (
+          <PartProgressBar totalParts={testCtx.parts.length} currentPart={currentPart} />
+        )}
+        <div className="flex items-center gap-2">
+          <StatusPill status={status} />
+          <EndTestButton onConfirm={submit} disabled={status === "ended"} />
+        </div>
       </div>
-      <MinaAvatarPanel remoteUserId={remoteUserId} />
+
+      <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
+        <div className="flex justify-center">
+          <MinaAvatarPanel remoteUserId={remoteUserId} />
+        </div>
+        <div className="flex justify-center">
+          <PhotoPanel photoUrl={photoUrl ?? null} caption={currentPartObj?.title} />
+        </div>
+      </div>
     </div>
   );
 }

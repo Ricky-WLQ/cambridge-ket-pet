@@ -65,11 +65,11 @@ export async function POST(_req: Request, ctx: RouteCtx) {
     },
   });
 
-  // Sign R2 photo URLs for the duration of the session (+2min buffer).
-  const ttl = durationSeconds + 120;
+  // Build R2 photo proxy URLs. The /api/speaking/photos/[...key] route
+  // auth-gates every request, so no time-limited presigning is needed.
   const photoUrls: Record<string, string> = {};
   for (const key of test.speakingPhotoKeys ?? []) {
-    photoUrls[key] = signR2PublicUrl(key, ttl);
+    photoUrls[key] = signR2PublicUrl(key);
   }
 
   const prompts = test.speakingPrompts as {
