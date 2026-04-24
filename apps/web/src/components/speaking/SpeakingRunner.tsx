@@ -175,19 +175,10 @@ export function SpeakingRunner({ attemptId, level }: Props) {
           credentials: init.trtc,
           onMessage: handleMessage,
           onRemoteVideoAvailable: (userId) => {
+            // createMinaTrtcSession auto-subscribes the remote video to the
+            // "mina-video" DOM mount point. We just need to clear the
+            // "loading Mina…" placeholder.
             setRemoteUserId(userId);
-            // The TRTC session's `_client` is a private field not exposed in
-            // the public types; the `as any` cast is necessary to reach the
-            // underlying SDK client's subscribeRemoteVideo method.
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const client = (session as any)._client ?? null;
-            if (client?.subscribeRemoteVideo) {
-              client.subscribeRemoteVideo({
-                userId,
-                view: "mina-video",
-                streamType: 0,
-              });
-            }
           },
           onDisconnected: () => {
             setError("连接已断开,请刷新重试。");
