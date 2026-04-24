@@ -100,7 +100,7 @@ Overall band = weighted average (weights documented in `prompts/speaking_scorer_
 | WebRTC transport | **TRTC** (Tencent, `trtc-sdk-v5`), Agora fallback | TRTC is China-native, reaches mainland browsers without VPN. Agora has China nodes but LiveKit does not; LiveKit is not used. |
 | LLM brain | DeepSeek via existing `services/ai` FastAPI; Akool avatar pinned to **`mode: 1` (Retelling)** so it only speaks what we push | Full control over examiner prompt + rubric; reuses Phase 2 AI stack; keeps scoring transcript server-side |
 | Per-turn message shape | One `type: 'chat'` message per reply, `idx: 0`, `fin: true`, `pld.text = fullReply` | Replies are ≤ 40 words (~200 chars), comfortably under the TRTC 1 KB per-message limit. Chunked streaming deferred. |
-| VAD | Akool built-in `server_vad`, threshold 0.6, `silence_duration_ms: 500` | Tune via `set-params` at session start; no client-side VAD to build |
+| VAD | Akool built-in `server_vad`, threshold 0.6, `silence_duration_ms: 500` | Set at create-time via `voice_params.turn_detection`; no post-join `set-params` round-trip, no client-side VAD to build |
 | Barge-in | Akool `cmd: 'interrupt'` command, **disabled by default in production**, exposed behind a dev flag | Exam-realism: student should not interrupt the examiner. Available for development and accessibility. |
 | Transcript source | **Dual**: authoritative server-side log of every `/reply` request + response; client-side capture of Akool `stream-message` events (`pld.from='user'` = STT, `pld.from='bot'` = our text as spoken) as backup | Server-side is complete and canonical; client buffer covers the gap if the user's last turn failed to reach `/reply` |
 | Format | Solo-with-examiner | Matches online prep convention; one avatar per session |
@@ -229,16 +229,29 @@ No new tables. `weakPoints`, `rawScore`, `scaledScore` are reused from Phase 2. 
    ```json
    {
      "avatar_id": "<AKOOL_AVATAR_ID>",
-     "duration": 900
+     "voice_id": "<AKOOL_VOICE_ID>",
+     "language": "en",
+     "duration": 900,
+     "mode_type": 1,
+     "stream_type": "trtc",
+     "voice_params": {
+       "stt_language": "en",
+       "stt_type": "openai_realtime",
+       "turn_detection": {
+         "type": "server_vad",
+         "threshold": 0.6,
+         "silence_duration_ms": 500
+       }
+     }
    }
    ```
-   Response includes RTC credentials. Akool returns Agora credentials by default; we select the TRTC transport by setting `rtc_provider: "trtc"` in the request body (confirmed per Akool integration guide; exact field name validated against the [streaming-avatar React demo](https://github.com/AKOOL-Official/akool-streaming-avatar-react-demo) at build time, step 7).
+   `stream_type` is the official enum field per the [create-session API reference](https://docs.akool.com/ai-tools-suite/live-avatar/create-session) — options `"agora" | "livekit" | "trtc"`, default `"agora"`. We set `"trtc"` for China reachability. `mode_type: 1` (Retelling) is set at create time so the avatar boots already pinned to "speak only what we push" — no runtime `set-params` round-trip. Same for `voice_params.turn_detection`. Response includes `code: 1000` and `data.credentials` with TRTC-specific fields: `trtc_sdk_app_id`, `trtc_sdk_room_id`, `trtc_sdk_user_id`, `trtc_sdk_user_sig` (and Akool's returned Agora/LiveKit fields are unused when `stream_type: "trtc"`).
    
-   The server persists `akoolSessionId` on the `TestAttempt` and returns TRTC join credentials + Akool session id to the browser. The Akool JWT is **not** returned.
+   The server persists `akoolSessionId` on the `TestAttempt` and returns the TRTC credentials + Akool session id to the browser. The Akool JWT is **not** returned.
 
 3. Client: installs `trtc-sdk-v5` (Tencent official). Creates a `TRTC.create()` client, enters the room with credentials, subscribes to the avatar's published audio + video tracks, publishes the student's microphone track.
 
-4. Client: immediately after the room is joined, sends a `type: 'command'` custom message with `{ pld.cmd: 'set-params', pld.data: { mode: 1, vid: <AKOOL_VOICE_ID>, lang: 'en', vparams: { stt_language: 'en', turn_detection: { type: 'server_vad', threshold: 0.6, silence_duration_ms: 500 } } } }`. This pins the avatar to Retelling mode and configures VAD + STT.
+4. Client: the session is already pinned to `mode_type: 1` and has VAD configured at create-time (step 2) — no runtime `set-params` round-trip. Optionally sends a first `type: 'chat'` message with the persona's opening line (e.g., `"Hello, I'm Mina. I'll be your Cambridge examiner today..."`) drawn from `speakingPrompts.initialGreeting`. That first message flows through Akool TTS like any turn and starts the conversation.
 
 5. Turn loop (repeats until session end):
    - Akool STT completes → fires a `stream-message` event on the TRTC client with `{ type: 'chat', pld.from: 'user', pld.text: '<transcript>', fin: true }`.
@@ -293,9 +306,9 @@ All routes require Auth.js session. All `[attemptId]` routes verify `TestAttempt
 - No body.
 - Flow: assert `speakingStatus === 'IDLE'`. Build the `speakingPrompts` + rubric-coaching preamble for reference (persona prompt is owned by the server, not sent to Akool). Server-side:
   1. Fetch/refresh Akool JWT via `getToken` (cached).
-  2. `POST /api/open/v4/liveAvatar/session/create` with `avatar_id = AKOOL_AVATAR_ID`, `duration = AKOOL_SESSION_DURATION_SEC`, `rtc_provider = AKOOL_RTC_TRANSPORT` (default `"trtc"`).
-  3. Persist returned `akoolSessionId` on the attempt. Transition `speakingStatus → IN_PROGRESS`.
-- Response: `{ rtcProvider: "trtc" | "agora", rtcCredentials: { sdkAppId, userId, userSig, roomId, strRoomId? }, akoolSessionId, test: { parts, photoUrls } }` (photo URLs are signed R2 URLs valid for the session duration).
+  2. `POST /api/open/v4/liveAvatar/session/create` with `avatar_id = AKOOL_AVATAR_ID`, `voice_id = AKOOL_VOICE_ID`, `language = "en"`, `duration = AKOOL_SESSION_DURATION_SEC`, `mode_type = 1`, `stream_type = AKOOL_STREAM_TYPE` (default `"trtc"`), and a `voice_params` object built from `AKOOL_VAD_THRESHOLD` + `AKOOL_VAD_SILENCE_MS` envs plus `stt_language: "en"`, `stt_type: "openai_realtime"`.
+  3. Persist returned `akoolSessionId` (from `data._id`) on the attempt. Transition `speakingStatus → IN_PROGRESS`.
+- Response to browser (strips Agora/LiveKit fields when `stream_type: "trtc"`): `{ streamType: "trtc", trtc: { sdkAppId: number, roomId: string, userId: string, userSig: string }, akoolSessionId, test: { parts, photoUrls } }` (photo URLs are signed R2 URLs valid for the session duration). When `stream_type: "agora"` is selected instead, swap the `trtc` object for `{ appId, channel, uid, token }`.
 - On Akool 4xx/5xx: `speakingStatus: FAILED`, `speakingError` set, client redirects to `/new`.
 
 ### 7.3 `POST /api/speaking/[attemptId]/reply`
@@ -518,8 +531,8 @@ AKOOL_CLIENT_SECRET=
 AKOOL_AVATAR_ID=
 AKOOL_VOICE_ID=
 
-# Transport: trtc (China-reach, default) or agora
-AKOOL_RTC_TRANSPORT=trtc
+# stream_type: trtc (China-reach, default) | agora | livekit
+AKOOL_STREAM_TYPE=trtc
 
 # Session safety net (seconds)
 AKOOL_SESSION_DURATION_SEC=900
@@ -630,8 +643,7 @@ Contract tests against real Akool / DeepSeek APIs are deferred: in-browser dev t
 
 - **Akool concurrency cap on Business tier (5 sessions).** If a class of ≥ 6 students tries to practise simultaneously, the 6th and beyond will be rejected. Mitigation: queue client-side with a friendly "too busy, try in a moment" message; negotiate Enterprise tier if the cap becomes a real blocker.
 - **Akool credit pool overage behaviour is opaque.** Without transparent overage pricing, one runaway usage incident could surprise-bill. Mitigation: `GenerationEvent` rate limits (3/24h per student), scheduled cron that alerts at 80% pool usage, manual top-up pattern until Akool publishes overage terms.
-- **TRTC transport assumes the request-field name matches the React demo.** `rtc_provider` is our best read of the integration guide; validated at step 7 (smoke-test). If Akool defaults to Agora or names the field differently, falls back cleanly to Agora (also China-reachable) with a config flip.
-- **Chinese network latency to Akool's compute** — even with TRTC as a transport, Akool's STT/TTS backends are US-hosted (OpenAI Realtime STT is a known option). Budget is ≤ 2.0s per-turn. Mitigation: measure with a real Chinese user during step 20; if unacceptable, re-evaluate chunked-streaming optimisation or fall back to text-only mode.
+- **Chinese network latency to Akool's compute** — even with TRTC as the transport, Akool's STT/TTS backends are US-hosted (OpenAI Realtime STT is a known option). Budget is ≤ 2.0s per-turn. Mitigation: measure with a real Chinese user during step 20; if unacceptable, re-evaluate chunked-streaming optimisation or fall back to text-only mode.
 - **Pronunciation scoring accuracy** — we infer from transcript, not audio. Acknowledged MVP limitation; document clearly to users/teachers.
 - **DeepSeek reliability** — single-provider dependency. Mitigation: retry once on `/reply` failure; fall back to a polite examiner line to preserve conversation flow.
 - **WebRTC fragility on mobile** — tab-backgrounded mobile browsers drop WebRTC. Recommend desktop for MVP; note in pre-flight UI.
