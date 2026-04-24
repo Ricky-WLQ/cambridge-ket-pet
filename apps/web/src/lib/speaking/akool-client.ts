@@ -3,9 +3,23 @@
  * Wraps /getToken (with in-memory cache), session/create, session/close.
  * All functions here read AKOOL_CLIENT_ID / AKOOL_CLIENT_SECRET and
  * must NEVER be imported from a Client Component.
+ *
+ * API version skew note: Akool mixes /v3 auth (getToken) with /v4
+ * liveAvatar endpoints (session/create, session/close). Both are current
+ * per Akool's published docs at time of writing.
  */
 
 import "server-only";
+
+// Defence in depth: `server-only` is the real barrier at Next.js build
+// time, but vitest aliases it to an empty shim (see vitest.config.ts).
+// If this module is ever loaded in a browser-like environment (jsdom,
+// happy-dom, or — worst case — a misconfigured bundler), fail loud.
+if (typeof window !== "undefined") {
+  throw new Error(
+    "akool-client must only be imported from server code; found `window` in scope",
+  );
+}
 
 const AKOOL_BASE = "https://openapi.akool.com";
 const GET_TOKEN_URL = `${AKOOL_BASE}/api/open/v3/getToken`;
@@ -31,9 +45,12 @@ function decodeJwtExpiryMs(token: string): number | null {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   try {
-    const payload = JSON.parse(
-      Buffer.from(parts[1], "base64url").toString("utf8"),
-    );
+    // Cross-runtime base64url decode: works under Node AND the Next.js
+    // edge runtime (where Buffer is not available). Converts base64url
+    // to standard base64 (- → +, _ → /) and pads to a multiple of 4.
+    let b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4 !== 0) b64 += "=";
+    const payload = JSON.parse(atob(b64));
     if (typeof payload.exp === "number") return payload.exp * 1000;
   } catch {
     // ignore
@@ -81,7 +98,10 @@ export async function getAkoolToken(): Promise<string> {
 
 // --- Session create ------------------------------------------------------
 
-export type AkoolStreamType = "trtc" | "agora" | "livekit";
+// `livekit` dropped — only trtc + agora have credential-mapping branches
+// below; adding livekit would need matching `credentials.livekit_*` handling
+// in createAkoolSession. Re-add when a caller actually needs it.
+export type AkoolStreamType = "trtc" | "agora";
 
 export interface AkoolCreateSessionInput {
   avatarId: string;
