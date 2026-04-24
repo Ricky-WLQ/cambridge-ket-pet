@@ -92,11 +92,16 @@ export async function createMinaTrtcSession(args: {
   let sentCount = 0;
 
   async function sendRaw(msg: StreamMessage): Promise<void> {
-    const data = new TextEncoder().encode(JSON.stringify(msg));
-    // TRTC v5 type declarations require { cmdId, data: ArrayBuffer } but the
-    // runtime accepts a Uint8Array view. Cast to any to match the plan's API
-    // surface without fighting declaration files.
-    await client.sendCustomMessage({ data } as any);
+    const encoded = new TextEncoder().encode(JSON.stringify(msg));
+    // TRTC v5.17 sendCustomMessage requires { cmdId: number 1..10, data: ArrayBuffer }.
+    // cmdId=1 is fine — Akool reads the JSON body, not the cmdId channel.
+    // Convert the Uint8Array view to its underlying ArrayBuffer with a slice
+    // so we don't accidentally forward over-allocated bytes.
+    const buffer = encoded.buffer.slice(
+      encoded.byteOffset,
+      encoded.byteOffset + encoded.byteLength,
+    ) as ArrayBuffer;
+    await client.sendCustomMessage({ cmdId: 1, data: buffer });
   }
 
   return {

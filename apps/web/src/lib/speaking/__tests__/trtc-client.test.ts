@@ -53,12 +53,15 @@ describe("trtc-client", () => {
     await session.sendChat("hello there");
     expect(trtcMock.sendCustomMessage).toHaveBeenCalled();
     const payload = (trtcMock.sendCustomMessage as any).mock.calls.at(-1)[0];
+    expect(payload.cmdId).toBe(1);
+    expect(payload.data).toBeInstanceOf(ArrayBuffer);
     const decoded = JSON.parse(new TextDecoder().decode(payload.data));
     expect(decoded.type).toBe("chat");
     expect(decoded.pld.text).toBe("hello there");
 
     await session.interrupt();
     const last = (trtcMock.sendCustomMessage as any).mock.calls.at(-1)[0];
+    expect(last.cmdId).toBe(1);
     const lastDecoded = JSON.parse(new TextDecoder().decode(last.data));
     expect(lastDecoded.type).toBe("command");
     expect(lastDecoded.pld.cmd).toBe("interrupt");
