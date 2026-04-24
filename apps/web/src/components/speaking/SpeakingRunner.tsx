@@ -137,24 +137,37 @@ export function SpeakingRunner({ attemptId, level }: Props) {
 
   // Bootstrap. React Strict Mode runs effects twice in dev, which would
   // create two Akool sessions + two TRTC peer connections — the cleanup
-  // of the first then tears down WebRTC mid-negotiation, surfacing as
-  // "Cannot read properties of null (reading 'type')" in the SDK. Use a
-  // ref-guarded latch so the second strict-mode invocation is a no-op.
+  // of the first then tears down WebRTC mid-negotiation. Use a ref-guarded
+  // latch so the second strict-mode invocation is a no-op.
+  //
+  // We do NOT cancel the bootstrap or close the session in the cleanup
+  // function because Strict Mode's between-mounts cleanup would prematurely
+  // tear down the just-created session before the latch can no-op the second
+  // mount. Real-unmount cleanup is handled by:
+  //   - safetyCap timer (Task 22) → submit() if elapsed > target+3
+  //   - beforeunload beacon → submit()
+  //   - End Test button → submit()
+  //   - onDisconnected callback → setError + setStatus("ended")
+  // and Akool's 15-min session-duration safety net.
+  //
+  // The fetch is wrapped in an AbortController so a real unmount cancels
+  // the in-flight bootstrap if it hasn't reached the TRTC step yet.
   const bootstrappedRef = useRef(false);
   useEffect(() => {
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
-    let cancelled = false;
+    const abortController = new AbortController();
+
     (async () => {
       try {
         const res = await fetch(`/api/speaking/${attemptId}/session`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: "{}",
+          signal: abortController.signal,
         });
         if (!res.ok) throw new Error(`/session HTTP ${res.status}`);
         const init = (await res.json()) as SessionInit;
-        if (cancelled) return;
         setTestCtx(init.test);
         startedAtRef.current = Date.now();
 
@@ -179,6 +192,15 @@ export function SpeakingRunner({ attemptId, level }: Props) {
           onDisconnected: () => {
             setError("连接已断开,请刷新重试。");
             setStatus("ended");
+            // Best-effort: close the Akool session server-side so the avatar
+            // is freed up immediately rather than waiting for the 15-min
+            // duration timeout.
+            void fetch(`/api/speaking/${attemptId}/submit`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ clientTranscript: bufRef.current.snapshot() }),
+              keepalive: true,
+            }).catch(() => {});
           },
         });
         sessionRef.current = session;
@@ -186,13 +208,23 @@ export function SpeakingRunner({ attemptId, level }: Props) {
 
         if (init.test.initialGreeting) await session.sendChat(init.test.initialGreeting);
       } catch (err) {
+        if ((err as Error).name === "AbortError") return;
         console.error("[runner] bootstrap failed", err);
         setError((err as Error).message);
+        // Close any Akool session that /session managed to create before the
+        // failure — without this, the avatar's single-concurrency slot stays
+        // occupied for 15 min.
+        void fetch(`/api/speaking/${attemptId}/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clientTranscript: [] }),
+          keepalive: true,
+        }).catch(() => {});
       }
     })();
+
     return () => {
-      cancelled = true;
-      sessionRef.current?.close();
+      abortController.abort();
     };
   }, [attemptId, handleMessage]);
 
