@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, status
@@ -21,6 +21,9 @@ from pydantic import BaseModel
 from app.agents.analysis import analyze_student
 from app.agents.listening_generator import generate_listening_test
 from app.agents.reading import generate_reading_test
+from app.agents.speaking_examiner import run_examiner_turn
+from app.agents.speaking_generator import generate_speaking_prompts
+from app.agents.speaking_scorer import score_speaking_attempt
 from app.agents.writing import generate_writing_test, grade_writing_response
 from app.prompts.reading import UnsupportedReadingPart
 from app.prompts.writing import UnsupportedWritingPart
@@ -30,6 +33,11 @@ from app.schemas.analysis import (
 )
 from app.schemas.listening import ListeningTestResponse
 from app.schemas.reading import ReadingTestRequest, ReadingTestResponse
+from app.schemas.speaking import (
+    SpeakingExaminerReply,
+    SpeakingPrompts,
+    SpeakingScore,
+)
 from app.schemas.writing import (
     WritingGradeRequest,
     WritingGradeResponse,
@@ -293,3 +301,53 @@ async def listening_generate(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"error": "validation_failed", "message": str(e)},
         ) from e
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 Speaking — generate / examiner / examiner-warmup / score
+# ---------------------------------------------------------------------------
+
+
+class SpeakingGenerateBody(BaseModel):
+    level: str  # "KET" | "PET"
+    photo_briefs: list[dict[str, Any]] = []
+
+
+class SpeakingExaminerBody(BaseModel):
+    prompts: SpeakingPrompts
+    history: list[dict[str, str]]
+    current_part: int
+
+
+class SpeakingScoreBody(BaseModel):
+    level: str
+    transcript: list[dict[str, Any]]
+
+
+@app.post("/speaking/examiner-warmup")
+async def speaking_examiner_warmup() -> dict:
+    """No-op: primes the DeepSeek HTTP client on runner mount."""
+    return {"ok": True}
+
+
+@app.post("/speaking/generate", response_model=SpeakingPrompts)
+async def speaking_generate(body: SpeakingGenerateBody) -> SpeakingPrompts:
+    return await generate_speaking_prompts(
+        level=body.level, photo_briefs=body.photo_briefs
+    )
+
+
+@app.post("/speaking/examiner", response_model=SpeakingExaminerReply)
+async def speaking_examiner(body: SpeakingExaminerBody) -> SpeakingExaminerReply:
+    return await run_examiner_turn(
+        prompts=body.prompts,
+        history=body.history,
+        current_part=body.current_part,
+    )
+
+
+@app.post("/speaking/score", response_model=SpeakingScore)
+async def speaking_score(body: SpeakingScoreBody) -> SpeakingScore:
+    return await score_speaking_attempt(
+        level=body.level, transcript=body.transcript
+    )
