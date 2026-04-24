@@ -17,6 +17,12 @@ export default defineConfig({
   resolve: {
     alias: {
       "server-only": serverOnlyEmpty,
+      // Mirror the Next.js / tsconfig "@/*" path alias so vitest resolves
+      // imports like `@/lib/speaking/photo-library` the same way the app does
+      // at build time. Vite's built-in tsconfig-paths support is inconsistent
+      // across filename shapes (hyphens, nested dirs), so we set this
+      // explicitly.
+      "@": path.resolve(import.meta.dirname, "src"),
     },
   },
 });
