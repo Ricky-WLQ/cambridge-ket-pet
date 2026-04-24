@@ -59,7 +59,10 @@ async def _run_llm(
         user_payload,
         model_settings={"max_tokens": max_tokens, "temperature": temperature},
     )
-    return str(result.output)
+    raw_output = result.output
+    if not raw_output:
+        raise RuntimeError("examiner LLM returned empty output")
+    return str(raw_output)
 
 
 def _build_user_payload(

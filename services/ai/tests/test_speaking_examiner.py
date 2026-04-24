@@ -81,3 +81,62 @@ async def test_examiner_enforces_reply_word_cap():
             current_part=1,
         )
     assert len(out.reply.split()) <= 40
+
+
+@pytest.mark.asyncio
+async def test_examiner_recovers_from_malformed_sentinel():
+    raw = "Good answer. [[PART:abc]] Tell me more."
+    with patch("app.agents.speaking_examiner._run_llm", new=AsyncMock(return_value=raw)):
+        out = await run_examiner_turn(
+            prompts=_ket_prompts(),
+            history=[{"role": "user", "content": "hi"}],
+            current_part=1,
+        )
+    assert isinstance(out, SpeakingExaminerReply)
+    assert out.reply.strip() != ""
+    assert out.advancePart is None
+    assert out.sessionEnd is False
+    assert "[[" not in out.reply
+
+
+@pytest.mark.asyncio
+async def test_examiner_recovers_from_multiple_part_sentinels():
+    raw = "[[PART:3]] Good. [[PART:2]] Now photo."
+    with patch("app.agents.speaking_examiner._run_llm", new=AsyncMock(return_value=raw)):
+        out = await run_examiner_turn(
+            prompts=_ket_prompts(),
+            history=[{"role": "user", "content": "hi"}],
+            current_part=1,
+        )
+    assert isinstance(out, SpeakingExaminerReply)
+    assert out.reply.strip() != ""
+    assert out.advancePart is None
+    assert out.sessionEnd is False
+    assert "[[PART" not in out.reply
+
+
+@pytest.mark.asyncio
+async def test_examiner_recovers_when_strip_leaves_empty():
+    raw = "[[PART:abc]]"
+    with patch("app.agents.speaking_examiner._run_llm", new=AsyncMock(return_value=raw)):
+        out = await run_examiner_turn(
+            prompts=_ket_prompts(),
+            history=[{"role": "user", "content": "hi"}],
+            current_part=1,
+        )
+    assert out.reply == "Could you say that again, please?"
+    assert out.advancePart is None
+    assert out.sessionEnd is False
+
+
+@pytest.mark.asyncio
+async def test_examiner_recovery_avoids_word_welding():
+    raw = "Thank[[SESSION_END]]you very much. Oops [[PART:abc]] there."
+    with patch("app.agents.speaking_examiner._run_llm", new=AsyncMock(return_value=raw)):
+        out = await run_examiner_turn(
+            prompts=_ket_prompts(),
+            history=[{"role": "user", "content": "hi"}],
+            current_part=1,
+        )
+    assert "Thankyou" not in out.reply
+    assert "Thank you" in out.reply
