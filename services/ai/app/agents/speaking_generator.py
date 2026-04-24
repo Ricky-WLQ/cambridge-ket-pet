@@ -42,6 +42,10 @@ async def run_pydantic_agent(
         model=_build_deepseek_model(),
         output_type=SpeakingPrompts,
         system_prompt=GENERATOR_SYSTEM_PROMPT.format(level=level),
+        # DeepSeek occasionally emits trailing characters after the JSON
+        # closing brace, which pydantic-ai's strict json validator rejects.
+        # 3 retries lets the model re-roll on transient malformed JSON.
+        retries=3,
     )
     user_prompt = json.dumps(
         {"level": level, "photo_briefs": photo_briefs},

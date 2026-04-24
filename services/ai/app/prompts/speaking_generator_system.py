@@ -44,5 +44,6 @@ CONTENT CONSTRAINTS
 
 OUTPUT
 Return a single valid SpeakingPrompts JSON object. Produce nothing else —
-no commentary, no markdown fences.
+no commentary, no markdown fences, no trailing characters or extra braces
+after the closing `}`. The JSON must parse cleanly with strict json.loads.
 """

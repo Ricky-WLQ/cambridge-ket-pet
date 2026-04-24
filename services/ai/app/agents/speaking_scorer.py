@@ -32,6 +32,10 @@ async def _run_scorer_agent(
         model=_build_deepseek_model(),
         output_type=SpeakingScore,
         system_prompt=SCORER_SYSTEM_PROMPT.format(level=level),
+        # DeepSeek occasionally emits trailing characters after the JSON
+        # closing brace; pydantic-ai's strict json validator rejects them.
+        # 3 retries lets the model re-roll on transient malformed JSON.
+        retries=3,
     )
     user_prompt = json.dumps(
         {"level": level, "transcript": transcript},

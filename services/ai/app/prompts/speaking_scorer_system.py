@@ -51,5 +51,7 @@ RULES
 - Only score from the transcript in the USER message.
 - If the transcript has zero user turns, every score is 0 and weakPoints
   is an empty list.
-- Return JSON only. No markdown fences, no commentary.
+- Return JSON only. No markdown fences, no commentary, no trailing
+  characters or extra braces after the closing `}`. The JSON must parse
+  cleanly with strict json.loads.
 """
