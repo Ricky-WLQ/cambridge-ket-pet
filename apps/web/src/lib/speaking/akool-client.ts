@@ -141,6 +141,19 @@ export async function createAkoolSession(
 
   const token = await getAkoolToken();
 
+  // voice_params is intentionally MINIMAL here. We previously included
+  // `stt_type: "openai_realtime"` (matching Akool's API example), but doing
+  // so puts the avatar behind OpenAI's Realtime API — a full-duplex
+  // conversational pipeline that vocalises responses on its own, lip-synced
+  // by the avatar. With Retelling (`mode_type: 1`) we DO NOT want any
+  // upstream LLM speaking; we want the avatar to TTS only what we push via
+  // sendChat(). Omitting `stt_type` makes Akool fall back to its default STT,
+  // which transcribes the user but does not generate spoken responses —
+  // exactly what Retelling assumes.
+  //
+  // We keep `stt_language` so STT knows what to listen for. `turn_detection`
+  // is intentionally also dropped because its `type: "server_vad"` shape is
+  // OpenAI-Realtime-specific and is ignored by other STT backends.
   const body: Record<string, unknown> = {
     avatar_id: input.avatarId,
     duration: input.durationSeconds,
@@ -149,12 +162,6 @@ export async function createAkoolSession(
     stream_type: streamType,
     voice_params: {
       stt_language: "en",
-      stt_type: "openai_realtime",
-      turn_detection: {
-        type: "server_vad",
-        threshold: input.vadThreshold,
-        silence_duration_ms: input.vadSilenceMs,
-      },
     },
   };
   if (input.voiceId) body.voice_id = input.voiceId;

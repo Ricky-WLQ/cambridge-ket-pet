@@ -23,6 +23,7 @@ interface SpeakingPart {
   title: string;
   targetMinutes: number;
   photoKey: string | null;
+  examinerScript: string[];
 }
 
 interface SpeakingTestContext {
@@ -197,7 +198,21 @@ export function SpeakingRunner({ attemptId, level }: Props) {
         sessionRef.current = session;
         setStatus("listening");
 
-        if (init.test.initialGreeting) await session.sendChat(init.test.initialGreeting);
+        // Bootstrap utterance: greeting + first question of Part 1.
+        // The greeting alone says "let's begin a few questions about
+        // yourself" but doesn't actually ASK anything, so Mina would sit
+        // silent until the candidate speaks. Pushing the first question
+        // immediately after gives her the opening turn she's supposed to
+        // have. After this, the examiner agent's /reply output drives
+        // every subsequent question — including part-transition questions,
+        // which the agent embeds in its reply text.
+        if (init.test.initialGreeting) {
+          await session.sendChat(init.test.initialGreeting);
+        }
+        const firstQuestion = init.test.parts[0]?.examinerScript[0];
+        if (firstQuestion) {
+          await session.sendChat(firstQuestion);
+        }
       } catch (err) {
         console.error("[runner] bootstrap failed", err);
         setError((err as Error).message);
