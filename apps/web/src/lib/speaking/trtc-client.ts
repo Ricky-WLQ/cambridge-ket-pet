@@ -81,8 +81,17 @@ export async function createMinaTrtcSession(args: {
         : (event.data as Uint8Array);
       const text = new TextDecoder().decode(buf);
       const msg = JSON.parse(text) as StreamMessage;
-      // Surface command ACKs in the console so we can verify mode-pin success.
-      // Akool ACKs commands as { type: "command", pld: { code, msg } }.
+      // Diagnostic logging so we can tell, from the browser console, exactly
+      // what Akool is sending us. Critical for debugging the "Mina repeats my
+      // answers" symptom — we need to know whether the avatar is TTS-ing the
+      // user's literal STT text (= Akool ignored mode_type:1) vs our /reply
+      // output (= our pipeline is feeding it user text).
+      if (msg.type === "chat" && msg.fin && msg.pld?.text) {
+        const who = msg.pld.from ?? "?";
+        console.log(`[trtc] inbound chat from=${who}: ${JSON.stringify(msg.pld.text)}`);
+      }
+      // Surface command ACKs so we can verify mode-pin success. Akool ACKs
+      // commands as { type: "command", pld: { code, msg } }.
       if (msg.type === "command") {
         const code = msg.pld?.code;
         if (code != null && code !== 1000) {
@@ -182,6 +191,7 @@ export async function createMinaTrtcSession(args: {
   return {
     async sendChat(text: string) {
       sentCount += 1;
+      console.log(`[trtc] outbound chat #${sentCount}: ${JSON.stringify(text)}`);
       await sendRaw({
         v: 2,
         type: "chat",
