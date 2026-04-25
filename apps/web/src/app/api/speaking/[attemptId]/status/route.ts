@@ -22,6 +22,9 @@ export async function GET(_req: Request, ctx: RouteCtx) {
       speakingStatus: true,
       rubricScores: true,
       speakingError: true,
+      rawScore: true,
+      scaledScore: true,
+      totalPossible: true,
     },
   });
   if (!attempt || attempt.userId !== userId) {
@@ -32,5 +35,8 @@ export async function GET(_req: Request, ctx: RouteCtx) {
     speakingStatus: attempt.speakingStatus,
     rubricScores: attempt.rubricScores ?? null,
     speakingError: attempt.speakingError ?? null,
+    rawScore: attempt.rawScore ?? null,
+    scaledScore: attempt.scaledScore ?? null,
+    totalPossible: attempt.totalPossible ?? null,
   });
 }

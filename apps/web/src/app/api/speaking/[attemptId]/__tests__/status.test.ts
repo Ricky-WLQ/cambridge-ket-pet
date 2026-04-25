@@ -23,6 +23,9 @@ describe("GET /api/speaking/[attemptId]/status", () => {
       speakingStatus: "SCORED",
       rubricScores: { overall: 3.5 },
       speakingError: null,
+      rawScore: 14,
+      scaledScore: 70,
+      totalPossible: 20,
     });
     const res = await GET(
       makeReq("attempt-1"),
@@ -33,6 +36,9 @@ describe("GET /api/speaking/[attemptId]/status", () => {
     expect(json.speakingStatus).toBe("SCORED");
     expect(json.rubricScores.overall).toBe(3.5);
     expect(json.speakingError).toBeNull();
+    expect(json.rawScore).toBe(14);
+    expect(json.scaledScore).toBe(70);
+    expect(json.totalPossible).toBe(20);
   });
 
   it("returns 404 when not owned", async () => {
