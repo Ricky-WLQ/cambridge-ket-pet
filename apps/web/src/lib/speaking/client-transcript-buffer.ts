@@ -24,6 +24,17 @@ export function createClientTranscriptBuffer(): ClientTranscriptBuffer {
       if (!text) return;
       const from = msg.pld.from;
       if (from !== "user" && from !== "bot") return;
+      // ECHO FILTER: Akool's avatar TTS-es user STT verbatim ~10ms after
+      // STT (the same bug we cancel via `interrupt` in the runner). The
+      // echo arrives as `from: "bot"` with identical text. We must NOT
+      // log it as an assistant turn — that would corrupt the transcript
+      // sent to the scorer (Mina would appear to say the candidate's
+      // words back). Drop any bot message whose text equals the most
+      // recent user turn.
+      if (from === "bot" && turns.length > 0) {
+        const last = turns[turns.length - 1];
+        if (last.role === "user" && last.content === text) return;
+      }
       turns.push({
         role: from === "user" ? "user" : "assistant",
         content: text,

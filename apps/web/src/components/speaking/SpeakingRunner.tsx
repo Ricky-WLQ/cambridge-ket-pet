@@ -91,6 +91,23 @@ export function SpeakingRunner({ attemptId, level }: Props) {
       if (msg.type !== "chat" || !msg.fin) return;
       if (msg.pld.from !== "user" || !msg.pld.text) return;
 
+      // ECHO-CANCEL: Akool's avatar TTS-es every user STT verbatim ~10ms
+      // after recognition, regardless of `mode_type:1` (Retelling) at
+      // session/create OR runtime `set-params(mode:1)` (both ACK'd 1000
+      // by Akool — confirmed in browser console — yet behavior persists).
+      // Send `interrupt` the instant we see user STT to abort that echo
+      // TTS in flight. Our sendChat(reply) below then fills the silence
+      // with the actual examiner question.
+      //
+      // The interrupt is also harmless if the avatar is already silent
+      // (no in-flight TTS to abort), so we can fire it unconditionally
+      // on every user-final turn.
+      try {
+        await sessionRef.current?.interrupt();
+      } catch (err) {
+        console.warn("[runner] interrupt(echo-cancel) failed", err);
+      }
+
       setStatus("thinking");
       const history = bufRef.current.snapshot().map((t) => ({
         role: t.role,
