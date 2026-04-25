@@ -12,12 +12,14 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Annotated
+from typing import Annotated, Literal
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, status
+from pydantic import BaseModel
 
 from app.agents.analysis import analyze_student
+from app.agents.listening_generator import generate_listening_test
 from app.agents.reading import generate_reading_test
 from app.agents.writing import generate_writing_test, grade_writing_response
 from app.prompts.reading import UnsupportedReadingPart
@@ -26,6 +28,7 @@ from app.schemas.analysis import (
     StudentAnalysisRequest,
     StudentAnalysisResponse,
 )
+from app.schemas.listening import ListeningTestResponse
 from app.schemas.reading import ReadingTestRequest, ReadingTestResponse
 from app.schemas.writing import (
     WritingGradeRequest,
@@ -35,6 +38,14 @@ from app.schemas.writing import (
 )
 from app.validators.reading import validate_reading_test
 from app.validators.writing import validate_writing_test
+
+
+class ListeningGenerateRequest(BaseModel):
+    exam_type: Literal["KET", "PET"]
+    scope: Literal["FULL", "PART"]
+    part: int | None = None
+    mode: Literal["PRACTICE", "MOCK"] = "PRACTICE"
+    seed_exam_points: list[str] = []
 
 load_dotenv()
 
@@ -251,4 +262,34 @@ async def writing_grade(req: WritingGradeRequest) -> WritingGradeResponse:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal error grading writing",
+        ) from e
+
+
+@app.post(
+    "/v1/listening/generate",
+    response_model=ListeningTestResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def listening_generate(
+    req: ListeningGenerateRequest,
+) -> ListeningTestResponse:
+    """Generate a fresh KET/PET listening test. Returns 400 on invalid
+    scope/part combination, 422 if the generator cannot produce a valid
+    test after MAX_ATTEMPTS."""
+    if req.scope == "PART" and req.part is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="scope=PART requires a part number",
+        )
+    try:
+        return await generate_listening_test(
+            exam_type=req.exam_type,
+            scope=req.scope,
+            part=req.part,
+            seed_exam_points=req.seed_exam_points,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "validation_failed", "message": str(e)},
         ) from e

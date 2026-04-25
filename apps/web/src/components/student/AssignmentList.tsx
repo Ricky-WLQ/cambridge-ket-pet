@@ -9,11 +9,17 @@ type Props = {
 const KIND_ZH: Record<string, string> = {
   READING: "阅读",
   WRITING: "写作",
+  LISTENING: "听力",
 };
 
 function targetHref(a: StudentAssignment): string {
   const portal = a.examType === "KET" ? "ket" : "pet";
-  const section = a.kind === "READING" ? "reading" : "writing";
+  const section =
+    a.kind === "READING"
+      ? "reading"
+      : a.kind === "LISTENING"
+        ? "listening"
+        : "writing";
   const qs = a.part != null ? `?part=${a.part}` : "";
   return `/${portal}/${section}/new${qs}`;
 }

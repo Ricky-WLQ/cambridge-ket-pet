@@ -175,6 +175,25 @@ export async function analyzeStudent(
   );
 }
 
+export interface GenerateListeningTestRequest {
+  exam_type: "KET" | "PET";
+  scope: "FULL" | "PART";
+  part?: number;
+  mode: "PRACTICE" | "MOCK";
+  seed_exam_points?: string[];
+}
+
+/**
+ * Call the Python /v1/listening/generate endpoint.
+ * Returns the raw snake_case JSON — caller is responsible for transforming
+ * to camelCase via the converter in `lib/audio/generate.ts`.
+ */
+export async function generateListeningTest(
+  req: GenerateListeningTestRequest,
+): Promise<Record<string, unknown>> {
+  return postToAi<Record<string, unknown>>("/v1/listening/generate", req);
+}
+
 async function postToAi<T>(
   path: string,
   body: unknown,

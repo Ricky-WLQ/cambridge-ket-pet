@@ -4,12 +4,12 @@ A web app for Chinese K-12 students preparing for Cambridge English **KET** (A2 
 
 ## Status
 
-**Phase 1 — Reading + Writing — complete (local). Awaiting final Phase 1 sign-off before moving to Phase 2.**
+**Phase 1 (Reading + Writing) and Phase 2 (Listening) are complete locally. See the [Phase 2 — Listening](#phase-2--listening) section below for the new runtime pieces introduced.**
 
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Reading + Writing (KET + PET), auth, classes, history, teacher dashboard, assignments, comments, AI teacher-analysis | ✅ complete, awaiting sign-off |
-| 2 | Listening (CosyVoice2 TTS via SiliconFlow; browser-TTS fallback) | ⏳ planned |
+| 2 | Listening (KET + PET, practice + mock, full + per-part; British-accent TTS via `node-edge-tts` + ffmpeg, R2 audio storage, Next.js stream-proxy) | ✅ complete, awaiting sign-off |
 | 3 | Speaking (Qwen3.5-Omni-Realtime via DashScope; Cambridge 4-criteria rubric) | ⏳ planned |
 | 4 | Vocab + Grammar (seeded from Cambridge A2/B1 official lists) | ⏳ planned |
 
@@ -181,6 +181,78 @@ Key Phase-1 decisions captured in commits and the implementation plan:
 - **Format validators + 3-retry regenerate** on every generator/grader/analysis call. A validator failure never silently ships malformed content to the user — after 3 tries we surface an explicit error.
 - **Rate limiting** via the `GenerationEvent` table — rolling 1-hour window, per-user-per-bucket (reading, writing, analysis).
 - **Chinese output, everywhere.** UI is `zh-CN` only; AI agents produce Simplified Chinese; validator catches English leakage and common misreadings like `25 分（满分 25）`.
+
+## Phase 2 — Listening
+
+Phase 2 adds a full **Listening** track for KET and PET: practice + mock modes, full-test + per-part scope, and on-demand audio generation using British-accent neural voices.
+
+### What ships
+
+- **KET + PET listening**, parallel to the existing Reading/Writing flow (new test, runner with audio, grading, result, history, teacher assignments, teacher dashboards)
+- **Practice + Mock** modes (Mock adds a 30-min hard-timer and auto-submit)
+- **Full-test + per-part scope** (KET 5 parts, PET 4 parts)
+- **British-accent TTS** via [`node-edge-tts`](https://www.npmjs.com/package/node-edge-tts) (Microsoft Edge TTS endpoints — `en-GB-RyanNeural`, `en-GB-SoniaNeural`, etc.), stitched with **ffmpeg** into a single MP3 per test
+- **Cloudflare R2** object storage for generated audio (long-term, immutable, keyed by `audio_hash`)
+- **Next.js stream-proxy** at `/api/listening/audio/[hash]` hides R2 credentials from the browser and adds HTTP Range support for seek + iOS/Safari playback
+
+### Service responsibilities
+
+Phase 2 keeps the Phase 1 Python/Node split and adds one route on each side:
+
+| Layer | Role |
+|---|---|
+| Python AI (`services/ai`) | `POST /v1/listening/generate` — Pydantic-AI agent produces the `ListeningTestResponse` (parts, questions, `audio_script` with per-segment voice tags). No audio synthesis here. |
+| Next.js web (`apps/web`) | `fetchListeningPayload()` calls the Python endpoint. The Node-side pipeline then runs `edge-tts` per segment → `ffmpeg` concat → uploads MP3 to R2 → persists the `Test.payload` with `audio_hash`. |
+
+This split keeps the LLM-structured-output concerns in Python and the binary-pipeline + cloud-storage concerns in Node.
+
+### Additional prerequisites (Phase 2)
+
+Everything from Phase 1 still applies. In addition:
+
+- **ffmpeg** on PATH (or point `FFMPEG_BINARY` at a binary). `ffmpeg-static` is installed as a fallback — see the gotcha below.
+- **Cloudflare R2** bucket + API token (free tier is sufficient for dev). Set up the bucket + access key (prerequisites **P1–P5** in the Phase 2 plan doc):
+  - P1: create a Cloudflare account
+  - P2: create an R2 bucket named (e.g.) `cambridge-ket-pet-audio`
+  - P3: generate an R2 API token with **Object Read & Write** scoped to that bucket
+  - P4: note the `accountId`, `accessKeyId`, `secretAccessKey`, bucket name, and S3-compatible endpoint
+  - P5: (optional) attach a public custom domain for direct CDN access — not required; the Next.js stream-proxy works without it
+
+Then fill `R2_*` in `apps/web/.env` (see `.env.example`).
+
+### Dev run order (3 services)
+
+```bash
+# 1. Postgres
+docker compose up -d
+
+# 2. Python AI service (new terminal) — now serves /v1/listening/generate too
+cd services/ai
+source .venv/Scripts/activate            # Windows bash
+# or:  source .venv/bin/activate          # macOS / Linux
+uvicorn app.main:app --reload --host :: --port 8001
+
+# 3. Next.js web (new terminal, repo root)
+pnpm --filter web dev
+```
+
+Then visit <http://localhost:3000/ket/listening/new> or `/pet/listening/new`.
+
+### Cost
+
+Generation is effectively free at the TTS layer (edge-tts has no API key / no per-call charge). The only LLM cost is the Python agent call that produces the script. **A full KET mock costs ~¥0.28 (~$0.04)** of DeepSeek tokens; a per-part regen is cheaper.
+
+### Gotcha — `ffmpeg-static` postinstall on pnpm
+
+**pnpm blocks build scripts by default** (security default since pnpm 10). `ffmpeg-static`'s `postinstall` is one of these — without it, the native `ffmpeg.exe`/`ffmpeg` binary is never downloaded into the package folder, and the Node audio pipeline will fail at runtime with `ENOENT` on `ffmpeg`.
+
+If you run `pnpm install` and `ffmpeg` is missing, run the postinstall manually:
+
+```bash
+cd node_modules/.pnpm/ffmpeg-static*/node_modules/ffmpeg-static && node install.js
+```
+
+(Alternatively: install a system-wide ffmpeg and set `FFMPEG_BINARY=/path/to/ffmpeg` in your `.env`.)
 
 ## License
 

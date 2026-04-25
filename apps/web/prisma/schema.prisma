@@ -34,6 +34,12 @@ enum TestKind {
   MOCK_SECTION
 }
 
+enum AudioStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
 enum TestMode {
   PRACTICE
   MOCK
@@ -73,6 +79,7 @@ model User {
   ownedClasses     Class[]       @relation("TeacherClasses")
   classMemberships ClassMember[]
 
+  tests            Test[]
   attempts         TestAttempt[]
   generationEvents GenerationEvent[]
   mistakeNotes     MistakeNote[]
@@ -188,6 +195,7 @@ model DifficultyPoint {
 // re-validated Pydantic-style on the Next.js side before save.
 model Test {
   id           String   @id @default(cuid())
+  userId       String?
   examType     ExamType
   kind         TestKind
   part         Int?
@@ -198,8 +206,18 @@ model Test {
   generatedBy  String // e.g. "deepseek-chat"
   createdAt    DateTime @default(now())
 
+  // Phase 2 Listening — audio artifact state
+  audioStatus          AudioStatus?
+  audioR2Key           String?
+  audioGenStartedAt    DateTime?
+  audioGenCompletedAt  DateTime?
+  audioSegments        Json?
+  audioErrorMessage    String?
+
+  user     User?         @relation(fields: [userId], references: [id])
   attempts TestAttempt[]
 
+  @@index([userId, createdAt])
   @@index([examType, kind, part])
   @@index([createdAt])
 }

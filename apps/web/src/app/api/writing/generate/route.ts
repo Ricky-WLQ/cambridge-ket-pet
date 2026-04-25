@@ -97,6 +97,7 @@ export async function POST(req: Request) {
   const { test, attempt } = await prisma.$transaction(async (tx) => {
     const createdTest = await tx.test.create({
       data: {
+        userId,
         examType,
         kind: "WRITING",
         part,

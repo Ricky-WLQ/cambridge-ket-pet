@@ -5,12 +5,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type ExamType = "KET" | "PET";
-type TestKind = "READING" | "WRITING";
+type TestKind = "READING" | "WRITING" | "LISTENING";
 
 const KET_READING_PARTS = [1, 2, 3, 4, 5] as const;
 const KET_WRITING_PARTS = [6, 7] as const;
+const KET_LISTENING_PARTS = [1, 2, 3, 4, 5] as const;
 const PET_READING_PARTS = [1, 2, 3, 4, 5, 6] as const;
 const PET_WRITING_PARTS = [1, 2] as const;
+const PET_LISTENING_PARTS = [1, 2, 3, 4] as const;
 
 function isValidPart(
   examType: ExamType,
@@ -23,9 +25,13 @@ function isValidPart(
       ? KET_READING_PARTS
       : examType === "KET" && kind === "WRITING"
         ? KET_WRITING_PARTS
-        : examType === "PET" && kind === "READING"
-          ? PET_READING_PARTS
-          : PET_WRITING_PARTS;
+        : examType === "KET" && kind === "LISTENING"
+          ? KET_LISTENING_PARTS
+          : examType === "PET" && kind === "READING"
+            ? PET_READING_PARTS
+            : examType === "PET" && kind === "WRITING"
+              ? PET_WRITING_PARTS
+              : PET_LISTENING_PARTS;
   return (allowed as readonly number[]).includes(part);
 }
 
@@ -59,8 +65,8 @@ export async function createAssignmentAction(formData: FormData): Promise<void> 
   if (!classId || !title) throw new Error("缺少必要字段");
   if (examType !== "KET" && examType !== "PET")
     throw new Error("科目无效");
-  if (kind !== "READING" && kind !== "WRITING")
-    throw new Error("题型无效（Phase 1 仅支持阅读/写作）");
+  if (kind !== "READING" && kind !== "WRITING" && kind !== "LISTENING")
+    throw new Error("题型无效（仅支持阅读/写作/听力）");
   if (!isValidPart(examType, kind, part))
     throw new Error(`该 ${examType} ${kind} 不存在 Part ${part}`);
   if (minScore !== null && (minScore < 0 || minScore > 100))

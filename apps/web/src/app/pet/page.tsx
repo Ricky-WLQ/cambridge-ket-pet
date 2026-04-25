@@ -44,12 +44,15 @@ export default async function PetPortalPage() {
             </div>
           </Link>
 
-          <div className="rounded-lg border border-dashed border-neutral-300 p-5 opacity-60">
+          <Link
+            href="/pet/listening/new"
+            className="rounded-lg border border-neutral-300 p-5 transition hover:border-neutral-900 hover:shadow-sm"
+          >
             <div className="text-lg font-semibold">听力</div>
             <div className="mt-1 text-xs text-neutral-500">
-              Listening · Phase 2
+              Listening · AI 即时生成真题听力
             </div>
-          </div>
+          </Link>
 
           <div className="rounded-lg border border-dashed border-neutral-300 p-5 opacity-60">
             <div className="text-lg font-semibold">口语</div>

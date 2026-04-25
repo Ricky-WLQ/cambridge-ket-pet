@@ -212,6 +212,37 @@ export default async function StudentDetailPage({
       startedAt: a.startedAt.toISOString(),
     }));
 
+  // Listening per-part averages (graded listening attempts, grouped by Test.part)
+  const listeningAttempts = attempts.filter(
+    (a) =>
+      a.status === "GRADED" &&
+      a.test.kind === "LISTENING" &&
+      a.scaledScore !== null,
+  );
+  const listeningBreakdown = (() => {
+    if (listeningAttempts.length === 0) return null;
+    const byPart = new Map<number | "FULL", { sum: number; count: number }>();
+    for (const a of listeningAttempts) {
+      const key: number | "FULL" = a.test.part ?? "FULL";
+      const bucket = byPart.get(key) ?? { sum: 0, count: 0 };
+      bucket.sum += a.scaledScore as number;
+      bucket.count += 1;
+      byPart.set(key, bucket);
+    }
+    const parts = Array.from(byPart.entries())
+      .map(([key, { sum, count }]) => ({
+        key,
+        avg: Math.round(sum / count),
+        count,
+      }))
+      .sort((x, y) => {
+        if (x.key === "FULL") return 1;
+        if (y.key === "FULL") return -1;
+        return (x.key as number) - (y.key as number);
+      });
+    return { parts, total: listeningAttempts.length };
+  })();
+
   // Writing rubric averages (across all graded writing attempts)
   const writingAttempts = attempts.filter(
     (a) => a.status === "GRADED" && a.test.kind === "WRITING",
@@ -393,6 +424,46 @@ export default async function StudentDetailPage({
           </>
         )}
 
+        {listeningBreakdown && (
+          <>
+            <h2 className="mt-8 mb-3 text-lg font-semibold">
+              听力分项平均
+              <span className="ml-2 text-sm font-normal text-neutral-500">
+                （共 {listeningBreakdown.total} 份）
+              </span>
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-4">
+              {listeningBreakdown.parts.map((p) => {
+                const title = p.key === "FULL" ? "全套" : `Part ${p.key}`;
+                return (
+                  <div
+                    key={String(p.key)}
+                    className="rounded-md border border-purple-200 bg-purple-50/30 p-4"
+                  >
+                    <div className="text-xs text-purple-700">{title}</div>
+                    <div className={`mt-1 text-2xl font-bold ${scoreTextColor(p.avg)}`}>
+                      {p.avg}
+                      <span className="text-sm font-normal text-neutral-400">
+                        {" "}
+                        %
+                      </span>
+                    </div>
+                    <div className="mt-0.5 text-xs text-neutral-500">
+                      {p.count} 份
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className={`h-full ${scoreBarColor(p.avg)}`}
+                        style={{ width: `${Math.min(p.avg, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {topMistakesByExamPoint.length > 0 && (
           <>
             <h2 className="mt-8 mb-3 text-lg font-semibold">高频错误考点</h2>
@@ -408,8 +479,8 @@ export default async function StudentDetailPage({
                       <span className="truncate">
                         <span className="font-mono text-xs text-neutral-500">
                           {id}
-                        </span>{" "}
-                        · {label}
+                        </span>
+                        {label !== id && <> · {label}</>}
                       </span>
                       <span className="ml-3 shrink-0 text-sm font-semibold text-red-700">
                         {count} 错

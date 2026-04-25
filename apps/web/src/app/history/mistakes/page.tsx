@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import StatusButtons from "./StatusButtons";
 
 type Filter = "ALL" | "NEW" | "REVIEWED" | "MASTERED";
+type KindFilter = "ALL" | "READING" | "WRITING" | "LISTENING";
 
 const STATUS_META: Record<
   "NEW" | "REVIEWED" | "MASTERED",
@@ -16,25 +18,55 @@ const STATUS_META: Record<
   MASTERED: { label: "已掌握", className: "bg-green-100 text-green-800" },
 };
 
+function buildMistakesHref(params: {
+  status: Filter;
+  kind: KindFilter;
+}): string {
+  const qs = new URLSearchParams();
+  if (params.status !== "ALL") qs.set("status", params.status);
+  if (params.kind !== "ALL") qs.set("kind", params.kind);
+  const s = qs.toString();
+  return s ? `/history/mistakes?${s}` : "/history/mistakes";
+}
+
 export default async function MistakesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; kind?: string }>;
 }) {
-  const { status } = await searchParams;
+  const { status, kind } = await searchParams;
   const filter: Filter =
     status === "NEW" || status === "REVIEWED" || status === "MASTERED"
       ? status
+      : "ALL";
+  const kindFilter: KindFilter =
+    kind === "READING" || kind === "WRITING" || kind === "LISTENING"
+      ? kind
       : "ALL";
 
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
 
+  // When a kind is selected, resolve the set of attemptIds whose Test.kind
+  // matches. MistakeNote has no direct Prisma relation to TestAttempt, so we
+  // look up the ids via TestAttempt first and pass them as a `in` filter.
+  let attemptIdFilter: Prisma.MistakeNoteWhereInput = {};
+  if (kindFilter !== "ALL") {
+    const matchingAttempts = await prisma.testAttempt.findMany({
+      where: { userId, test: { kind: kindFilter } },
+      select: { id: true },
+    });
+    attemptIdFilter = {
+      attemptId: { in: matchingAttempts.map((a) => a.id) },
+    };
+  }
+
   const notes = await prisma.mistakeNote.findMany({
     where: {
       userId,
       ...(filter === "ALL" ? {} : { status: filter }),
+      ...attemptIdFilter,
     },
     orderBy: { createdAt: "desc" },
     take: 200,
@@ -42,7 +74,7 @@ export default async function MistakesPage({
 
   const counts = await prisma.mistakeNote.groupBy({
     by: ["status"],
-    where: { userId },
+    where: { userId, ...attemptIdFilter },
     _count: true,
   });
   const byStatus = Object.fromEntries(
@@ -56,6 +88,13 @@ export default async function MistakesPage({
     { value: "NEW", label: "新错题", count: byStatus.NEW ?? 0 },
     { value: "REVIEWED", label: "已复习", count: byStatus.REVIEWED ?? 0 },
     { value: "MASTERED", label: "已掌握", count: byStatus.MASTERED ?? 0 },
+  ];
+
+  const kindChips: Array<{ value: KindFilter; label: string }> = [
+    { value: "ALL", label: "全部题型" },
+    { value: "READING", label: "阅读" },
+    { value: "WRITING", label: "写作" },
+    { value: "LISTENING", label: "听力" },
   ];
 
   return (
@@ -76,10 +115,13 @@ export default async function MistakesPage({
           阅读练习中答错的题目会自动汇总到这里。逐题复习后可标记为「已复习」，完全掌握后再标记为「已掌握」。
         </p>
 
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           {chips.map((c) => {
             const active = filter === c.value;
-            const href = c.value === "ALL" ? "/history/mistakes" : `/history/mistakes?status=${c.value}`;
+            const href = buildMistakesHref({
+              status: c.value,
+              kind: kindFilter,
+            });
             return (
               <Link
                 key={c.value}
@@ -91,6 +133,29 @@ export default async function MistakesPage({
                 }`}
               >
                 {c.label} <span className="font-mono text-xs">{c.count}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mb-6 flex flex-wrap gap-2">
+          {kindChips.map((c) => {
+            const active = kindFilter === c.value;
+            const href = buildMistakesHref({
+              status: filter,
+              kind: c.value,
+            });
+            return (
+              <Link
+                key={c.value}
+                href={href}
+                className={`rounded-full px-3 py-1 text-sm ${
+                  active
+                    ? "bg-neutral-900 text-white"
+                    : "border border-neutral-300 text-neutral-700 hover:bg-neutral-100"
+                }`}
+              >
+                {c.label}
               </Link>
             );
           })}

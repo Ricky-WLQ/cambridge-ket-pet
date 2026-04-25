@@ -106,8 +106,42 @@ src/
 
 See the root [`.env.example`](../../.env.example) for the full list and local-dev defaults.
 
+### Phase 2 — Listening env vars
+
+All of these live in `apps/web/.env` (copied from the root `.env.example`). The `R2_*` keys come from the Cloudflare R2 bucket setup (prerequisites P1–P5 in the root README).
+
+| Key | Purpose |
+|---|---|
+| `R2_ACCOUNT_ID` | Cloudflare account id that owns the R2 bucket |
+| `R2_ACCESS_KEY_ID` | R2 API-token access key (Object Read & Write on the bucket) |
+| `R2_SECRET_ACCESS_KEY` | R2 API-token secret |
+| `R2_BUCKET` | Bucket name, e.g. `cambridge-ket-pet-audio` |
+| `R2_ENDPOINT` | S3-compatible endpoint `https://<accountId>.r2.cloudflarestorage.com` |
+| `FFMPEG_BINARY` | `auto` (use `ffmpeg-static`) or an absolute path to a system `ffmpeg` binary |
+| `LISTENING_MAX_CONCURRENT` | Max concurrent listening-generation jobs (default 3) |
+| `LISTENING_QUEUE_MAX` | Max queued jobs before 429 (default 5) |
+| `LISTENING_GEN_TIMEOUT_MS` | Per-job hard timeout in ms (default 300_000 = 5 min) |
+| `LISTENING_RATE_LIMIT_PER_HOUR` | Per-user hourly generation limit (default 10) |
+| `LISTENING_TIME_LIMIT_SEC` | Mock-mode hard timer in seconds (default 1800 = 30 min) |
+| `LISTENING_GRACE_PERIOD_MS` | Extra time after the timer before cron auto-submits (default 60_000) |
+| `CRON_SECRET` | Shared secret for `/api/cron/*` endpoints (sent by the scheduler as `x-cron-secret`) |
+
+## Tests (Phase 2 listening subset)
+
+To run only the listening-related vitest suites (audio pipeline + listening grader):
+
+```bash
+pnpm --filter web exec vitest run src/lib/audio src/lib/grading
+```
+
 ## Gotchas
 
 - **Windows + Prisma generate**: if `prisma generate` fails with `EPERM: operation not permitted` on `query_engine-windows.dll.node`, the Next.js dev server is holding that DLL. Kill Node (`powershell.exe "Get-Process node | Stop-Process -Force"`) then re-run generate.
 - **Writing grader latency**: `deepseek-chat` takes 30-90s on a full essay. The submit route declares `export const maxDuration = 150`; make sure your host honors that (Zeabur does).
 - **`deepseek-reasoner` (R1)** is NOT used — it rejects the `tool_choice` parameter Pydantic AI needs for structured output. All agents use `deepseek-chat`.
+
+### Phase 2 listening troubleshooting
+
+- **`ECONNRESET` from edge-tts** — the Microsoft Edge TTS websocket occasionally drops a segment mid-synth. The pipeline retries **3 times with 2 s exponential-ish backoff** automatically; a single `ECONNRESET` in the logs is normal and recovers transparently. Only escalate if you see `edge-tts failed after 3 attempts` in the log.
+- **Microsoft `trustedclienttoken` rotation** — `node-edge-tts` bakes in a fixed client token to talk to the Edge TTS endpoint. Microsoft rotates this token periodically (every few months). When it rotates, **all segments fail immediately** with a 401/403 from the websocket. This is a **fail-fast** path — the logs emit a loud `edge-tts auth rejected (token may have rotated)` alert. Fix: bump `node-edge-tts` to the latest version (maintainers roll a new token on each rotation).
+- **`ffmpeg-static` postinstall missing** — if the audio pipeline fails with `ENOENT` on `ffmpeg`, pnpm never ran the `ffmpeg-static` postinstall. See the **Gotcha** section in the root README for the one-line fix.

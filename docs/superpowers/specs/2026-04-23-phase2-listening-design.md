@@ -526,7 +526,7 @@ No changes — existing teacher→student messaging works across all kinds.
 
 Each step is browser-verified with user sign-off before moving on. Follows Phase 1's 27-step pattern.
 
-1. **Env + deps** — add `node-edge-tts`, `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`, `ffmpeg-static`; create R2 bucket (`cambridge-ket-pet-audio`), configure CORS (Zeabur origin only), 180-day lifecycle rule on `listening/` prefix; add env vars per Appendix C
+1. **Env + deps** — add `node-edge-tts`, `@aws-sdk/client-s3`, `ffmpeg-static`; create R2 bucket (`cambridge-ket-pet-audio`), configure CORS (Zeabur origin only), 180-day lifecycle rule on `listening/` prefix; add env vars per Appendix C
 2. **Prisma schema + migration** — add `AudioStatus` enum and 5 fields on `Test`; run migration; verify Phase 1 still works
 3. **Python `listening_generator` agent** — new module w/ Pydantic schemas + system prompt encoding §3 spec; unit tests
 4. **Python `POST /listening/generate` endpoint** — wire agent + validators + 3× regenerate; pytest
@@ -620,7 +620,7 @@ Drawn from `2020PET_Sample Test 1\2.真题答案\3.听力原文B1 Preliminary 20
 
 ## Appendix C — Environment variables
 
-Additions to `.env.example` (both `apps/web/` and `services/ai/`):
+Additions to the root `.env.example` (which has `# ========== apps/web ==========` and `# ========== services/ai ==========` sections):
 
 ```
 # R2 (apps/web)
@@ -628,7 +628,7 @@ R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET=cambridge-ket-pet-audio
-R2_ENDPOINT=https://{accountId}.r2.cloudflarestorage.com
+R2_ENDPOINT=https://<accountId>.r2.cloudflarestorage.com
 
 # ffmpeg
 FFMPEG_BINARY=auto        # "auto" uses ffmpeg-static; override for Zeabur if needed

@@ -89,7 +89,7 @@ services/ai/
     │   └── listening.py                            (NEW)
     ├── validators/
     │   └── listening.py                            (NEW)
-    ├── main.py                                     (MODIFY — add /listening/generate)
+    ├── main.py                                     (MODIFY — add /v1/listening/generate)
     └── tests/
         ├── test_listening_schema.py                (NEW)
         ├── test_listening_validators_ket.py        (NEW)
@@ -100,8 +100,7 @@ services/ai/
 ### Files to modify
 
 - `apps/web/prisma/schema.prisma` — add `AudioStatus` enum + 5 fields on `Test`
-- `apps/web/.env.example` — R2 + listening env vars
-- `services/ai/.env.example` — unchanged (already has DEEPSEEK_API_KEY)
+- `.env.example` — R2 + listening env vars
 - `apps/web/src/i18n/zh-CN.ts` — listening UI strings
 - `apps/web/src/app/history/page.tsx` — Listening filter chip
 - `apps/web/src/app/history/mistakes/page.tsx` — Listening filter chip
@@ -177,7 +176,7 @@ These are one-time operational steps the engineer must complete before coding be
 
   Run from repo root:
   ```bash
-  pnpm --filter web add node-edge-tts@^1.2.10 @aws-sdk/client-s3@^3 @aws-sdk/s3-request-presigner@^3 ffmpeg-static@^5
+  pnpm --filter web add node-edge-tts@^1.2.10 @aws-sdk/client-s3@^3 ffmpeg-static@^5
   ```
 
 - [ ] **Step 2: Install dev dependencies**
@@ -203,11 +202,11 @@ These are one-time operational steps the engineer must complete before coding be
 ### Task 2: Add env var documentation
 
 **Files:**
-- Modify: `apps/web/.env.example`
+- Modify: `.env.example`
 
 - [ ] **Step 1: Append listening/audio section**
 
-  Append to `apps/web/.env.example`:
+  Append to `.env.example`:
 
   ```
   # ========== Phase 2 Listening ==========
@@ -238,7 +237,7 @@ These are one-time operational steps the engineer must complete before coding be
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add apps/web/.env.example
+  git add .env.example
   git commit -m "docs(phase2): document listening + r2 env vars in .env.example"
   ```
 
@@ -1535,7 +1534,7 @@ These are one-time operational steps the engineer must complete before coding be
   git commit -m "feat(ai): regenerate-on-validator-fail with max 3 attempts"
   ```
 
-### Task 14: Add `POST /listening/generate` endpoint
+### Task 14: Add `POST /v1/listening/generate` endpoint
 
 **Files:**
 - Modify: `services/ai/app/main.py`
@@ -1570,7 +1569,11 @@ These are one-time operational steps the engineer must complete before coding be
       seed_exam_points: list[str] = []
 
 
-  @app.post("/listening/generate", response_model=ListeningTestResponse)
+  @app.post(
+      "/v1/listening/generate",
+      response_model=ListeningTestResponse,
+      dependencies=[Depends(verify_internal_auth)],
+  )
   async def listening_generate(req: ListeningGenerateRequest) -> ListeningTestResponse:
       if req.scope == "PART" and req.part is None:
           raise HTTPException(status_code=400, detail="scope=PART requires a part number")
@@ -1585,6 +1588,8 @@ These are one-time operational steps the engineer must complete before coding be
           raise HTTPException(status_code=422, detail={"error": "validation_failed", "message": str(e)})
   ```
 
+  `Depends` and `verify_internal_auth` are already imported at the top of `main.py` from Phase 1 — don't duplicate those imports.
+
 - [ ] **Step 3: Start the dev server and smoke-test with curl**
 
   Terminal 1:
@@ -1594,25 +1599,35 @@ These are one-time operational steps the engineer must complete before coding be
 
   Terminal 2:
   ```bash
-  curl -X POST http://localhost:8001/listening/generate \
+  curl -X POST http://localhost:8001/v1/listening/generate \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $(grep INTERNAL_SHARED_SECRET .env | cut -d= -f2)" \
     -d '{"exam_type":"KET","scope":"PART","part":1}'
   ```
   Expected: JSON response with `parts[0].questions[].id` etc. (real DeepSeek call — may take 10-20s).
 
   If you prefer not to make a live LLM call, mock by checking the endpoint returns 400 for missing `part`:
   ```bash
-  curl -X POST http://localhost:8001/listening/generate \
+  curl -X POST http://localhost:8001/v1/listening/generate \
     -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $(grep INTERNAL_SHARED_SECRET .env | cut -d= -f2)" \
     -d '{"exam_type":"KET","scope":"PART"}'
   ```
   Expected: `{"detail":"scope=PART requires a part number"}` with status 400.
+
+  Also verify auth is enforced — a request WITHOUT the Authorization header should return 401:
+  ```bash
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8001/v1/listening/generate \
+    -H "Content-Type: application/json" \
+    -d '{"exam_type":"KET","scope":"PART"}'
+  ```
+  Expected: `401` (assuming `INTERNAL_SHARED_SECRET` is set in `.env`; if it's empty, Phase 1's local-dev carve-out returns 400 instead — still fine, proves auth wiring is in place).
 
 - [ ] **Step 4: Commit**
 
   ```bash
   git add services/ai/app/main.py
-  git commit -m "feat(ai): POST /listening/generate endpoint"
+  git commit -m "feat(ai): POST /v1/listening/generate endpoint"
   ```
 
 ### Task 15: User-verify Python side end-to-end
@@ -3381,17 +3396,44 @@ These are one-time operational steps the engineer must complete before coding be
 ### Task 28: Add Python-agent call to orchestrator + error paths
 
 **Files:**
-- Modify: `apps/web/src/lib/audio/generate.ts`
+- Modify: `apps/web/src/lib/aiClient.ts` (add `generateListeningTest` wrapper to match Phase 1's `postToAi` pattern)
+- Modify: `apps/web/src/lib/audio/generate.ts` (call the new wrapper, keep the snake→camel transform)
 
-- [ ] **Step 1: Add `generateTestPayload` helper that calls Python**
+- [ ] **Step 1: Add `generateListeningTest` wrapper + `fetchListeningPayload` helper**
 
   Prepend imports and add helper to `apps/web/src/lib/audio/generate.ts`:
 
+  Phase 1 centralises the Python-service HTTP contract (URL + Bearer auth + timeout + error handling) in `apps/web/src/lib/aiClient.ts`'s `postToAi<T>(path, body, timeoutMs?)` helper. All Phase 1 callers (`generateReadingTest`, `generateWritingTest`, `gradeWriting`, `analyzeStudent`) delegate to it. To stay DRY and inherit the same auth/error semantics, Phase 2's listening caller must do the same.
+
+  There are two touch-points:
+
+  **(a) Add a `generateListeningTest` wrapper to `apps/web/src/lib/aiClient.ts`** (alongside the existing Phase 1 wrappers). This is the single place the `/v1/listening/generate` path + raw JSON shape lives:
+
+  ```ts
+  // Append to aiClient.ts, after the Phase 1 wrappers.
+
+  export type ListeningGenerateRequest = {
+    exam_type: "KET" | "PET";
+    scope: "FULL" | "PART";
+    part?: number;
+    mode?: "PRACTICE" | "MOCK";
+    seed_exam_points?: string[];
+  };
+
+  // Returns the raw snake_case payload straight from Python; the caller in
+  // `audio/generate.ts` converts it to the camelCase `ListeningTestPayloadV2`.
+  export async function generateListeningTest(
+    req: ListeningGenerateRequest,
+  ): Promise<Record<string, unknown>> {
+    return postToAi<Record<string, unknown>>("/v1/listening/generate", req);
+  }
+  ```
+
+  **(b) Have `fetchListeningPayload` in `apps/web/src/lib/audio/generate.ts` delegate to that wrapper**, keeping only the snake-case → camelCase transform here:
+
   ```ts
   // ... existing imports ...
-
-  const AI_SERVICE_URL =
-    process.env.INTERNAL_AI_URL ?? process.env.AI_SERVICE_URL ?? "http://localhost:8001";
+  import { generateListeningTest } from "@/lib/aiClient";
 
   export interface GenerateTestPayloadArgs {
     examType: "KET" | "PET";
@@ -3403,26 +3445,14 @@ These are one-time operational steps the engineer must complete before coding be
   export async function fetchListeningPayload(
     args: GenerateTestPayloadArgs
   ): Promise<ListeningTestPayloadV2> {
-    const res = await fetch(`${AI_SERVICE_URL}/listening/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        exam_type: args.examType,
-        scope: args.scope,
-        part: args.part,
-        mode: args.mode,
-      }),
+    const raw = await generateListeningTest({
+      exam_type: args.examType,
+      scope: args.scope,
+      part: args.part,
+      mode: args.mode,
     });
-
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(
-        `Python listening/generate failed: HTTP ${res.status} — ${body}`
-      );
-    }
     // The Python response uses snake_case; the Node types are camelCase.
     // A minimal transform layer converts them.
-    const raw = (await res.json()) as Record<string, unknown>;
     return snakeToCamelListening(raw);
   }
 
@@ -3483,8 +3513,8 @@ These are one-time operational steps the engineer must complete before coding be
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add apps/web/src/lib/audio/generate.ts
-  git commit -m "feat(audio): fetchListeningPayload calls Python /listening/generate"
+  git add apps/web/src/lib/aiClient.ts apps/web/src/lib/audio/generate.ts
+  git commit -m "feat(audio): fetchListeningPayload calls Python /v1/listening/generate"
   ```
 
 ### Task 29: Dev-server integration smoke test
@@ -5565,12 +5595,12 @@ These are one-time operational steps the engineer must complete before coding be
   }
   ```
 
-  Also add to `apps/web/.env.example`: `CRON_SECRET=` and instruct user to populate with a long random string.
+  Also add to `.env.example`: `CRON_SECRET=` and instruct user to populate with a long random string.
 
 - [ ] **Step 3: Commit**
 
   ```bash
-  git add apps/web/src/lib/cron/ apps/web/src/app/api/cron/ apps/web/.env.example
+  git add apps/web/src/lib/cron/ apps/web/src/app/api/cron/ .env.example
   git commit -m "feat(cron): force-submit expired LISTENING attempts"
   ```
 
@@ -5595,7 +5625,7 @@ These are one-time operational steps the engineer must complete before coding be
 
 - [ ] **Step 3: Update services/ai/README**
 
-  Add: `/listening/generate` endpoint, how to run `pytest tests/test_listening_*.py`, and the DeepSeek call shape.
+  Add: `/v1/listening/generate` endpoint (Bearer auth via `INTERNAL_SHARED_SECRET`), how to run `pytest tests/test_listening_*.py`, and the DeepSeek call shape.
 
 - [ ] **Step 4: Commit**
 
@@ -5607,13 +5637,13 @@ These are one-time operational steps the engineer must complete before coding be
 ### Task 51: Finalize `.env.example`
 
 **Files:**
-- Modify: `apps/web/.env.example`
+- Modify: `.env.example`
 
 - [ ] **Step 1: Review and ensure the .env.example is complete**
 
   Run:
   ```bash
-  grep -E "^[A-Z_]+=" apps/web/.env.example
+  grep -E "^[A-Z_]+=" .env.example
   ```
   Verify every env var referenced in Phase 2 code is present:
   - R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_ENDPOINT
@@ -5625,7 +5655,7 @@ These are one-time operational steps the engineer must complete before coding be
 - [ ] **Step 2: Commit if any changes**
 
   ```bash
-  git add apps/web/.env.example
+  git add .env.example
   git commit -m "docs: finalize Phase 2 env vars in .env.example"
   ```
 
