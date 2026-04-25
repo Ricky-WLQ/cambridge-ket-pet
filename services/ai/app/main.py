@@ -24,6 +24,7 @@ from app.agents.reading import generate_reading_test
 from app.agents.speaking_examiner import run_examiner_turn
 from app.agents.speaking_generator import generate_speaking_prompts
 from app.agents.speaking_scorer import score_speaking_attempt
+from app.agents.vocab_gloss import run_vocab_gloss
 from app.agents.writing import generate_writing_test, grade_writing_response
 from app.prompts.reading import UnsupportedReadingPart
 from app.prompts.writing import UnsupportedWritingPart
@@ -38,6 +39,7 @@ from app.schemas.speaking import (
     SpeakingPrompts,
     SpeakingScore,
 )
+from app.schemas.vocab import VocabGlossRequest, VocabGlossResponse
 from app.schemas.writing import (
     WritingGradeRequest,
     WritingGradeResponse,
@@ -371,3 +373,31 @@ async def speaking_score(body: SpeakingScoreBody) -> SpeakingScore:
     return await score_speaking_attempt(
         level=body.level, transcript=body.transcript
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 4a Vocab — batch gloss generation for Cambridge wordlists
+# ---------------------------------------------------------------------------
+
+
+@app.post(
+    "/vocab-gloss",
+    response_model=VocabGlossResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def vocab_gloss_endpoint(req: VocabGlossRequest) -> VocabGlossResponse:
+    """Batch-translate Cambridge wordlist entries to Chinese gloss + example.
+
+    Called by the seed script `apps/web/scripts/generate-vocab-glosses.ts`
+    one batch (≤100 words) per request. The agent retries up to 3 times on
+    validator failure (coverage + per-item example-contains-headword).
+    Returns 422 if generation fails after all retries.
+    """
+    try:
+        return await run_vocab_gloss(req)
+    except Exception as e:  # noqa: BLE001 — surface validator failure as 422
+        log.exception("vocab_gloss endpoint failed after retries")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "vocab_gloss_failed", "message": str(e)},
+        ) from e
