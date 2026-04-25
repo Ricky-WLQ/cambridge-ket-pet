@@ -36,7 +36,9 @@ export interface ComputeNextReviewResult {
  * Then schedule next review at now + MASTERY_INTERVALS_MS[newMastery].
  */
 export function computeNextReview(args: ComputeNextReviewArgs): ComputeNextReviewResult {
-  const { mastery, isCorrect, markMastered, now } = args;
+  const { isCorrect, markMastered, now } = args;
+  // Defensive clamp — guards against drifted DB values (negative or > MASTERY_MAX).
+  const mastery = Math.max(0, Math.min(MASTERY_MAX, args.mastery));
   let newMastery: number;
   if (markMastered) {
     newMastery = MASTERY_MASTERED_THRESHOLD;
