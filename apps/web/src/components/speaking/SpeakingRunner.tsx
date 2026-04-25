@@ -82,6 +82,17 @@ export function SpeakingRunner({ attemptId, level }: Props) {
   const replyInFlightRef = useRef(false);
   const pendingFireRef = useRef(false);
 
+  // Debounce window: when a user-final stream-message arrives, we wait
+  // USER_FINAL_DEBOUNCE_MS for additional finals before actually firing
+  // /reply. Akool's server-side VAD (silence_duration_ms) is set to
+  // 2000ms so a "thinking pause" within an utterance is captured as
+  // one segment, but if a candidate's pause runs slightly longer than
+  // that or Akool's VAD is fooled by a breath, this client-side
+  // window catches the next final and merges it into the same /reply
+  // snapshot. Total max pause before /reply fires is
+  // silence_duration_ms (2000) + USER_FINAL_DEBOUNCE_MS = ~2.6s.
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     currentPartRef.current = currentPart;
     bufRef.current.setCurrentPart(currentPart);
@@ -175,6 +186,29 @@ export function SpeakingRunner({ attemptId, level }: Props) {
     }
   }, [attemptId, submit]);
 
+  // Drain pending replies — one /reply at a time, looping while more
+  // user input arrived during flight. Called from the debounce timer
+  // callback. Splits the in-flight latch out of handleMessage so the
+  // debounce path can drive it independently of the stream-message
+  // event path.
+  const drainReplies = useCallback(async () => {
+    if (replyInFlightRef.current) {
+      pendingFireRef.current = true;
+      return;
+    }
+    replyInFlightRef.current = true;
+    try {
+      do {
+        pendingFireRef.current = false;
+        await runReplyTurn();
+      } while (pendingFireRef.current && !endedRef.current);
+    } finally {
+      replyInFlightRef.current = false;
+    }
+  }, [runReplyTurn]);
+
+  const USER_FINAL_DEBOUNCE_MS = 600;
+
   const handleMessage = useCallback(
     async (msg: StreamMessage) => {
       if (endedRef.current) return;
@@ -199,30 +233,31 @@ export function SpeakingRunner({ attemptId, level }: Props) {
         console.warn("[runner] interrupt(echo-cancel) failed", err);
       }
 
-      // Coalesce: only one /reply in flight at a time. Akool's VAD often
-      // splits one logical utterance into two STT segments (the ".
-      // because" pattern observed in QA), each of which fires this
-      // handler. Without serialization, both /reply calls produce a
-      // turn — Mina speaks back-to-back replies that don't see each
-      // other's output, AND with the new script-cursor they'd both ask
-      // the same script[N+1] (duplicate question). Queue the second
-      // segment via pendingFireRef and re-fire after the current call
-      // finishes; the next snapshot will include both user turns.
+      // If a /reply is already running, the user spoke during Mina's
+      // thinking. Queue the segment so drainReplies picks it up after
+      // the current call finishes. Skip the debounce — there's no
+      // in-flight call to debounce against.
       if (replyInFlightRef.current) {
         pendingFireRef.current = true;
         return;
       }
-      replyInFlightRef.current = true;
-      try {
-        do {
-          pendingFireRef.current = false;
-          await runReplyTurn();
-        } while (pendingFireRef.current && !endedRef.current);
-      } finally {
-        replyInFlightRef.current = false;
+
+      // Debounce: postpone the actual /reply by USER_FINAL_DEBOUNCE_MS.
+      // If another user-final arrives before the timer fires (Akool
+      // emitted a second segment for the same logical utterance), the
+      // timer is reset and only ONE /reply call eventually fires with
+      // the merged history. This catches the "I don't like X. because
+      // Y." pattern where the candidate's mid-thought pause exceeds
+      // Akool's silence_duration_ms.
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
+      debounceTimerRef.current = setTimeout(() => {
+        debounceTimerRef.current = null;
+        void drainReplies();
+      }, USER_FINAL_DEBOUNCE_MS);
     },
-    [runReplyTurn],
+    [drainReplies],
   );
 
   // Bootstrap. React Strict Mode runs effects twice in dev, which would

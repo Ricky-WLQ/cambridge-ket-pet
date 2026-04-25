@@ -54,10 +54,14 @@ export async function POST(_req: Request, ctx: RouteCtx) {
     voiceId: process.env.AKOOL_VOICE_ID || null,
     durationSeconds,
     vadThreshold: Number(process.env.AKOOL_VAD_THRESHOLD ?? 0.6),
-    // 1500ms (was 500ms): K-12 ESL candidates pause mid-sentence to
-    // search for words. 500ms produced fragmented STT events
-    // ("favorite subject is" / "It's math." as separate turns).
-    vadSilenceMs: Number(process.env.AKOOL_VAD_SILENCE_MS ?? 1500),
+    // 2000ms (was 1500ms — and 500ms before that). K-12 ESL candidates
+    // pause mid-sentence to think; 1500ms still cut some sentences in
+    // half ("My favourite subject" / "is math") in QA. 2000ms covers
+    // typical thinking pauses; pair this with the runner-side
+    // debounce so any stragglers within ~600ms still merge into one
+    // turn. The total max-pause budget before /reply fires is
+    // ~2000+600 = 2.6s, which is acceptable Cambridge-pace.
+    vadSilenceMs: Number(process.env.AKOOL_VAD_SILENCE_MS ?? 2000),
   });
 
   await prisma.testAttempt.update({
