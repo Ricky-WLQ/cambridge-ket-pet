@@ -72,6 +72,7 @@ export async function POST(req: Request, ctx: RouteCtx) {
     await prisma.testAttempt.update({
       where: { id: attempt.id },
       data: {
+        status: "ABANDONED",
         speakingStatus: "FAILED",
         speakingError: "No transcript captured",
       },
@@ -83,6 +84,11 @@ export async function POST(req: Request, ctx: RouteCtx) {
   await prisma.testAttempt.update({
     where: { id: attempt.id },
     data: {
+      // Mirror speaking-specific status onto the legacy AttemptStatus
+      // so /history filters, teacher views, and the per-student
+      // aggregates (which key off `status === "GRADED"` etc.) treat
+      // speaking attempts the same as reading/writing/listening.
+      status: "SUBMITTED",
       speakingStatus: "SUBMITTED",
       transcript: transcript as unknown as Prisma.InputJsonValue,
       submittedAt: new Date(),
@@ -124,6 +130,9 @@ async function runScoringInBackground(
     await prisma.testAttempt.update({
       where: { id: attemptId },
       data: {
+        // Mirror onto AttemptStatus so legacy filters / aggregates treat
+        // a scored speaking attempt as graded.
+        status: "GRADED",
         speakingStatus: "SCORED",
         rubricScores: scored as unknown as Prisma.InputJsonValue,
         rawScore,
@@ -137,6 +146,10 @@ async function runScoringInBackground(
     await prisma.testAttempt.update({
       where: { id: attemptId },
       data: {
+        // Mirror onto AttemptStatus: scoring failure ≈ ABANDONED for
+        // legacy views; rubricScores stays null and the attempt never
+        // appears in graded aggregates.
+        status: "ABANDONED",
         speakingStatus: "FAILED",
         speakingError: `scoring failed: ${(err as Error).message}`.slice(0, 200),
       },

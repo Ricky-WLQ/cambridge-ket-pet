@@ -85,6 +85,8 @@ describe("POST /api/speaking/[attemptId]/submit", () => {
     // First update must be the SUBMITTED transition with the reconciled
     // transcript; scoring happens asynchronously after we return.
     expect((prisma.testAttempt.update as any).mock.calls[0][0].data.speakingStatus).toBe("SUBMITTED");
+    // Mirror onto AttemptStatus so legacy filters/aggregates pick up the attempt.
+    expect((prisma.testAttempt.update as any).mock.calls[0][0].data.status).toBe("SUBMITTED");
     expect((prisma.testAttempt.update as any).mock.calls[0][0].data.transcript).toBeTruthy();
 
     const { clearTurns } = await import("@/lib/speaking/turn-buffer");
@@ -106,6 +108,7 @@ describe("POST /api/speaking/[attemptId]/submit", () => {
     );
     expect(res.status).toBe(200);
     expect((prisma.testAttempt.update as any).mock.calls[0][0].data.speakingStatus).toBe("FAILED");
+    expect((prisma.testAttempt.update as any).mock.calls[0][0].data.status).toBe("ABANDONED");
     expect((prisma.testAttempt.update as any).mock.calls[0][0].data.speakingError).toBe("No transcript captured");
   });
 });
