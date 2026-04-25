@@ -1,0 +1,16 @@
+examType,word,pos,tier,reason
+KET,homework,n,CORE,Daily school vocab; Chinese students see this every day
+KET,classroom,n,CORE,Daily school vocab
+PET,vocabulary,n,CORE,Meta vocab — the word for what they're studying
+KET,vocabulary,n,CORE,Meta vocab — the word for what they're studying
+KET,student,n,CORE,Self-identity vocab; in every Chinese-classroom dialogue
+KET,teacher,n,CORE,Daily school vocab; ubiquitous in Chinese classroom context
+KET,school,n,CORE,Daily school vocab; central to a Chinese student's life
+KET,lesson,n,CORE,Daily school vocab
+KET,class,n,CORE,Daily school vocab
+KET,test,n,CORE,Test-taker context essential
+PET,test,n & v,CORE,Test-taker context essential
+KET,study,v,CORE,Test-taker context essential — the verb for what they do daily
+PET,study,n & v,CORE,Test-taker context essential
+KET,learn,v,CORE,Test-taker context essential
+KET,dictionary,n,CORE,Active reference tool for Chinese students learning English
