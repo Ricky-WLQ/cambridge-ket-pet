@@ -65,6 +65,27 @@ async def _run_llm(
     return str(raw_output)
 
 
+def _photo_topic_from_key(photo_key: str | None) -> str | None:
+    """Extract the topic tag from a photo key WITHOUT revealing visual
+    contents. e.g. "speaking/photos/shopping-01.jpg" -> "shopping".
+
+    The examiner agent uses this to phrase topic-appropriate follow-ups
+    ("What do you usually buy when you go shopping?") while staying blind
+    to what's actually depicted in the image — which is correct, because
+    the candidate must do the describing.
+    """
+    if not photo_key:
+        return None
+    basename = photo_key.rsplit("/", 1)[-1]
+    stem = basename.rsplit(".", 1)[0]  # drop extension
+    # Stem looks like "shopping-01" or "choice-gifts-01"; strip trailing
+    # "-NN" sequence numbers.
+    parts = stem.rsplit("-", 1)
+    if len(parts) == 2 and parts[1].isdigit():
+        return parts[0]
+    return stem
+
+
 def _build_user_payload(
     *,
     prompts: SpeakingPrompts,
@@ -73,6 +94,7 @@ def _build_user_payload(
 ) -> str:
     """Compose the user-role payload for the examiner LLM call."""
     part = next(p for p in prompts.parts if p.partNumber == current_part)
+    topic = _photo_topic_from_key(part.photoKey)
     return json.dumps(
         {
             "current_part": current_part,
@@ -81,7 +103,10 @@ def _build_user_payload(
                 "target_minutes": part.targetMinutes,
                 "examiner_script": part.examinerScript,
                 "coaching_hints": part.coachingHints,
-                "photo_key": part.photoKey,
+                # Only the topic tag — never the visual contents. Agent is
+                # instructed (in the system prompt's PHOTO-DESCRIPTION
+                # PARTS section) to never describe what's in the photo.
+                "photo_topic": topic,
             },
             "history": history,
         },

@@ -122,11 +122,14 @@ describe("createAkoolSession", () => {
     expect(capturedBody.language).toBe("en");
     expect(capturedBody.duration).toBe(900);
     expect(capturedBody.voice_params.stt_language).toBe("en");
-    // Important: stt_type and turn_detection are intentionally omitted —
-    // they activate OpenAI Realtime, which fights with mode_type:1
-    // (Retelling) by vocalising on its own. See akool-client.ts comments.
+    // stt_type stays omitted (it activates OpenAI Realtime which fights
+    // mode_type:1 by vocalising on its own). turn_detection is kept,
+    // because Akool's default VAD silence is too short and produced
+    // fragmented STT events for K-12 ESL candidates.
     expect(capturedBody.voice_params.stt_type).toBeUndefined();
-    expect(capturedBody.voice_params.turn_detection).toBeUndefined();
+    expect(capturedBody.voice_params.turn_detection.type).toBe("server_vad");
+    expect(capturedBody.voice_params.turn_detection.threshold).toBe(0.6);
+    expect(capturedBody.voice_params.turn_detection.silence_duration_ms).toBe(500);
   });
 
   it("throws on non-1000 responses", async () => {

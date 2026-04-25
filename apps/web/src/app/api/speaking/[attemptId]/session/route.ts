@@ -54,7 +54,10 @@ export async function POST(_req: Request, ctx: RouteCtx) {
     voiceId: process.env.AKOOL_VOICE_ID || null,
     durationSeconds,
     vadThreshold: Number(process.env.AKOOL_VAD_THRESHOLD ?? 0.6),
-    vadSilenceMs: Number(process.env.AKOOL_VAD_SILENCE_MS ?? 500),
+    // 1500ms (was 500ms): K-12 ESL candidates pause mid-sentence to
+    // search for words. 500ms produced fragmented STT events
+    // ("favorite subject is" / "It's math." as separate turns).
+    vadSilenceMs: Number(process.env.AKOOL_VAD_SILENCE_MS ?? 1500),
   });
 
   await prisma.testAttempt.update({
