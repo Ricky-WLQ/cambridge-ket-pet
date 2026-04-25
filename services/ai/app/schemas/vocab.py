@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 ExamType = Literal["KET", "PET"]
+CefrLevel = Literal["A1", "A2", "B1", "B2", "C1", "C2"]
 
 
 class VocabWordInput(BaseModel):
@@ -27,6 +28,7 @@ class VocabGlossItem(BaseModel):
     cambridgeId: str = Field(..., min_length=1)
     glossZh: str = Field(..., min_length=1, max_length=200)
     example: str = Field(..., min_length=3, max_length=200)
+    cefrLevel: CefrLevel  # Cambridge CEFR rating, used for tier auto-assignment
 
     @field_validator("glossZh")
     @classmethod

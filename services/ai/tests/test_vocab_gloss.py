@@ -30,11 +30,12 @@ def _make_req(*pairs: tuple[str, str, str]) -> VocabGlossRequest:
     )
 
 
-def _make_resp(*pairs: tuple[str, str, str]) -> VocabGlossResponse:
+def _make_resp(*pairs: tuple[str, str, str, str]) -> VocabGlossResponse:
+    """Each pair: (cambridgeId, glossZh, example, cefrLevel)"""
     return VocabGlossResponse(
         items=[
-            VocabGlossItem(cambridgeId=cid, glossZh=g, example=ex)
-            for cid, g, ex in pairs
+            VocabGlossItem(cambridgeId=cid, glossZh=g, example=ex, cefrLevel=cefr)
+            for cid, g, ex, cefr in pairs
         ],
     )
 
@@ -50,7 +51,7 @@ def _patch_agent_run(mock_run):
 @pytest.mark.asyncio
 async def test_run_vocab_gloss_returns_validated_response():
     req = _make_req(("a", "act", "v"))
-    fake_resp = _make_resp(("a", "表演", "She acts in the school play."))
+    fake_resp = _make_resp(("a", "表演", "She acts in the school play.", "A2"))
 
     mock = AsyncMock(return_value=SimpleNamespace(output=fake_resp))
     with _patch_agent_run(mock):
@@ -64,10 +65,10 @@ async def test_run_vocab_gloss_returns_validated_response():
 @pytest.mark.asyncio
 async def test_run_vocab_gloss_retries_on_missing_coverage():
     req = _make_req(("a", "act", "v"), ("b", "go", "v"))
-    bad = _make_resp(("a", "表演", "She acts."))  # missing "b"
+    bad = _make_resp(("a", "表演", "She acts.", "A2"))  # missing "b"
     good = _make_resp(
-        ("a", "表演", "She acts."),
-        ("b", "去", "I go to school."),
+        ("a", "表演", "She acts.", "A2"),
+        ("b", "去", "I go to school.", "A1"),
     )
 
     mock = AsyncMock(

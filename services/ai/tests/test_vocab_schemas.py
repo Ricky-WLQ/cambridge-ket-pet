@@ -33,10 +33,32 @@ def test_response_item_requires_chinese_gloss_and_example():
         cambridgeId="ket-act-v",
         glossZh="表演；行动",
         example="She acts in the school play.",
+        cefrLevel="A2",
     )
     assert item.glossZh == "表演；行动"
 
 
 def test_response_item_rejects_empty_gloss():
     with pytest.raises(ValidationError):
-        VocabGlossItem(cambridgeId="ket-act-v", glossZh="", example="x")
+        VocabGlossItem(cambridgeId="ket-act-v", glossZh="", example="x", cefrLevel="A2")
+
+
+def test_response_item_accepts_cefr_levels():
+    for lvl in ["A1", "A2", "B1", "B2", "C1", "C2"]:
+        item = VocabGlossItem(
+            cambridgeId="ket-act-v",
+            glossZh="表演",
+            example="She acts.",
+            cefrLevel=lvl,
+        )
+        assert item.cefrLevel == lvl
+
+
+def test_response_item_rejects_invalid_cefr_level():
+    with pytest.raises(ValidationError):
+        VocabGlossItem(
+            cambridgeId="ket-act-v",
+            glossZh="表演",
+            example="She acts.",
+            cefrLevel="A0",  # invalid
+        )

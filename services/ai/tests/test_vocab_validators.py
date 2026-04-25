@@ -10,8 +10,8 @@ def _input(cid: str = "ket-act-v", word: str = "act", pos: str = "v"):
     return VocabWordInput(cambridgeId=cid, word=word, pos=pos, glossEn=None)
 
 
-def _item(cid: str = "ket-act-v", gloss: str = "表演；行动", ex: str = "She acts in the school play."):
-    return VocabGlossItem(cambridgeId=cid, glossZh=gloss, example=ex)
+def _item(cid: str = "ket-act-v", gloss: str = "表演；行动", ex: str = "She acts in the school play.", cefr: str = "A2"):
+    return VocabGlossItem(cambridgeId=cid, glossZh=gloss, example=ex, cefrLevel=cefr)
 
 
 # validate_gloss_item
@@ -36,7 +36,7 @@ def test_validate_rejects_english_only_gloss():
     # Schema-level CJK check raises during construction — this test pins that behaviour
     # so the validator suite acts as a regression net for the gloss-language guarantee.
     with pytest.raises(Exception):
-        VocabGlossItem(cambridgeId="ket-act-v", glossZh="to do", example="She acts.")
+        VocabGlossItem(cambridgeId="ket-act-v", glossZh="to do", example="She acts.", cefrLevel="A2")
 
 
 # validate_response_covers_all_words

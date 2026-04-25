@@ -2,6 +2,9 @@
 
 Each validator raises ValueError on bad output. The Pydantic AI agent
 catches these and triggers retry (up to 3 attempts per spec).
+
+Note: cefrLevel field on VocabGlossItem is validated by Pydantic's Literal type
+(A1|A2|B1|B2|C1|C2). No extra validator function needed.
 """
 import re
 from app.schemas.vocab import VocabGlossItem, VocabWordInput
