@@ -87,6 +87,28 @@ type WritingStored = {
   };
 };
 
+type SpeakingRubricStored = {
+  grammarVocab?: number;
+  discourseManagement?: number;
+  pronunciation?: number;
+  interactive?: number;
+};
+
+const SPEAKING_CRITERIA: Array<{
+  key: keyof Required<SpeakingRubricStored>;
+  labelZh: string;
+  labelEn: string;
+}> = [
+  { key: "grammarVocab", labelZh: "语法词汇", labelEn: "Grammar & Vocab" },
+  {
+    key: "discourseManagement",
+    labelZh: "话语连贯",
+    labelEn: "Discourse Mgmt",
+  },
+  { key: "pronunciation", labelZh: "发音", labelEn: "Pronunciation" },
+  { key: "interactive", labelZh: "互动", labelEn: "Interactive" },
+];
+
 export default async function StudentDetailPage({
   params,
 }: {
@@ -241,6 +263,46 @@ export default async function StudentDetailPage({
         return (x.key as number) - (y.key as number);
       });
     return { parts, total: listeningAttempts.length };
+  })();
+
+  // Speaking rubric averages (across SCORED speaking attempts)
+  const speakingAttempts = attempts.filter(
+    (a) =>
+      a.status === "GRADED" &&
+      a.test.kind === "SPEAKING" &&
+      a.rubricScores !== null,
+  );
+  const speakingAverages = (() => {
+    if (speakingAttempts.length === 0) return null;
+    const sums = {
+      grammarVocab: 0,
+      discourseManagement: 0,
+      pronunciation: 0,
+      interactive: 0,
+    };
+    let n = 0;
+    for (const a of speakingAttempts) {
+      const r = a.rubricScores as SpeakingRubricStored | null;
+      if (!r) continue;
+      sums.grammarVocab += r.grammarVocab ?? 0;
+      sums.discourseManagement += r.discourseManagement ?? 0;
+      sums.pronunciation += r.pronunciation ?? 0;
+      sums.interactive += r.interactive ?? 0;
+      n += 1;
+    }
+    if (n === 0) return null;
+    const avgs = {
+      grammarVocab: sums.grammarVocab / n,
+      discourseManagement: sums.discourseManagement / n,
+      pronunciation: sums.pronunciation / n,
+      interactive: sums.interactive / n,
+    };
+    // Weakest criterion = lowest average; report key + label.
+    const weakestKey = (
+      Object.keys(avgs) as Array<keyof typeof avgs>
+    ).reduce((min, k) => (avgs[k] < avgs[min] ? k : min));
+    const weakest = SPEAKING_CRITERIA.find((c) => c.key === weakestKey)!;
+    return { ...avgs, count: n, weakestKey, weakestLabel: weakest.labelZh };
   })();
 
   // Writing rubric averages (across all graded writing attempts)
@@ -402,6 +464,61 @@ export default async function StudentDetailPage({
                     className="rounded-md border border-neutral-200 p-4"
                   >
                     <div className="text-xs text-neutral-500">{c.labelZh}</div>
+                    <div
+                      className={`mt-1 text-2xl font-bold ${scoreTextColor(pct)}`}
+                    >
+                      {avg.toFixed(1)}
+                      <span className="text-sm font-normal text-neutral-400">
+                        {" "}
+                        / 5
+                      </span>
+                    </div>
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className={`h-full ${scoreBarColor(pct)}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {speakingAverages && (
+          <>
+            <h2 className="mt-8 mb-3 text-lg font-semibold">
+              口语分项平均
+              <span className="ml-2 text-sm font-normal text-neutral-500">
+                （共 {speakingAverages.count} 份 · 最弱:
+                {speakingAverages.weakestLabel}）
+              </span>
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-4">
+              {SPEAKING_CRITERIA.map((c) => {
+                const avg = speakingAverages[c.key] as number;
+                const pct = Math.round((avg / 5) * 100);
+                const isWeakest = c.key === speakingAverages.weakestKey;
+                return (
+                  <div
+                    key={c.key}
+                    className={`rounded-md border p-4 ${
+                      isWeakest
+                        ? "border-amber-300 bg-amber-50/50"
+                        : "border-emerald-200 bg-emerald-50/30"
+                    }`}
+                  >
+                    <div
+                      className={`text-xs ${
+                        isWeakest ? "text-amber-800" : "text-emerald-800"
+                      }`}
+                    >
+                      {c.labelZh}
+                      <span className="ml-1 text-neutral-400">
+                        · {c.labelEn}
+                      </span>
+                    </div>
                     <div
                       className={`mt-1 text-2xl font-bold ${scoreTextColor(pct)}`}
                     >

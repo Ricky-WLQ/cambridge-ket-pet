@@ -57,6 +57,7 @@ const STATUS_ZH: Record<
 function kindPathFor(kind: AttemptRow["test"]["kind"]): string {
   if (kind === "WRITING") return "writing";
   if (kind === "LISTENING") return "listening";
+  if (kind === "SPEAKING") return "speaking";
   return "reading";
 }
 
@@ -301,11 +302,14 @@ export default async function HistoryPage({
               const part = a.test.part ?? 0;
               const kind = KIND_ZH[a.test.kind] ?? a.test.kind;
               const isListening = a.test.kind === "LISTENING";
-              const partLabel = isListening
-                ? a.test.part === null || a.test.part === undefined
-                  ? "完整模考"
-                  : `第 ${a.test.part} 部分`
-                : `Part ${part}`;
+              const isSpeaking = a.test.kind === "SPEAKING";
+              const partLabel = isSpeaking
+                ? "全程对话"
+                : isListening
+                  ? a.test.part === null || a.test.part === undefined
+                    ? "完整模考"
+                    : `第 ${a.test.part} 部分`
+                  : `Part ${part}`;
               const scoreText = isListening
                 ? a.rawScore !== null && a.totalPossible !== null
                   ? `${a.rawScore}/${a.totalPossible}`

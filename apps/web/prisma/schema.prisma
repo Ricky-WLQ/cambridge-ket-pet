@@ -52,6 +52,15 @@ enum AttemptStatus {
   ABANDONED
 }
 
+enum SpeakingStatus {
+  IDLE
+  IN_PROGRESS
+  SUBMITTED
+  SCORING
+  SCORED
+  FAILED
+}
+
 enum NoteStatus {
   NEW
   REVIEWED
@@ -214,6 +223,11 @@ model Test {
   audioSegments        Json?
   audioErrorMessage    String?
 
+  // Phase 3 Speaking — per-test script + photo prompts + level tag
+  speakingPrompts   Json?
+  speakingPhotoKeys String[]
+  speakingPersona   String?   // "KET" | "PET"
+
   user     User?         @relation(fields: [userId], references: [id])
   attempts TestAttempt[]
 
@@ -236,6 +250,13 @@ model TestAttempt {
   totalPossible Int?
   scaledScore   Float?
   weakPoints    Json?
+
+  // Phase 3 Speaking
+  transcript       Json?
+  rubricScores     Json?
+  akoolSessionId   String?
+  speakingStatus   SpeakingStatus?
+  speakingError    String?
 
   user User @relation(fields: [userId], references: [id])
   test Test @relation(fields: [testId], references: [id])

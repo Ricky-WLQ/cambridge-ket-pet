@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Phase 3 Speaking — source images staging (JPEG/PNG/WebP only; manifest.json tracked)
+prisma/data/speaking-photos/*.jpg
+prisma/data/speaking-photos/*.jpeg
+prisma/data/speaking-photos/*.png
+prisma/data/speaking-photos/*.webp

@@ -30,6 +30,18 @@ export async function redoAttemptAction(formData: FormData) {
     redirect("/history");
   }
 
+  const portal = oldAttempt.test.examType === "KET" ? "ket" : "pet";
+
+  // Speaking attempts can't share a Test row across attempts: the
+  // examinerScript + photoKey are randomized per attempt by /api/speaking/
+  // tests/generate, so "redo same test" doesn't recreate the same exam.
+  // Send the user to /new which generates fresh prompts — the right
+  // semantics for "再做一次".
+  if (oldAttempt.test.kind === "SPEAKING") {
+    revalidatePath("/history");
+    redirect(`/${portal}/speaking/new`);
+  }
+
   const newAttempt = await prisma.testAttempt.create({
     data: {
       userId,
@@ -41,7 +53,6 @@ export async function redoAttemptAction(formData: FormData) {
   });
 
   revalidatePath("/history");
-  const portal = oldAttempt.test.examType === "KET" ? "ket" : "pet";
   const kindPath =
     oldAttempt.test.kind === "WRITING"
       ? "writing"
