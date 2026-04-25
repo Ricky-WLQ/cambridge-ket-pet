@@ -6,7 +6,7 @@
  * `/api/vocab/audio/[wordId]` route in one place.
  *
  * Note: `signR2PublicUrl` does not produce a time-limited presigned URL — it
- * returns a server-relative path to the existing `/api/speaking/photos/[...key]`
+ * returns a server-relative path to the generic `/api/r2/[...key]`
  * stream-proxy route, which auth-gates every request via Auth.js. We re-use
  * that pattern for vocab audio so the R2 domain stays hidden from Chinese
  * users. The TTL constant below is therefore the suggested client cache

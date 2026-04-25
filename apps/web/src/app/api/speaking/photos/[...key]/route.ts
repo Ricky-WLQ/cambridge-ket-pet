@@ -1,101 +1,25 @@
 import { NextResponse } from "next/server";
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
-
-import { auth } from "@/lib/auth";
 
 /**
- * GET /api/speaking/photos/[...key]
+ * GET /api/speaking/photos/[...key] — DEPRECATED
  *
- * Stream-proxies Speaking photo prompts from Cloudflare R2 through
- * Zeabur's Next.js. The R2 domain stays hidden from Chinese users (they
- * only see our Zeabur Singapore endpoint). Mirrors the Phase 2 listening
- * audio stream-proxy pattern, but simpler since photos are small JPEGs
- * (~200KB) — range requests are not required.
+ * Back-compat shim. Renamed to the generic `/api/r2/[...key]` proxy so
+ * the same stream-proxy logic can serve vocab audio MP3s, future
+ * grammar audio, etc. — not just speaking photos.
  *
- * Auth: requires a logged-in session. Unauthenticated callers get 401.
+ * Redirects 308 (preserves method + body, signals permanent move) so
+ * any browser holding an in-flight session's photoUrls follows over.
  *
- * Content-Type: inferred from the key's extension (defaults to
- * image/jpeg for .jpg/.jpeg/unknown). Cache-Control is `private,
- * max-age=300` — per-user caching for 5 minutes so the photo panel can
- * re-render without hammering R2.
+ * Remove this shim once Phase 4 ships and any in-flight Phase 3
+ * sessions have completed (≈1-2 weeks of soak).
  */
-
-const CONTENT_TYPES: Record<string, string> = {
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  gif: "image/gif",
-};
-
-function inferContentType(key: string): string {
-  const ext = key.split(".").pop()?.toLowerCase() ?? "";
-  return CONTENT_TYPES[ext] ?? "image/jpeg";
-}
-
-function r2Client(): S3Client {
-  return new S3Client({
-    region: "auto",
-    endpoint: process.env.R2_ENDPOINT!,
-    credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-    },
-  });
-}
-
-export async function GET(
-  _req: Request,
+export function GET(
+  request: Request,
   ctx: { params: Promise<{ key: string[] }> },
-) {
-  const session = await auth();
-  const userId = (session?.user as { id?: string } | undefined)?.id;
-  if (!userId) {
-    return NextResponse.json({ error: "请先登录" }, { status: 401 });
-  }
-
-  const { key: keySegments } = await ctx.params;
-  if (!keySegments || keySegments.length === 0) {
-    return NextResponse.json({ error: "missing_key" }, { status: 400 });
-  }
-  // The key segments arrive URL-decoded from Next.js' catch-all route.
-  const key = keySegments.join("/");
-
-  const bucket = process.env.R2_BUCKET;
-  if (!bucket) {
-    return NextResponse.json(
-      { error: "R2_BUCKET not configured" },
-      { status: 500 },
-    );
-  }
-
-  const client = r2Client();
-  try {
-    const resp = await client.send(
-      new GetObjectCommand({ Bucket: bucket, Key: key }),
-    );
-    const body = resp.Body;
-    if (!body) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
-    }
-
-    const headers = new Headers();
-    headers.set("Content-Type", resp.ContentType ?? inferContentType(key));
-    if (resp.ContentLength !== undefined) {
-      headers.set("Content-Length", String(resp.ContentLength));
-    }
-    headers.set("Cache-Control", "private, max-age=300");
-
-    return new NextResponse(body as unknown as BodyInit, {
-      status: 200,
-      headers,
-    });
-  } catch (err) {
-    const name = (err as { name?: string } | undefined)?.name;
-    if (name === "NoSuchKey" || name === "NotFound") {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
-    }
-    console.error("[speaking/photos] R2 fetch failed", err);
-    return NextResponse.json({ error: "r2_error" }, { status: 502 });
-  }
+): Promise<Response> {
+  return ctx.params.then(({ key }) => {
+    const url = new URL(request.url);
+    const newPath = `/api/r2/${key.map(encodeURIComponent).join("/")}`;
+    return NextResponse.redirect(new URL(newPath, url.origin), 308);
+  });
 }
