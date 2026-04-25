@@ -10,7 +10,8 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
-    "seed:speaking-photos": "tsx scripts/seed-speaking-photos.ts"
+    "seed:speaking-photos": "tsx scripts/seed-speaking-photos.ts",
+    "fetch:speaking-photos": "tsx scripts/fetch-speaking-photos.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
