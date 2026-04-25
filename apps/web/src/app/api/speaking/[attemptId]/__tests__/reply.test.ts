@@ -65,6 +65,7 @@ describe("POST /api/speaking/[attemptId]/reply", () => {
     const res = await POST(makeReq("attempt-1", {
       messages: [{ role: "user", content: "My name is Li Wei." }],
       currentPart: 1,
+      currentPartQuestionCount: 1,
     }), { params: Promise.resolve({ attemptId: "attempt-1" }) });
     expect(res.status).toBe(200);
     const json = await res.json();
@@ -72,12 +73,38 @@ describe("POST /api/speaking/[attemptId]/reply", () => {
     expect(json.flags.advancePart).toBeNull();
     expect(json.flags.sessionEnd).toBe(false);
 
+    // Cursor is forwarded to the Python examiner as snake_case.
+    const callBody = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(callBody.current_part).toBe(1);
+    expect(callBody.current_part_question_count).toBe(1);
+
     const { appendTurn } = await import("@/lib/speaking/turn-buffer");
     expect(appendTurn).toHaveBeenCalledWith("attempt-1", expect.objectContaining({
       userText: "My name is Li Wei.",
       replyText: "Where do you live?",
       partNumber: 1,
     }));
+  });
+
+  it("defaults currentPartQuestionCount to 0 when client omits it", async () => {
+    await stubAttempt();
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        reply: "What's your name?",
+        advancePart: null,
+        sessionEnd: false,
+      }), { status: 200 }),
+    );
+    await POST(makeReq("attempt-1", {
+      messages: [{ role: "user", content: "hi" }],
+      currentPart: 1,
+    }), { params: Promise.resolve({ attemptId: "attempt-1" }) });
+    const callBody = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(callBody.current_part_question_count).toBe(0);
   });
 
   it("passes advancePart from the examiner through", async () => {

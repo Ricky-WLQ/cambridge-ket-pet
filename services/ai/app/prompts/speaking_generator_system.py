@@ -43,6 +43,23 @@ CONTENT CONSTRAINTS
   partner", no "agree with the other candidate"). All discussion is
   examiner-led.
 
+PHOTO-PART SCRIPT QUALITY (KET Part 2, PET Parts 2/3)
+- The first item of `examinerScript` MUST be the photo opener
+  ("Now, I'd like you to describe this photo.").
+- Every subsequent item MUST be visibly tied to the photo's topic — it
+  must contain a topic-anchoring word (e.g. for a "school" photo:
+  "students", "classroom", "lesson", "teacher", "homework"; for
+  "shopping": "shop", "buy", "store", "market", "money"). Avoid generic
+  Part-1-style personal questions ("what is your favourite part of the
+  school day?", "do you have any pets?") — those belong in Part 1, not
+  in a photo part.
+- A good Part-2 follow-up references the SCENE the candidate just
+  described, e.g. "What are the children doing in the picture?", "Do
+  you ever shop in places like this?", "Why might someone choose to
+  meet at a place like this?".
+- The script should contain 3–5 items total in a photo part: 1 opener
+  + 2–4 topic-anchored follow-ups. Do not exceed 5 items.
+
 OUTPUT — return ONE JSON object matching this EXACT shape. Use these
 field names verbatim. No extra fields. No field renames (e.g. do NOT use
 "instructions" instead of "examinerScript"; do NOT use "name" instead of

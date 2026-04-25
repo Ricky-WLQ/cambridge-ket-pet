@@ -62,6 +62,26 @@ export function SpeakingRunner({ attemptId, level }: Props) {
   const startedAtRef = useRef<number>(0);
   const submittedRef = useRef(false);
 
+  // Script-progression cursor: how many examiner questions have already
+  // been issued in currentPart. Initialised to 1 because bootstrap
+  // pushes parts[0].examinerScript[0] before the first /reply fires.
+  // After each /reply that does NOT advance, increment by 1. On
+  // advancePart, reset to 1 (the [[PART:M]] reply consumed script[0] of
+  // the new part). The Python examiner agent uses this as its
+  // deterministic cursor so it never cycles back to script[0] of an
+  // exhausted part — root cause of the multi-loop bug observed in QA.
+  const assistantTurnsInPartRef = useRef(1);
+
+  // Concurrency guard: Akool VAD splits multi-sentence utterances into
+  // multiple `fin=true` STT segments (e.g. "I don't like X. because Y."
+  // → two segments). Without this guard, two parallel /reply calls fire
+  // and two assistant turns come back. We serialize: while one /reply
+  // is in flight, mark `pendingFireRef`; after the current call
+  // completes, fire ONE more /reply with fresh history if pending was
+  // set, looping until clear.
+  const replyInFlightRef = useRef(false);
+  const pendingFireRef = useRef(false);
+
   useEffect(() => {
     currentPartRef.current = currentPart;
     bufRef.current.setCurrentPart(currentPart);
@@ -83,6 +103,77 @@ export function SpeakingRunner({ attemptId, level }: Props) {
       window.location.href = `${base}/speaking/result/${attemptId}`;
     }
   }, [attemptId, level]);
+
+  // One /reply round-trip — snapshot history, call API, push reply to
+  // Akool, advance/end as flagged. Only the loop in handleMessage may
+  // call this; it owns the in-flight latch.
+  const runReplyTurn = useCallback(async () => {
+    setStatus("thinking");
+    const history = bufRef.current.snapshot().map((t) => ({
+      role: t.role,
+      content: t.content,
+    }));
+
+    try {
+      const res = await fetch(`/api/speaking/${attemptId}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history,
+          currentPart: currentPartRef.current,
+          currentPartQuestionCount: assistantTurnsInPartRef.current,
+        }),
+      });
+      if (!res.ok) throw new Error(`/reply HTTP ${res.status}`);
+      const json = (await res.json()) as {
+        reply: string;
+        flags: {
+          advancePart: number | null;
+          sessionEnd: boolean;
+          retry?: boolean;
+        };
+      };
+
+      // Cursor maintenance: a normal turn consumed script[N], so the
+      // next turn should ask script[N+1]. A part-advance turn consumed
+      // script[0] of the destination part, so the cursor for the new
+      // part starts at 1. A retry filler does not consume any script
+      // item.
+      //
+      // We update the part RAW state AND the synchronous mirrors
+      // (currentPartRef + bufRef.setCurrentPart) in the same tick. The
+      // useEffect on `currentPart` would do the mirrors too, but it only
+      // fires after React's commit phase — meanwhile Akool's bot
+      // stream-message confirming our [[PART:M]] reply could arrive on
+      // the TRTC channel and the buffer would tag it with the OLD part.
+      // The sync mirrors close that window.
+      if (json.flags.retry) {
+        // no cursor change
+      } else if (json.flags.advancePart != null) {
+        const next = json.flags.advancePart;
+        setCurrentPart(next);
+        currentPartRef.current = next;
+        bufRef.current.setCurrentPart(next);
+        assistantTurnsInPartRef.current = 1;
+      } else {
+        assistantTurnsInPartRef.current += 1;
+      }
+
+      setStatus("speaking");
+      await sessionRef.current?.sendChat(json.reply);
+
+      if (json.flags.sessionEnd) {
+        endedRef.current = true;
+        setStatus("ended");
+        setTimeout(() => void submit(), 1200);
+      } else {
+        setStatus("listening");
+      }
+    } catch (err) {
+      console.error("[runner] reply failed", err);
+      setStatus("listening");
+    }
+  }, [attemptId, submit]);
 
   const handleMessage = useCallback(
     async (msg: StreamMessage) => {
@@ -108,49 +199,30 @@ export function SpeakingRunner({ attemptId, level }: Props) {
         console.warn("[runner] interrupt(echo-cancel) failed", err);
       }
 
-      setStatus("thinking");
-      const history = bufRef.current.snapshot().map((t) => ({
-        role: t.role,
-        content: t.content,
-      }));
-
+      // Coalesce: only one /reply in flight at a time. Akool's VAD often
+      // splits one logical utterance into two STT segments (the ".
+      // because" pattern observed in QA), each of which fires this
+      // handler. Without serialization, both /reply calls produce a
+      // turn — Mina speaks back-to-back replies that don't see each
+      // other's output, AND with the new script-cursor they'd both ask
+      // the same script[N+1] (duplicate question). Queue the second
+      // segment via pendingFireRef and re-fire after the current call
+      // finishes; the next snapshot will include both user turns.
+      if (replyInFlightRef.current) {
+        pendingFireRef.current = true;
+        return;
+      }
+      replyInFlightRef.current = true;
       try {
-        const res = await fetch(`/api/speaking/${attemptId}/reply`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: history,
-            currentPart: currentPartRef.current,
-          }),
-        });
-        if (!res.ok) throw new Error(`/reply HTTP ${res.status}`);
-        const json = (await res.json()) as {
-          reply: string;
-          flags: {
-            advancePart: number | null;
-            sessionEnd: boolean;
-            retry?: boolean;
-          };
-        };
-
-        if (json.flags.advancePart != null) setCurrentPart(json.flags.advancePart);
-
-        setStatus("speaking");
-        await sessionRef.current?.sendChat(json.reply);
-
-        if (json.flags.sessionEnd) {
-          endedRef.current = true;
-          setStatus("ended");
-          setTimeout(() => void submit(), 1200);
-        } else {
-          setStatus("listening");
-        }
-      } catch (err) {
-        console.error("[runner] reply failed", err);
-        setStatus("listening");
+        do {
+          pendingFireRef.current = false;
+          await runReplyTurn();
+        } while (pendingFireRef.current && !endedRef.current);
+      } finally {
+        replyInFlightRef.current = false;
       }
     },
-    [attemptId, submit],
+    [runReplyTurn],
   );
 
   // Bootstrap. React Strict Mode runs effects twice in dev, which would

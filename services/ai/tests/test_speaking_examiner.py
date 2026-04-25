@@ -140,3 +140,67 @@ async def test_examiner_recovery_avoids_word_welding():
         )
     assert "Thankyou" not in out.reply
     assert "Thank you" in out.reply
+
+
+@pytest.mark.asyncio
+async def test_examiner_payload_includes_progression_cursor():
+    """Regression guard: the user payload built for the LLM must include
+    the script-progression cursor and next-part info so the model never
+    cycles back to script[0] of an exhausted part. Captures the actual
+    user_payload string that gets sent to _run_llm.
+    """
+    captured: dict[str, str] = {}
+
+    async def fake_llm(*, system_prompt: str, user_payload: str, **_kwargs):
+        captured["user"] = user_payload
+        captured["system"] = system_prompt
+        return "Where do you live?"
+
+    with patch("app.agents.speaking_examiner._run_llm", new=fake_llm):
+        await run_examiner_turn(
+            prompts=_ket_prompts(),
+            history=[
+                {"role": "assistant", "content": "Hello, I'm Mina."},
+                {"role": "assistant", "content": "What's your name?"},
+                {"role": "user", "content": "My name is Li Wei."},
+            ],
+            current_part=1,
+            current_part_question_count=1,  # script[0] already issued
+        )
+    payload = captured["user"]
+    # Cursor + next-script-item are present and correct
+    assert '"current_part_question_count": 1' in payload
+    assert '"next_script_item": "Where do you live?"' in payload
+    assert '"is_last_part": false' in payload
+    assert '"script_remaining": 1' in payload
+    # next_part info exposed for transition turns
+    assert '"next_part"' in payload
+    # System prompt has the cursor section
+    assert "SCRIPT-PROGRESSION CURSOR" in captured["system"]
+
+
+@pytest.mark.asyncio
+async def test_examiner_payload_marks_last_part_complete():
+    """When the script for the last part is exhausted, payload must show
+    is_last_part=true, next_script_item=null, next_part=null — the
+    signals the LLM uses to emit [[SESSION_END]].
+    """
+    captured: dict[str, str] = {}
+
+    async def fake_llm(*, system_prompt: str, user_payload: str, **_kwargs):
+        captured["user"] = user_payload
+        return "Thank you. [[SESSION_END]]"
+
+    with patch("app.agents.speaking_examiner._run_llm", new=fake_llm):
+        out = await run_examiner_turn(
+            prompts=_ket_prompts(),
+            history=[{"role": "user", "content": "yes I enjoyed that"}],
+            current_part=2,
+            current_part_question_count=1,  # part 2 has 1 script item, exhausted
+        )
+    payload = captured["user"]
+    assert '"is_last_part": true' in payload
+    assert '"next_script_item": null' in payload
+    assert '"next_part": null' in payload
+    assert '"script_remaining": 0' in payload
+    assert out.sessionEnd is True

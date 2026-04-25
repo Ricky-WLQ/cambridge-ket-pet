@@ -317,6 +317,10 @@ class SpeakingExaminerBody(BaseModel):
     prompts: SpeakingPrompts
     history: list[dict[str, str]]
     current_part: int
+    # Number of examiner questions ALREADY ISSUED in current_part. Drives
+    # the script-progression cursor inside the examiner agent so it picks
+    # examinerScript[N] next instead of cycling back to script[0].
+    current_part_question_count: int = 0
 
 
 class SpeakingScoreBody(BaseModel):
@@ -354,6 +358,7 @@ async def speaking_examiner(body: SpeakingExaminerBody) -> SpeakingExaminerReply
         prompts=body.prompts,
         history=body.history,
         current_part=body.current_part,
+        current_part_question_count=body.current_part_question_count,
     )
 
 

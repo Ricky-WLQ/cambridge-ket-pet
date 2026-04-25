@@ -13,6 +13,11 @@ const bodySchema = z.object({
     }),
   ),
   currentPart: z.number().int().min(1).max(6),
+  // How many examiner questions have already been issued in currentPart.
+  // Used by the Python examiner agent as a deterministic script-progression
+  // cursor so it doesn't cycle back to script[0] of an exhausted part.
+  // Optional with sane default for backwards compat with any older client.
+  currentPartQuestionCount: z.number().int().min(0).max(20).default(0),
 });
 
 interface RouteCtx {
@@ -94,6 +99,7 @@ export async function POST(req: Request, ctx: RouteCtx) {
           prompts: test.speakingPrompts,
           history: body.messages,
           current_part: body.currentPart,
+          current_part_question_count: body.currentPartQuestionCount,
         }),
         cache: "no-store",
       },

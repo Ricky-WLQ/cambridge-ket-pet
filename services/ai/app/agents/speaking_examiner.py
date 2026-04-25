@@ -86,71 +86,59 @@ def _photo_topic_from_key(photo_key: str | None) -> str | None:
     return stem
 
 
-def _trim_history_to_recent_part(
-    history: list[dict[str, str]], current_part: int
-) -> list[dict[str, str]]:
-    """Strip earlier-part turns from the history fed to the examiner.
-
-    Why: when the agent sees Part-1 personal interview turns alongside a
-    Part-2 photo task, it tends to fall back to Part-1-style follow-ups
-    ("what do you have for breakfast?") even when the photo topic is
-    unrelated. The agent latches onto the conversational pattern in
-    history regardless of `current_part`. Keeping only the most recent
-    user turn (or the last few turns of THIS part) eliminates that
-    anchor.
-
-    For Part 1 (the interview), we keep the full history so the agent
-    can build on prior personal answers naturally. For any later part
-    we keep only the post-transition turns — i.e. everything after the
-    most recent assistant turn that concluded a part advance.
-
-    Heuristic: walk history backwards, stop at the first assistant turn
-    that mentions "next part" / "let's move" / "another picture" — that
-    marks the transition. Everything BEFORE it is prior-part chatter.
-    Fall back to keeping just the last 4 turns if no marker is found
-    (covers the common case of the agent not emitting an explicit
-    transition phrase).
-    """
-    if current_part <= 1:
-        return history
-
-    transition_markers = (
-        "next part",
-        "let's move",
-        "let me show you",
-        "another picture",
-        "now let's look",
-    )
-    cut_idx: int | None = None
-    for i in range(len(history) - 1, -1, -1):
-        turn = history[i]
-        if turn.get("role") != "assistant":
-            continue
-        content_lc = (turn.get("content") or "").lower()
-        if any(marker in content_lc for marker in transition_markers):
-            cut_idx = i
-            break
-    if cut_idx is not None:
-        return history[cut_idx:]
-    # Fall back: keep only the last 4 turns. That's enough recent
-    # context for natural follow-ups but small enough that no Part-1
-    # pattern dominates.
-    return history[-4:] if len(history) > 4 else history
-
-
 def _build_user_payload(
     *,
     prompts: SpeakingPrompts,
     history: list[dict[str, str]],
     current_part: int,
+    current_part_question_count: int,
 ) -> str:
-    """Compose the user-role payload for the examiner LLM call."""
+    """Compose the user-role payload for the examiner LLM call.
+
+    The payload exposes a deterministic script-progression cursor
+    (`current_part_question_count` = N) so the agent picks
+    `examinerScript[N]` next instead of cycling back to script[0]. When
+    N >= len(examinerScript), the agent must advance with `[[PART:M]]`
+    + the next part's first script item, OR sign off with
+    `[[SESSION_END]]` if this is the last part. Both branches are
+    spelled out in the system prompt's SCRIPT-PROGRESSION CURSOR
+    section.
+
+    Full history is sent verbatim — earlier heuristic-marker trimming
+    was removed because the cursor makes part progression deterministic
+    and the marker matches were unreliable in practice. DeepSeek's
+    context window comfortably fits a 12-min KET conversation.
+    """
     part = next(p for p in prompts.parts if p.partNumber == current_part)
     topic = _photo_topic_from_key(part.photoKey)
-    trimmed = _trim_history_to_recent_part(history, current_part)
+    last_part_number = prompts.parts[-1].partNumber
+    is_last_part = current_part == last_part_number
+    script_remaining = max(0, len(part.examinerScript) - current_part_question_count)
+    next_script_item: str | None = (
+        part.examinerScript[current_part_question_count]
+        if current_part_question_count < len(part.examinerScript)
+        else None
+    )
+
+    next_part_info: dict[str, object] | None = None
+    if not is_last_part:
+        np = next(
+            p for p in prompts.parts if p.partNumber == current_part + 1
+        )
+        next_part_info = {
+            "partNumber": np.partNumber,
+            "title": np.title,
+            "first_script_item": np.examinerScript[0],
+            "photo_topic": _photo_topic_from_key(np.photoKey),
+        }
+
     return json.dumps(
         {
             "current_part": current_part,
+            "is_last_part": is_last_part,
+            "current_part_question_count": current_part_question_count,
+            "script_remaining": script_remaining,
+            "next_script_item": next_script_item,
             "script": {
                 "title": part.title,
                 "target_minutes": part.targetMinutes,
@@ -161,7 +149,8 @@ def _build_user_payload(
                 # PARTS section) to never describe what's in the photo.
                 "photo_topic": topic,
             },
-            "history": trimmed,
+            "next_part": next_part_info,
+            "history": history,
         },
         ensure_ascii=False,
     )
@@ -175,6 +164,7 @@ async def run_examiner_turn(
     prompts: SpeakingPrompts,
     history: list[dict[str, str]],
     current_part: int,
+    current_part_question_count: int = 0,
 ) -> SpeakingExaminerReply:
     last_part = prompts.parts[-1].partNumber
     next_part_hint = min(current_part + 1, last_part)
@@ -186,7 +176,10 @@ async def run_examiner_turn(
         next_part_hint=next_part_hint,
     )
     user = _build_user_payload(
-        prompts=prompts, history=history, current_part=current_part
+        prompts=prompts,
+        history=history,
+        current_part=current_part,
+        current_part_question_count=current_part_question_count,
     )
     raw = await _run_llm(system_prompt=system, user_payload=user)
 
