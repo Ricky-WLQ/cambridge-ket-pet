@@ -125,6 +125,7 @@ export default async function ClassOverviewPage({
     classAggregate,
     perStudent,
     perStudentListening,
+    perStudentSpeaking,
   ] = await Promise.all([
     memberIds.length > 0
       ? prisma.testAttempt.findMany({
@@ -186,11 +187,34 @@ export default async function ClassOverviewPage({
             _avg: { scaledScore: number | null };
           }>,
         ),
+    // Speaking-only per-student stats (kind: "SPEAKING") — mirrors the
+    // listening summary so each student row shows a 口语 line at a glance.
+    memberIds.length > 0
+      ? prisma.testAttempt.groupBy({
+          by: ["userId"],
+          where: {
+            userId: { in: memberIds },
+            status: "GRADED",
+            test: { is: { kind: "SPEAKING" } },
+          },
+          _count: true,
+          _avg: { scaledScore: true },
+        })
+      : Promise.resolve(
+          [] as Array<{
+            userId: string;
+            _count: number;
+            _avg: { scaledScore: number | null };
+          }>,
+        ),
   ]);
 
   const perStudentMap = new Map(perStudent.map((s) => [s.userId, s]));
   const perStudentListeningMap = new Map(
     perStudentListening.map((s) => [s.userId, s]),
+  );
+  const perStudentSpeakingMap = new Map(
+    perStudentSpeaking.map((s) => [s.userId, s]),
   );
 
   return (
@@ -364,6 +388,7 @@ export default async function ClassOverviewPage({
             {cls.members.map((m) => {
               const stats = perStudentMap.get(m.userId);
               const listeningStats = perStudentListeningMap.get(m.userId);
+              const speakingStats = perStudentSpeakingMap.get(m.userId);
               const avg =
                 stats?._avg.scaledScore !== null &&
                 stats?._avg.scaledScore !== undefined
@@ -373,6 +398,11 @@ export default async function ClassOverviewPage({
                 listeningStats?._avg.scaledScore !== null &&
                 listeningStats?._avg.scaledScore !== undefined
                   ? Math.round(listeningStats._avg.scaledScore)
+                  : null;
+              const speakingAvg =
+                speakingStats?._avg.scaledScore !== null &&
+                speakingStats?._avg.scaledScore !== undefined
+                  ? Math.round(speakingStats._avg.scaledScore)
                   : null;
               return (
                 <li
@@ -417,6 +447,25 @@ export default async function ClassOverviewPage({
                               </>
                             ) : (
                               <span className="text-purple-600/60">暂无</span>
+                            )}
+                          </div>
+                          <div className="mt-0.5 text-xs text-emerald-700">
+                            口语{" "}
+                            {speakingStats ? (
+                              <>
+                                <span className="font-semibold">
+                                  {speakingStats._count}
+                                </span>
+                                <span className="text-emerald-600/70">
+                                  {" "}
+                                  份 · 平均{" "}
+                                </span>
+                                <span className="font-semibold">
+                                  {speakingAvg !== null ? `${speakingAvg}%` : "—"}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-emerald-600/60">暂无</span>
                             )}
                           </div>
                         </div>
