@@ -57,7 +57,11 @@ class KnowledgePointGroup(BaseModel):
     rule: str
     example_sentences: list[str]
     questions: list[KnowledgePointQuestion]
-    severity: KnowledgePointSeverity = "minor"  # default; severity is recomputed in TS post-AI
+    # AI-supplied; the validator only checks it is a valid enum value. TS
+    # recomputes and overwrites severity post-AI based on questions.length
+    # (see types.ts:45-48 for the threshold rule), so the AI's choice here
+    # is informational only — the TS layer is the source of truth.
+    severity: KnowledgePointSeverity
 
 
 class WrongAnswer(BaseModel):
@@ -69,6 +73,10 @@ class WrongAnswer(BaseModel):
 
 
 # ─── /v1/diagnose/generate request/response ──────────────────────────
+#
+# Callers wanting "the sections payload shape" should import
+# ``DiagnoseGenerateResponse`` directly. There is no separate "sections"
+# class — the response IS the sections map (one field per section kind).
 
 class FocusArea(BaseModel):
     """A weak area carried forward from last week's wrong-answer analysis."""
@@ -173,15 +181,6 @@ class GrammarItem(BaseModel):
 class DiagnoseGrammarContent(BaseModel):
     questions: list[GrammarItem]
     time_limit_sec: Literal[300] = 300
-
-
-class DiagnoseGenerateSections(BaseModel):
-    READING: DiagnoseReadingContent
-    LISTENING: DiagnoseListeningContent
-    WRITING: DiagnoseWritingContent
-    SPEAKING: DiagnoseSpeakingContent
-    VOCAB: DiagnoseVocabContent
-    GRAMMAR: DiagnoseGrammarContent
 
 
 class DiagnoseGenerateResponse(BaseModel):

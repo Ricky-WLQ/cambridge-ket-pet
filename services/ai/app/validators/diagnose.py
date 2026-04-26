@@ -12,36 +12,31 @@ Two validators here:
     weekly-specific rule that ``narrative_zh`` must reference the week date
     (a 4-digit year token, since Chinese narrative usually opens with
     "本周（2026年X月X日—X月X日）……").
+
+Pending follow-ups:
+  - See TODO(T13) on ``validate_diagnose_summary`` — the
+    percentage-as-points / "满分 X" score-misreading checks from
+    ``validators/analysis.py::validate_student_analysis`` need to be
+    ported here once the summary agent is wired up in T13.
 """
 
 from __future__ import annotations
 
 import re
+from typing import get_args
 
 from app.schemas.diagnose import (
     DiagnoseAnalysisResponse,
+    DiagnoseSectionKind,
     DiagnoseSummaryResponse,
+    KnowledgePointCategory,
 )
 
-ALLOWED_CATEGORIES: frozenset[str] = frozenset({
-    "grammar",
-    "collocation",
-    "vocabulary",
-    "sentence_pattern",
-    "reading_skill",
-    "listening_skill",
-    "cambridge_strategy",
-    "writing_skill",
-})
-
-ALLOWED_SECTIONS: frozenset[str] = frozenset({
-    "READING",
-    "LISTENING",
-    "WRITING",
-    "SPEAKING",
-    "VOCAB",
-    "GRAMMAR",
-})
+# Derive the closed-set whitelists from the Literal types in schemas so
+# taxonomy edits happen in ONE place. ``typing.get_args`` returns the tuple
+# of literal values declared on the alias — exactly what frozenset wants.
+ALLOWED_CATEGORIES: frozenset[str] = frozenset(get_args(KnowledgePointCategory))
+ALLOWED_SECTIONS: frozenset[str] = frozenset(get_args(DiagnoseSectionKind))
 
 # 4-digit year token starting with "20" — matches 2024–2099. Used to enforce
 # that the weekly narrative names the week date in its opening sentence.
@@ -91,9 +86,18 @@ def validate_diagnose_analysis(response: DiagnoseAnalysisResponse) -> list[str]:
 
 
 def validate_diagnose_summary(response: DiagnoseSummaryResponse) -> list[str]:
-    """Validate the 4-field summary. Reuses the analyze_student validator
-    semantics but adds the weekly-specific rule: ``narrative_zh`` must contain
-    a 4-digit year token (enforces the "first sentence names the week" rule).
+    """Validate the 4-field summary.
+
+    TODO(T13): Port the score-misreading checks from validate_student_analysis
+      (percentage-as-points confusion, bogus '满分 X' claims) when the
+      summary agent is wired up. Currently this validator only checks
+      structural emptiness + the year-token rule. The same LLM failure
+      modes apply here because the diagnose summary will reference
+      per_section_scores + overall_score in narrative_zh.
+
+    Reuses the analyze_student validator semantics but adds the
+    weekly-specific rule: ``narrative_zh`` must contain a 4-digit year token
+    (enforces the "first sentence names the week" rule).
     """
     errors: list[str] = []
 
