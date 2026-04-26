@@ -47,8 +47,11 @@ export default function VocabListenRunner({ examType }: Props) {
     if (!cur || !audioRef.current) return;
     setRevealed(false);
     audioRef.current.src = `/api/vocab/audio/${cur.id}`;
-    audioRef.current.play().catch(() => {
-      // R2 fetch failed → fall back to Web Speech
+    audioRef.current.play().catch((err: DOMException) => {
+      // Browser autoplay policy blocks the FIRST play before user interaction —
+      // don't fall back to Web Speech for that (the user will click 播放发音).
+      // Only fall back on REAL failures (network / 4xx / 5xx).
+      if (err?.name === "NotAllowedError") return;
       try {
         const u = new SpeechSynthesisUtterance(cur.word);
         u.lang = "en-GB";
@@ -64,7 +67,10 @@ export default function VocabListenRunner({ examType }: Props) {
   const playAgain = () => {
     if (!cur || !audioRef.current) return;
     audioRef.current.currentTime = 0;
-    audioRef.current.play().catch(() => {
+    audioRef.current.play().catch((err: DOMException) => {
+      // User-initiated play — autoplay policy doesn't apply here, so any
+      // rejection is a real failure. Web Speech fallback is appropriate.
+      if (err?.name === "NotAllowedError") return;
       try {
         const u = new SpeechSynthesisUtterance(cur.word);
         u.lang = "en-GB";

@@ -59,7 +59,10 @@ export default function VocabSpellRunner({ examType }: Props) {
   useEffect(() => {
     if (!cur || !audioRef.current) return;
     audioRef.current.src = `/api/vocab/audio/${cur.word.id}`;
-    audioRef.current.play().catch(() => {
+    audioRef.current.play().catch((err: DOMException) => {
+      // Browser autoplay policy blocks the FIRST play before user interaction —
+      // don't fall back to Web Speech for that (the user will click 播放发音).
+      if (err?.name === "NotAllowedError") return;
       try {
         const u = new SpeechSynthesisUtterance(cur.word.word);
         u.lang = "en-GB"; window.speechSynthesis.speak(u);
