@@ -16,7 +16,11 @@ import type { AudioSegmentRecord } from "@/lib/audio/types";
 
 export const maxDuration = 180; // long-running due to AI orchestration (4 parallel generators)
 
-const DIAGNOSE_RATE_LIMIT_PER_HOUR = 3;
+// 10/hr is generous for the typical "lazy on-view" path (a student opens
+// /diagnose at most once or twice a week). Bumped from 3 to give dev/QA
+// headroom when testing the regenerate flow + speaking re-attempts back-
+// to-back without hitting the wall mid-debug.
+const DIAGNOSE_RATE_LIMIT_PER_HOUR = 10;
 
 /**
  * POST /api/diagnose/me/generate
