@@ -173,7 +173,12 @@ export async function runFinalizePipeline(
     try {
       const result = await gradeWriting({
         exam_type: examType,
-        part: 0,
+        // Mirror the diagnose_generator pinning: KET writing → Part 6
+        // (guided email with content points), PET writing → Part 1 (also
+        // guided email with content points). Both task shapes accept the
+        // same wire format (prompt + content_points). The part value must
+        // be ≥1 — services/ai's WritingGradeRequest schema enforces this.
+        part: examType === "KET" ? 6 : 1,
         prompt: writingContent.prompt,
         content_points: writingContent.contentPoints ?? [],
         scene_descriptions: [],
