@@ -59,6 +59,7 @@ postgres-data/
 .claude/settings.local.json
 .superpowers/
 .firecrawl/
+.worktrees/
 
 # ========== Next.js cache / build artifacts ==========
 next-env.d.ts
