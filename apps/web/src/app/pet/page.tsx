@@ -73,6 +73,16 @@ export default async function PetPortalPage() {
               Vocabulary · B1 Preliminary 官方词表 · 3,046 词
             </div>
           </Link>
+
+          <Link
+            href="/pet/grammar"
+            className="rounded-lg border border-neutral-300 p-5 transition hover:border-neutral-900 hover:shadow-sm"
+          >
+            <div className="text-lg font-semibold">语法</div>
+            <div className="mt-1 text-xs text-neutral-500">
+              Grammar · B1 Preliminary 官方语法清单 · 21 个主题
+            </div>
+          </Link>
         </div>
       </main>
     </div>
