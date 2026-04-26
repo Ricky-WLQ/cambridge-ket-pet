@@ -194,6 +194,162 @@ export async function generateListeningTest(
   return postToAi<Record<string, unknown>>("/v1/listening/generate", req);
 }
 
+// ─── Diagnose v2 endpoints ──────────────────────────────────────────
+//
+// Wire types here are snake_case to match the Python Pydantic schemas
+// in services/ai/app/schemas/diagnose.py. The TS-side domain types
+// (camelCase) live in apps/web/src/lib/diagnose/types.ts. Route
+// handlers (T18-T24) are responsible for camelCase<->snake_case
+// translation at their boundary; aiClient.ts only deals in wire types.
+
+export interface DiagnoseWireWrongAnswer {
+  section:
+    | "READING"
+    | "LISTENING"
+    | "WRITING"
+    | "SPEAKING"
+    | "VOCAB"
+    | "GRAMMAR";
+  question_text: string;
+  user_answer: string;
+  correct_answer: string;
+  options?: string[];
+}
+
+export interface DiagnoseWireKnowledgePointGroup {
+  knowledge_point: string;
+  category:
+    | "grammar"
+    | "collocation"
+    | "vocabulary"
+    | "sentence_pattern"
+    | "reading_skill"
+    | "listening_skill"
+    | "cambridge_strategy"
+    | "writing_skill";
+  mini_lesson: string;
+  rule: string;
+  example_sentences: string[];
+  questions: Array<{
+    section:
+      | "READING"
+      | "LISTENING"
+      | "WRITING"
+      | "SPEAKING"
+      | "VOCAB"
+      | "GRAMMAR";
+    question_text: string;
+    user_answer: string;
+    correct_answer: string;
+    why_wrong: string;
+    rule: string;
+  }>;
+  severity: "critical" | "moderate" | "minor";
+}
+
+export interface DiagnoseWirePerSectionScores {
+  READING: number | null;
+  LISTENING: number | null;
+  WRITING: number | null;
+  SPEAKING: number | null;
+  VOCAB: number | null;
+  GRAMMAR: number | null;
+}
+
+export interface DiagnoseGenerateRequest {
+  exam_type: "KET" | "PET";
+  week_start: string; // YYYY-MM-DD
+  focus_areas: { exam_point_id: string; wrong_count: number }[];
+  // sections defaults to ["READING","LISTENING","WRITING","SPEAKING"] on the Python side
+}
+
+/**
+ * The 4 AI-generated sections come back from /v1/diagnose/generate. Each
+ * uses the existing per-kind response shape from services/ai (raw output;
+ * apps/web extracts the bits it needs for Test.payload + Test row columns).
+ */
+export interface DiagnoseAIGenerateResponse {
+  reading: unknown; // ReadingTestResponse (raw — downstream parses)
+  listening: unknown; // ListeningTestResponse
+  writing: unknown; // WritingTestResponse
+  speaking: unknown; // SpeakingPrompts
+}
+
+const DIAGNOSE_GENERATE_TIMEOUT_MS = 180_000; // 3 min — parallel-gather of 4 generators can take ~30-60s
+
+/**
+ * Call the Python /v1/diagnose/generate endpoint.
+ * Returns raw section payloads — caller is responsible for slotting them
+ * into Test rows + Test.payload columns.
+ */
+export async function generateDiagnose(
+  req: DiagnoseGenerateRequest,
+): Promise<DiagnoseAIGenerateResponse> {
+  return postToAi<DiagnoseAIGenerateResponse>(
+    "/v1/diagnose/generate",
+    req,
+    DIAGNOSE_GENERATE_TIMEOUT_MS,
+  );
+}
+
+export interface DiagnoseAnalysisRequest {
+  exam_type: "KET" | "PET";
+  wrong_answers: DiagnoseWireWrongAnswer[];
+}
+
+export interface DiagnoseAnalysisResponse {
+  knowledge_points: DiagnoseWireKnowledgePointGroup[];
+}
+
+const DIAGNOSE_ANALYSIS_TIMEOUT_MS = 120_000; // 2 min — single batch + retries
+
+/**
+ * Call the Python /v1/diagnose/analysis endpoint.
+ * Groups wrong answers into knowledge-point clusters with mini-lessons.
+ */
+export async function analyzeDiagnose(
+  req: DiagnoseAnalysisRequest,
+): Promise<DiagnoseAnalysisResponse> {
+  return postToAi<DiagnoseAnalysisResponse>(
+    "/v1/diagnose/analysis",
+    req,
+    DIAGNOSE_ANALYSIS_TIMEOUT_MS,
+  );
+}
+
+export interface DiagnoseSummaryRequest {
+  exam_type: "KET" | "PET";
+  week_start: string;
+  week_end: string;
+  per_section_scores: DiagnoseWirePerSectionScores;
+  overall_score: number;
+  knowledge_points: DiagnoseWireKnowledgePointGroup[];
+  weak_count: number;
+}
+
+export interface DiagnoseSummaryResponse {
+  strengths: string[];
+  weaknesses: string[];
+  priority_actions: string[];
+  narrative_zh: string;
+}
+
+const DIAGNOSE_SUMMARY_TIMEOUT_MS = 90_000;
+
+/**
+ * Call the Python /v1/diagnose/summary endpoint.
+ * Produces the weekly narrative summary (strengths/weaknesses/actions + zh narrative).
+ */
+export async function summarizeDiagnose(
+  req: DiagnoseSummaryRequest,
+): Promise<DiagnoseSummaryResponse> {
+  return postToAi<DiagnoseSummaryResponse>(
+    "/v1/diagnose/summary",
+    req,
+    DIAGNOSE_SUMMARY_TIMEOUT_MS,
+  );
+}
+
 async function postToAi<T>(
   path: string,
   body: unknown,
