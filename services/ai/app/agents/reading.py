@@ -34,13 +34,13 @@ async def generate_reading_test(req: ReadingTestRequest) -> ReadingTestResponse:
         model=model,
         output_type=ReadingTestResponse,
         system_prompt=build_system_prompt(req.exam_type, req.part),
-        # DeepSeek's default output cap (~4096) can truncate the structured
-        # ReadingTestResponse mid-tool-call (passage + N questions × {prompt,
-        # options, answer, explanationZh, examPointId}), surfacing as
-        # pydantic_ai.IncompleteToolCall. 8000 is just under DeepSeek-chat's
-        # 8192 ceiling. Mirrors listening_generator.py's pattern.
-        model_settings={"max_tokens": 8000},
     )
+    # IMPORTANT: pydantic-ai applies model_settings only at agent.run(...)
+    # call time, NOT via Agent(...) constructor. See speaking_examiner.py:60
+    # for the canonical pattern in this codebase.
+    # max_tokens=8000 is just under DeepSeek-chat's 8192 ceiling — needed
+    # because the structured ReadingTestResponse (passage + N MCQs +
+    # explanations) can truncate at the provider default ~4096.
 
     pinning_lines: list[str] = []
     if req.seed_exam_points:
@@ -58,5 +58,7 @@ async def generate_reading_test(req: ReadingTestRequest) -> ReadingTestResponse:
         f"Mode: {req.mode}.{pinning_block}"
     )
 
-    result = await agent.run(user_message)
+    result = await agent.run(
+        user_message, model_settings={"max_tokens": 8000}
+    )
     return result.output
