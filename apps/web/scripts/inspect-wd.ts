@@ -24,6 +24,11 @@ async function main() {
     " V:", wd?.vocabStatus,
     " G:", wd?.grammarStatus,
   );
+  console.log("  reportError:", wd?.reportError);
+  console.log("  overallScore:", wd?.overallScore);
+  console.log("  knowledgePoints set?", wd?.knowledgePoints != null);
+  console.log("  summary set?", wd?.summary != null);
+  console.log("  perSectionScores:", JSON.stringify(wd?.perSectionScores));
   await prisma.$disconnect();
 }
 
