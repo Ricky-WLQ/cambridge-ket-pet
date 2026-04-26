@@ -4,7 +4,7 @@
  * One card in the diagnose hub's 6-section grid.
  *
  * Displays the per-section title, a status pill, and an action button:
- *  - NOT_STARTED       → "开始" (links to /diagnose/section/[kind])
+ *  - NOT_STARTED       → "开始" (links to /diagnose/runner/[section])
  *  - IN_PROGRESS       → "继续" (same target)
  *  - SUBMITTED/GRADED  → "查看作答" (links to the regular result page when available)
  *  - AUTO_SUBMITTED    → "查看作答" with an "自动提交" pill highlight
@@ -91,8 +91,11 @@ export default function SectionStatusCard({ kind, status, attemptId }: Props) {
     status === "AUTO_SUBMITTED";
   const isInProgress = status === "IN_PROGRESS";
 
-  // Section URL — page itself lives at /diagnose/section/[kind] (built in Phase 7).
-  const sectionUrl = `/diagnose/section/${kind}`;
+  // Section URL — page itself lives at /diagnose/runner/[section] (Phase 7).
+  // The URL uses lowercase to match the rest of the app's URL conventions
+  // (e.g. /ket/reading/runner/...); the page resolves it back to the uppercase
+  // DiagnoseSectionKind enum.
+  const sectionUrl = `/diagnose/runner/${kind.toLowerCase()}`;
 
   // CTA wording mirrors the table in the SectionStatusCard module-doc.
   let ctaLabel: string;
