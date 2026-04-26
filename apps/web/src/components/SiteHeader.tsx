@@ -6,6 +6,9 @@ import { t } from "@/i18n/zh-CN";
 export async function SiteHeader() {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
+  const requiredDiagnoseId = (
+    session?.user as { requiredDiagnoseId?: string | null } | undefined
+  )?.requiredDiagnoseId ?? null;
 
   const dbUser = userId
     ? await prisma.user.findUnique({
@@ -16,6 +19,9 @@ export async function SiteHeader() {
 
   const loggedIn = !!dbUser;
   const isTeacher = dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN";
+  // Teachers/admins are exempt from the gate, so no red-dot for them — but
+  // we still surface the link so they can navigate to /diagnose for class scope.
+  const showGateDot = loggedIn && !isTeacher && requiredDiagnoseId !== null;
 
   return (
     <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
@@ -38,6 +44,18 @@ export async function SiteHeader() {
               className="text-neutral-700 hover:text-neutral-900"
             >
               {t.nav.history}
+            </Link>
+            <Link
+              href="/diagnose"
+              className="relative text-neutral-700 hover:text-neutral-900"
+            >
+              {t.nav.diagnose}
+              {showGateDot && (
+                <span
+                  className="absolute -right-1.5 -top-0.5 inline-block h-2 w-2 rounded-full bg-red-500"
+                  aria-label="本周诊断未完成"
+                />
+              )}
             </Link>
             <Link
               href="/classes"

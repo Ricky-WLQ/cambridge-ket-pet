@@ -19,6 +19,14 @@ export interface ListeningRunnerProps {
   testId: string;
   mode: "MOCK" | "PRACTICE";
   portal: "ket" | "pet";
+  /**
+   * Optional override for the submit endpoint. Defaults to the existing
+   * `/api/tests/${attemptId}/submit` to preserve current behavior.
+   *
+   * Used by the diagnose runner wrapper to route submissions to
+   * `/api/diagnose/me/section/LISTENING/submit`.
+   */
+  submitUrl?: string;
 }
 
 type RunnerState = "LOADING" | "READY" | "LISTENING" | "REVIEW" | "SUBMITTING";
@@ -58,10 +66,14 @@ export function ListeningRunner(props: ListeningRunnerProps) {
 
   const audioSrc = `/api/listening/${props.attemptId}/audio`;
 
+  // Default preserves existing call-site behavior; diagnose wrapper overrides.
+  const submitUrl =
+    props.submitUrl ?? `/api/tests/${props.attemptId}/submit`;
+
   const submit = useCallback(
     async (forceSubmit = false) => {
       setState("SUBMITTING");
-      const res = await fetch(`/api/tests/${props.attemptId}/submit`, {
+      const res = await fetch(submitUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers, forceSubmit }),
@@ -74,7 +86,7 @@ export function ListeningRunner(props: ListeningRunnerProps) {
         setState(forceSubmit ? "REVIEW" : "LISTENING");
       }
     },
-    [answers, props.attemptId, props.portal, router],
+    [answers, props.attemptId, props.portal, router, submitUrl],
   );
 
   if (state === "LOADING" || !payload) {

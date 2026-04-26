@@ -14,6 +14,14 @@ export type WritingRunnerProps = {
   sceneDescriptions: string[];
   minWords: number;
   timeLimitSec: number;
+  /**
+   * Optional override for the submit endpoint. Defaults to the existing
+   * `/api/tests/${attemptId}/submit` to preserve current behavior.
+   *
+   * Used by the diagnose runner wrapper to route submissions to
+   * `/api/diagnose/me/section/WRITING/submit`.
+   */
+  submitUrl?: string;
 };
 
 function countWords(s: string): number {
@@ -40,8 +48,11 @@ export default function WritingRunner({
   sceneDescriptions,
   minWords,
   timeLimitSec,
+  submitUrl: submitUrlProp,
 }: WritingRunnerProps) {
   const router = useRouter();
+  // Default preserves existing call-site behavior; diagnose wrapper overrides.
+  const submitUrl = submitUrlProp ?? `/api/tests/${attemptId}/submit`;
   const [response, setResponse] = useState("");
   const [chosenOption, setChosenOption] = useState<"A" | "B" | "">("");
   const [submitting, setSubmitting] = useState(false);
@@ -77,7 +88,7 @@ export default function WritingRunner({
     }
 
     try {
-      const res = await fetch(`/api/tests/${attemptId}/submit`, {
+      const res = await fetch(submitUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers: payload }),

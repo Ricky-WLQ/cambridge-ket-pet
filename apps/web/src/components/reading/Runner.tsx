@@ -25,6 +25,14 @@ export type RunnerProps = {
   passage: string | null;
   questions: RunnerQuestion[];
   timeLimitSec: number;
+  /**
+   * Optional override for the submit endpoint. Defaults to the existing
+   * `/api/tests/${attemptId}/submit` to preserve current behavior.
+   *
+   * Used by the diagnose runner wrappers to point submission at the
+   * `/api/diagnose/me/section/READING/submit` route instead.
+   */
+  submitUrl?: string;
 };
 
 function formatTime(sec: number): string {
@@ -41,8 +49,11 @@ export default function ReadingRunner({
   passage,
   questions,
   timeLimitSec,
+  submitUrl: submitUrlProp,
 }: RunnerProps) {
   const router = useRouter();
+  // Default preserves existing call-site behavior; diagnose wrappers override.
+  const submitUrl = submitUrlProp ?? `/api/tests/${attemptId}/submit`;
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +83,7 @@ export default function ReadingRunner({
     setSubmitting(true);
 
     try {
-      const res = await fetch(`/api/tests/${attemptId}/submit`, {
+      const res = await fetch(submitUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers }),
