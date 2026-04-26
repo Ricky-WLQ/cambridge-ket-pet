@@ -89,3 +89,7 @@ Prereq for step 3: AI service running on port 8001. Start it with:
 1. Re-download handbook PDFs if Cambridge has updated them.
 2. Edit `data/raw/grammar-topics.json` to reflect any new structure-inventory items.
 3. Re-run all 3 grammar scripts above. Step 1 is upsert (re-syncs schema fields). Steps 2-3 only touch missing/under-quota rows.
+
+### Workaround: a topic that consistently 422s on the validator
+
+If `seed-grammar-questions.ts` reports the same `(examType, topicId)` failing every re-run (validator catches the same defect — most often `exactly one '_____' blank, got 2` for tense topics), drop `BATCH_PER_CALL` in the script from `10` to `3` and re-run. Smaller batches reduce the chance any single item trips the validator. This was observed once during initial seeding for `PET/present_perfect_simple`; restore `BATCH_PER_CALL = 10` after the topic reaches quota.
