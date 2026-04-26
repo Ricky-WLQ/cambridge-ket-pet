@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type ExamType = "KET" | "PET";
-type TestKind = "READING" | "WRITING" | "LISTENING" | "VOCAB";
+type TestKind = "READING" | "WRITING" | "LISTENING" | "VOCAB" | "GRAMMAR";
 type WordTier = "CORE" | "RECOMMENDED" | "EXTRA";
 
 const KET_READING_PARTS = [1, 2, 3, 4, 5] as const;
@@ -17,7 +17,7 @@ const PET_LISTENING_PARTS = [1, 2, 3, 4] as const;
 
 function isValidPart(
   examType: ExamType,
-  kind: Exclude<TestKind, "VOCAB">,
+  kind: Exclude<TestKind, "VOCAB" | "GRAMMAR">,
   part: number | null,
 ): boolean {
   if (part === null) return true;
@@ -65,17 +65,20 @@ export async function createAssignmentAction(formData: FormData): Promise<void> 
     kind !== "READING" &&
     kind !== "WRITING" &&
     kind !== "LISTENING" &&
-    kind !== "VOCAB"
+    kind !== "VOCAB" &&
+    kind !== "GRAMMAR"
   )
-    throw new Error("题型无效（仅支持阅读/写作/听力/词汇）");
+    throw new Error("题型无效（仅支持阅读/写作/听力/词汇/语法）");
 
-  // Per-kind fields. VOCAB uses (targetTier, targetWordCount); paper kinds
-  // use (part, minScore). We deliberately leave the other set null to avoid
-  // accidentally persisting fields that don't apply.
+  // Per-kind fields. VOCAB uses (targetTier, targetWordCount); GRAMMAR uses
+  // (targetTopicId, minScore as accuracy %); paper kinds use (part, minScore).
+  // We deliberately leave the other sets null to avoid accidentally persisting
+  // fields that don't apply.
   let part: number | null = null;
   let minScore: number | null = null;
   let targetTier: WordTier | null = null;
   let targetWordCount: number | null = null;
+  let targetTopicId: string | null = null;
 
   if (kind === "VOCAB") {
     const tierRaw = String(formData.get("targetTier") ?? "").trim();
@@ -95,6 +98,15 @@ export async function createAssignmentAction(formData: FormData): Promise<void> 
       throw new Error("需掌握词数应在 1-4000 之间");
     }
     targetWordCount = count;
+  } else if (kind === "GRAMMAR") {
+    const topicRaw = String(formData.get("targetTopicId") ?? "").trim();
+    targetTopicId = topicRaw === "" ? null : topicRaw;
+    const minScoreRaw = String(formData.get("minScore") ?? "").trim();
+    const score = minScoreRaw === "" ? NaN : Number.parseInt(minScoreRaw, 10);
+    if (!Number.isFinite(score) || score < 1 || score > 100) {
+      throw new Error("正确率达标线应在 1-100 之间");
+    }
+    minScore = score;
   } else {
     const partRaw = String(formData.get("part") ?? "").trim();
     part =
@@ -130,6 +142,7 @@ export async function createAssignmentAction(formData: FormData): Promise<void> 
       minScore,
       targetTier,
       targetWordCount,
+      targetTopicId,
       dueAt,
     },
   });

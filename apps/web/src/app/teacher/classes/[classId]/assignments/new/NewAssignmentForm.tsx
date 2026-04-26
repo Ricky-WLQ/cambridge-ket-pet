@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createAssignmentAction } from "@/lib/assignmentActions";
 
 type ExamType = "KET" | "PET";
-type Kind = "READING" | "WRITING" | "LISTENING" | "VOCAB";
+type Kind = "READING" | "WRITING" | "LISTENING" | "VOCAB" | "GRAMMAR";
 type Tier = "CORE" | "RECOMMENDED" | "EXTRA";
+type GrammarTopicOption = {
+  id: string;
+  topicId: string;
+  labelZh: string;
+  category: string;
+};
 
 const PAPER_KINDS = ["READING", "WRITING", "LISTENING"] as const;
 
@@ -27,6 +33,7 @@ const KIND_LABEL: Record<Kind, string> = {
   WRITING: "写作",
   LISTENING: "听力",
   VOCAB: "词汇",
+  GRAMMAR: "语法",
 };
 
 const TIER_LABEL: Record<Tier | "ALL", string> = {
@@ -48,10 +55,25 @@ export default function NewAssignmentForm({
   const [part, setPart] = useState<string>("ANY");
   const [targetTier, setTargetTier] = useState<Tier | null>(null);
   const [targetWordCount, setTargetWordCount] = useState<number>(100);
+  const [targetTopicId, setTargetTopicId] = useState<string | null>(null);
+  const [targetMinScore, setTargetMinScore] = useState<number>(70);
+  const [topics, setTopics] = useState<GrammarTopicOption[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const isVocab = kind === "VOCAB";
-  const parts = isVocab ? [] : PARTS[examType][kind];
+  const isGrammar = kind === "GRAMMAR";
+  const isPaperKind = !isVocab && !isGrammar;
+  const parts = isPaperKind
+    ? PARTS[examType][kind as (typeof PAPER_KINDS)[number]]
+    : [];
+
+  useEffect(() => {
+    if (kind !== "GRAMMAR") return;
+    fetch(`/api/grammar/topics?examType=${examType}`)
+      .then((r) => r.json())
+      .then((data) => setTopics(Array.isArray(data?.topics) ? data.topics : []))
+      .catch(() => {});
+  }, [kind, examType]);
 
   return (
     <form
@@ -121,7 +143,7 @@ export default function NewAssignmentForm({
         <div>
           <label className="mb-1 block text-sm font-medium">题型</label>
           <div className="flex flex-wrap gap-2">
-            {(["READING", "WRITING", "LISTENING", "VOCAB"] as const).map((k) => (
+            {(["READING", "WRITING", "LISTENING", "VOCAB", "GRAMMAR"] as const).map((k) => (
               <button
                 key={k}
                 type="button"
@@ -143,7 +165,7 @@ export default function NewAssignmentForm({
         </div>
       </div>
 
-      {!isVocab && (
+      {isPaperKind && (
         <div>
           <label className="mb-1 block text-sm font-medium">
             Part（可选 — 留「任意」则该题型任意 Part 均计入）
@@ -232,8 +254,55 @@ export default function NewAssignmentForm({
         </div>
       )}
 
+      {isGrammar && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium">目标主题</label>
+            <select
+              value={targetTopicId ?? ""}
+              onChange={(e) =>
+                setTargetTopicId(e.target.value === "" ? null : e.target.value)
+              }
+              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            >
+              <option value="">全部主题</option>
+              {topics.map((t) => (
+                <option key={t.id} value={t.id}>
+                  [{t.category}] {t.labelZh}
+                </option>
+              ))}
+            </select>
+            <input
+              type="hidden"
+              name="targetTopicId"
+              value={targetTopicId ?? ""}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              正确率达标线 (%)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={targetMinScore}
+              onChange={(e) => {
+                const v = Number.parseInt(e.target.value, 10);
+                setTargetMinScore(Number.isFinite(v) ? v : 0);
+              }}
+              name="minScore"
+              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              学生需在所选主题（或全部主题）至少答 10 题，且正确率达到此线。
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
-        {!isVocab && (
+        {isPaperKind && (
           <div>
             <label className="mb-1 block text-sm font-medium">
               最低及格分（可选，0-100）
@@ -253,7 +322,7 @@ export default function NewAssignmentForm({
           </div>
         )}
 
-        <div className={isVocab ? "sm:col-span-2" : ""}>
+        <div className={isPaperKind ? "" : "sm:col-span-2"}>
           <label className="mb-1 block text-sm font-medium">
             截止时间（可选）
           </label>
