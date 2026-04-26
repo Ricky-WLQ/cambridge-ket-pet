@@ -86,6 +86,18 @@ def _build_agent(exam_type: str) -> Agent[None, DiagnoseSummaryResponse]:
     )
 
 
+# Same rationale as diagnose_analysis: the 4-field summary's ``narrative_zh``
+# alone runs ~150-260 Chinese characters, plus 1-3 strengths, 1-3 weaknesses,
+# 2-4 priority_actions. Combined with pydantic-ai's tool-call wrapping, the
+# default ~4096 token ceiling is tight; truncation surfaces as
+# UnexpectedModelBehavior("Exceeded maximum retries (1) for output validation").
+# 8000 keeps us under DeepSeek-chat's 8192 ceiling with comfortable slack.
+#
+# IMPORTANT: pydantic-ai applies model_settings only at agent.run(...) — see
+# listening_generator.py:62-65 for the same pattern.
+_SUMMARY_MODEL_SETTINGS = {"max_tokens": 8000}
+
+
 async def summarize_diagnose(
     req: DiagnoseSummaryRequest,
 ) -> DiagnoseSummaryResponse:
@@ -119,7 +131,7 @@ async def summarize_diagnose(
                 + feedback_lines
             )
 
-        result = await agent.run(user_prompt)
+        result = await agent.run(user_prompt, model_settings=_SUMMARY_MODEL_SETTINGS)
         last_response = result.output
 
         # Pass req so the validator can also run the score-misreading

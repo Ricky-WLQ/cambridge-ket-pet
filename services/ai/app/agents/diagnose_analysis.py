@@ -77,6 +77,20 @@ def _build_agent(exam_type: str) -> Agent[None, DiagnoseAnalysisResponse]:
     )
 
 
+# DeepSeek's default max_tokens (~4096) is too small for the structured
+# 8-category KnowledgePointGroup output: each group carries a mini-lesson,
+# rule, 3 example sentences, and a list of per-question explanations. With
+# 6 sections × ~3 wrong-answers fanning into multiple groups the output
+# easily exceeds 4096 → tool-call args get truncated → pydantic-ai raises
+# UnexpectedModelBehavior("Exceeded maximum retries (1) for output validation").
+# 8000 is just under DeepSeek-chat's 8192 ceiling.
+#
+# IMPORTANT: pydantic-ai applies model_settings only when passed to
+# ``agent.run(...)``, NOT when passed to ``Agent(...)`` constructor — see
+# the same fix in listening_generator.py:62-65 / reading.py:38-62.
+_ANALYSIS_MODEL_SETTINGS = {"max_tokens": 8000}
+
+
 async def analyze_diagnose(
     req: DiagnoseAnalysisRequest,
 ) -> DiagnoseAnalysisResponse:
@@ -115,7 +129,7 @@ async def analyze_diagnose(
                 + feedback_lines
             )
 
-        result = await agent.run(user_prompt)
+        result = await agent.run(user_prompt, model_settings=_ANALYSIS_MODEL_SETTINGS)
         last_response = result.output
 
         errors = validate_diagnose_analysis(last_response)

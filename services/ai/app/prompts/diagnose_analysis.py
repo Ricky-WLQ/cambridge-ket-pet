@@ -123,15 +123,15 @@ def build_diagnose_analysis_user_prompt(
 
 ## 输出格式
 
-请以JSON格式返回分析结果：
+请以JSON格式返回分析结果（字段名必须使用 snake_case，与下例完全一致）：
 {{
-  "knowledgePoints": [
+  "knowledge_points": [
     {{
-      "knowledgePoint": "知识点名称（如：现在完成时、look forward to 搭配）",
+      "knowledge_point": "知识点名称（如：现在完成时、look forward to 搭配）",
       "category": "grammar|collocation|vocabulary|sentence_pattern|reading_skill|listening_skill|cambridge_strategy|writing_skill",
-      "miniLesson": "2-3句话讲解这个知识点的核心规则",
+      "mini_lesson": "2-3句话讲解这个知识点的核心规则",
       "rule": "一句话总结规则",
-      "exampleSentences": [
+      "example_sentences": [
         "正确例句1 — 中文翻译",
         "正确例句2 — 中文翻译",
         "正确例句3 — 中文翻译"
@@ -139,13 +139,14 @@ def build_diagnose_analysis_user_prompt(
       "questions": [
         {{
           "section": "来源板块（READING/LISTENING/WRITING/SPEAKING/VOCAB/GRAMMAR）",
-          "questionText": "题目文本",
-          "userAnswer": "学生答案",
-          "correctAnswer": "正确答案",
-          "whyWrong": "具体解释为什么学生的答案是错的",
+          "question_text": "题目文本",
+          "user_answer": "学生答案",
+          "correct_answer": "正确答案",
+          "why_wrong": "具体解释为什么学生的答案是错的",
           "rule": "适用的规则"
         }}
-      ]
+      ],
+      "severity": "critical|moderate|minor"
     }}
   ]
 }}
@@ -155,9 +156,10 @@ def build_diagnose_analysis_user_prompt(
 1. 每道错题必须归入一个知识点分类
 2. 相同知识点的错题归到同一组
 3. category必须是以上8个类别之一（注意：使用 cambridge_strategy 而非 translation_skill —— 剑桥KET/PET不考翻译）
-4. miniLesson要简洁但有教学价值，包含核心规则和易错点
-5. exampleSentences提供3个正确用法的例句，附带中文翻译
-6. whyWrong要具体说明学生这道题的错误原因，不要泛泛而谈，并使用剑桥考点术语
-7. 如果题目有选项（如A/B/C/D），userAnswer和correctAnswer必须包含完整选项内容，格式为"A. 选项内容"，不要只写字母
+4. mini_lesson 要简洁但有教学价值，包含核心规则和易错点
+5. example_sentences 提供3个正确用法的例句，附带中文翻译
+6. why_wrong 要具体说明学生这道题的错误原因，不要泛泛而谈，并使用剑桥考点术语
+7. 如果题目有选项（如A/B/C/D），user_answer 和 correct_answer 必须包含完整选项内容，格式为"A. 选项内容"，不要只写字母
+8. severity 根据该知识点关联的错题数量给出："critical"（≥3 题）、"moderate"（=2 题）、"minor"（=1 题）
 
 只返回JSON。"""
