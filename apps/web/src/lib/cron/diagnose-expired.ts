@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { maybeMarkDiagnoseComplete } from "@/lib/diagnose/markComplete";
 import {
   isCronExpired,
   type DiagnoseSectionKind,
@@ -183,6 +184,8 @@ export async function forceSubmitExpiredDiagnoseSections(
         },
       });
       await mirrorAutoSubmitted(wd.id, sectionKind);
+      // C3: release the gate when this auto-submit closes the last section.
+      await maybeMarkDiagnoseComplete(wd.id);
       count++;
       continue;
     }
@@ -205,6 +208,8 @@ export async function forceSubmitExpiredDiagnoseSections(
         },
       });
       await mirrorAutoSubmitted(wd.id, sectionKind);
+      // C3: release the gate when this auto-submit closes the last section.
+      await maybeMarkDiagnoseComplete(wd.id);
       count++;
       continue;
     }
@@ -246,7 +251,9 @@ function extractStringAnswers(answersJson: unknown): (string | null)[] {
  * Apply a graded section: update the TestAttempt to GRADED, persist the
  * (rawScore, totalPossible, scaledScore, weakPoints=perItem[]) fields the
  * finalize step will read, and flip the WeeklyDiagnose mirror to
- * AUTO_SUBMITTED.
+ * AUTO_SUBMITTED. Also fires `maybeMarkDiagnoseComplete` so the gate
+ * releases the user once the cron pulls the last outstanding section
+ * across the line (C3).
  */
 async function applyGradedSection(
   attemptId: string,
@@ -273,6 +280,7 @@ async function applyGradedSection(
     },
   });
   await mirrorAutoSubmitted(wdId, sectionKind);
+  await maybeMarkDiagnoseComplete(wdId);
 }
 
 /**

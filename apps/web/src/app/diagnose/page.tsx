@@ -7,10 +7,12 @@ import DiagnoseHub, {
   type DiagnoseHubStatus,
 } from "@/components/diagnose/DiagnoseHub";
 import HistoryList from "@/components/diagnose/HistoryList";
+import SessionRefresher from "@/components/diagnose/SessionRefresher";
 import type { DiagnoseSectionStatus } from "@/components/diagnose/SectionStatusCard";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { findCurrentWeekDiagnose } from "@/lib/diagnose/eligibility";
+import { runFinalizePipeline } from "@/lib/diagnose/finalize";
 import { currentWeekStart, currentWeekEnd } from "@/lib/diagnose/week";
 import {
   DIAGNOSE_SECTION_KINDS,
@@ -81,7 +83,31 @@ export default async function DiagnoseHubPage() {
   // STUDENT path — load current-week WeeklyDiagnose + last 12 weeks.
   const weekStart = currentWeekStart();
   const weekEnd = currentWeekEnd();
-  const wd = await findCurrentWeekDiagnose(userId);
+  let wd = await findCurrentWeekDiagnose(userId);
+
+  // C2 (finalize trigger on hub render): when the row is in COMPLETE but
+  // hasn't been finalized (reportAt === null), kick the post-submit pipeline
+  // server-side. This is the canonical bridge from "all 6 sections done"
+  // (gate-released) to "report visible" — the section-submit route flips
+  // status to COMPLETE but doesn't trigger AI analysis itself, so without
+  // this server-side trigger the user would see a stuck COMPLETE state
+  // forever. The pipeline is idempotent and a re-fetch of `wd` after the
+  // call surfaces the new status (REPORT_READY or REPORT_FAILED) so the
+  // hub renders the report CTA on the same page load.
+  //
+  // Errors are swallowed here on purpose — the pipeline already persists
+  // status=REPORT_FAILED with a reportError for analysis/summary failures,
+  // and the hub renders a retry hint when status is REPORT_FAILED. A
+  // throw at this layer would render an unhelpful 500 page.
+  if (wd && wd.status === "COMPLETE" && wd.reportAt === null) {
+    try {
+      await runFinalizePipeline(userId);
+    } catch (err) {
+      console.error("[diagnose] finalize pipeline crashed on hub render:", err);
+    }
+    // Re-fetch so the rendered hub reflects the post-pipeline status.
+    wd = await findCurrentWeekDiagnose(userId);
+  }
 
   const history = await prisma.weeklyDiagnose.findMany({
     where: { userId },
@@ -103,9 +129,25 @@ export default async function DiagnoseHubPage() {
     (h) => h.weekStart.getTime() !== weekStart.getTime(),
   );
 
+  // C4 (JWT refresh on gate release): once the row reaches an ungated state
+  // (COMPLETE / REPORT_READY / REPORT_FAILED), the JWT cached on the client
+  // still holds the old requiredDiagnoseId value. SessionRefresher mounts a
+  // tiny client-side effect that POSTs to /api/auth/session, which fires the
+  // jwt callback's trigger="update" branch — that re-reads
+  // getRequiredDiagnoseId() and returns null, refreshing the cache. The
+  // refresh is deduped by weeklyDiagnoseId so it fires only once per row.
+  const ungated =
+    wd !== null &&
+    (wd.status === "COMPLETE" ||
+      wd.status === "REPORT_READY" ||
+      wd.status === "REPORT_FAILED");
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
+      {wd !== null && (
+        <SessionRefresher shouldRefresh={ungated} weeklyDiagnoseId={wd.id} />
+      )}
       <main className="mx-auto w-full max-w-4xl px-6 py-10">
         {wd === null ? (
           <>

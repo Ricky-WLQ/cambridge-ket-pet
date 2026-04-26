@@ -11,7 +11,7 @@ const credentialsSchema = z.object({
   password: z.string().min(8).max(200),
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {

@@ -174,19 +174,34 @@ export async function POST(req: Request, ctx: RouteCtx) {
 
   if (sectionKind === "WRITING") {
     // Writing: store text, mark SUBMITTED. AI grading deferred to /finalize.
-    const writingSchema = z.object({ text: z.string() });
-    let writingBody: { text: string };
+    //
+    // Wire-format normalization: the diagnose-native shape is `{ text }`, but
+    // the reused WritingRunner sends `{ response, chosenOption? }` (its own
+    // wire shape). Accept either via a Zod union, then translate to `{ text }`
+    // before persisting.
+    const writingSchema = z.union([
+      z.object({ text: z.string() }),
+      z.object({
+        response: z.string(),
+        chosenOption: z.string().optional(),
+      }),
+    ]);
+    let writingText: string;
     try {
-      writingBody = writingSchema.parse(parsedBody.answers);
+      const parsed = writingSchema.parse(parsedBody.answers);
+      writingText = "text" in parsed ? parsed.text : parsed.response;
     } catch {
       return NextResponse.json(
-        { error: "Writing answers must be { text: string }" },
+        {
+          error:
+            "Writing answers must be { text: string } or { response: string, chosenOption?: string }",
+        },
         { status: 400 },
       );
     }
     const answersJson: WritingAnswers = {
       sectionKind: "WRITING",
-      text: writingBody.text,
+      text: writingText,
     };
     await prisma.testAttempt.update({
       where: { id: attempt.id },
@@ -206,6 +221,14 @@ export async function POST(req: Request, ctx: RouteCtx) {
 
   // Auto-graded sections — branch on sectionKind to pick the right grader
   // + answers shape + content slice from the parent payload.
+  //
+  // Wire-format normalization: each section accepts BOTH the diagnose-native
+  // shape (positional indexes/strings) AND the reused runner's native shape
+  // (Record<questionId, letter|string>). The normalizers translate the
+  // runner shape into the canonical positional array before grading. This
+  // lets the diagnose-runner wrappers use the same submit endpoint as the
+  // hub's React component without forcing the runners to translate their
+  // state at submit time.
   let grade: SectionGradeResult;
   let answersJson:
     | ReadingAnswers
@@ -215,22 +238,40 @@ export async function POST(req: Request, ctx: RouteCtx) {
   try {
     switch (sectionKind) {
       case "READING": {
-        const sch = z.object({
-          answers: z.array(z.number().int().nullable()),
-        });
-        const a = sch.parse(parsedBody.answers);
+        const sch = z.union([
+          // Diagnose-native shape: positional MCQ indexes
+          z.object({ answers: z.array(z.number().int().nullable()) }),
+          // Runner-native shape: letter-keyed record (e.g. {q1:"B", q2:"A"})
+          z.record(z.string(), z.string()),
+        ]);
+        const parsed = sch.parse(parsedBody.answers);
         const content: DiagnoseReadingContent = payload.sections.READING;
-        answersJson = { sectionKind: "READING", answers: a.answers };
+        const positional = isPositionalAnswers(parsed)
+          ? parsed.answers
+          : recordToPositional(
+              parsed,
+              content.questions.map((q) => q.id),
+            );
+        answersJson = { sectionKind: "READING", answers: positional };
         grade = gradeReadingSection(content, answersJson);
         break;
       }
       case "LISTENING": {
-        const sch = z.object({
-          answers: z.array(z.number().int().nullable()),
-        });
-        const a = sch.parse(parsedBody.answers);
+        const sch = z.union([
+          // Diagnose-native shape: positional MCQ indexes
+          z.object({ answers: z.array(z.number().int().nullable()) }),
+          // Runner-native shape: letter-keyed record (e.g. {q1:"B", q2:"A"})
+          z.record(z.string(), z.string()),
+        ]);
+        const parsed = sch.parse(parsedBody.answers);
         const content: DiagnoseListeningContent = payload.sections.LISTENING;
-        answersJson = { sectionKind: "LISTENING", answers: a.answers };
+        const flatQuestionIds = content.parts.flatMap((p) =>
+          p.questions.map((q) => q.id),
+        );
+        const positional = isPositionalAnswers(parsed)
+          ? parsed.answers
+          : recordToPositional(parsed, flatQuestionIds);
+        answersJson = { sectionKind: "LISTENING", answers: positional };
         grade = gradeListeningSection(content, answersJson);
         break;
       }
@@ -294,6 +335,50 @@ export async function POST(req: Request, ctx: RouteCtx) {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Convert a single MCQ letter ("A"-"H", case-insensitive) to a positional
+ * 0-based index. Returns `null` for any unrecognized input — callers treat
+ * that as "unanswered" (and grading correctly counts that as wrong).
+ */
+function letterToIndex(letter: string): number | null {
+  const idx = "ABCDEFGH".indexOf(letter.toUpperCase());
+  return idx === -1 ? null : idx;
+}
+
+/**
+ * Detect the diagnose-native positional shape (`{ answers: (...|null)[] }`)
+ * versus the runner-native record shape (`Record<questionId, letter>`).
+ * The Zod union picks whichever matches first; this guard lets us discriminate
+ * after parse without re-running validation.
+ */
+function isPositionalAnswers(
+  parsed: { answers: (number | null)[] } | Record<string, string>,
+): parsed is { answers: (number | null)[] } {
+  return (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    "answers" in parsed &&
+    Array.isArray((parsed as { answers: unknown }).answers)
+  );
+}
+
+/**
+ * Translate a runner-native `Record<questionId, letter>` map into the
+ * canonical positional array of MCQ indexes. The order of `questionIds`
+ * must match the order the section's grader expects (Reading: passage
+ * order; Listening: parts.flatMap(p => p.questions)). Missing or invalid
+ * letters become `null`.
+ */
+function recordToPositional(
+  record: Record<string, string>,
+  questionIds: string[],
+): (number | null)[] {
+  return questionIds.map((qid) => {
+    const letter = record[qid];
+    return typeof letter === "string" ? letterToIndex(letter) : null;
+  });
+}
 
 /** Read the per-section attemptId off a WeeklyDiagnose row. */
 function pickAttemptId(
