@@ -75,6 +75,98 @@ async function getStudentVocabSummary(
   return { tiers, sparkline: byDay };
 }
 
+interface StudentGrammarTopic {
+  topicId: string;
+  labelZh: string;
+  category: string;
+  attempted: number;
+  correct: number;
+  accuracy: number;
+}
+
+interface StudentGrammarTier {
+  examType: "KET" | "PET";
+  totalAttempted: number;
+  totalCorrect: number;
+  accuracy: number;
+  perTopic: StudentGrammarTopic[];
+}
+
+interface StudentGrammarSummary {
+  tiers: StudentGrammarTier[];
+  sparkline: number[];
+}
+
+async function getStudentGrammarSummary(
+  userId: string,
+): Promise<StudentGrammarSummary> {
+  const tiers = await Promise.all(
+    (["KET", "PET"] as const).map(async (examType) => {
+      const rows = await prisma.grammarProgress.findMany({
+        where: { userId, examType },
+        select: { topicId: true, isCorrect: true },
+      });
+      const totalAttempted = rows.length;
+      const totalCorrect = rows.filter((r) => r.isCorrect).length;
+      const accuracy = totalAttempted === 0 ? 0 : totalCorrect / totalAttempted;
+      const perTopicMap = new Map<
+        string,
+        { attempted: number; correct: number }
+      >();
+      for (const r of rows) {
+        const cur = perTopicMap.get(r.topicId) ?? { attempted: 0, correct: 0 };
+        cur.attempted++;
+        if (r.isCorrect) cur.correct++;
+        perTopicMap.set(r.topicId, cur);
+      }
+      const topicMeta = await prisma.grammarTopic.findMany({
+        where: { examType, id: { in: Array.from(perTopicMap.keys()) } },
+        select: { id: true, labelZh: true, category: true },
+      });
+      const labelMap = new Map(
+        topicMeta.map((t) => [
+          t.id,
+          { labelZh: t.labelZh, category: t.category },
+        ]),
+      );
+      const perTopic: StudentGrammarTopic[] = Array.from(perTopicMap.entries())
+        .map(([topicId, c]) => {
+          const meta = labelMap.get(topicId);
+          return {
+            topicId,
+            labelZh: meta?.labelZh ?? topicId,
+            category: meta?.category ?? "",
+            attempted: c.attempted,
+            correct: c.correct,
+            accuracy: c.attempted === 0 ? 0 : c.correct / c.attempted,
+          };
+        })
+        .sort((a, b) => b.attempted - a.attempted);
+      return {
+        examType: examType as "KET" | "PET",
+        totalAttempted,
+        totalCorrect,
+        accuracy,
+        perTopic,
+      };
+    }),
+  );
+  // 30-day sparkline — count of attempts per day
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60_000);
+  const recent = await prisma.grammarProgress.findMany({
+    where: { userId, createdAt: { gte: since } },
+    select: { createdAt: true, isCorrect: true },
+  });
+  const byDay = new Array(30).fill(0);
+  for (const r of recent) {
+    const dayIdx = Math.floor(
+      (Date.now() - r.createdAt.getTime()) / (24 * 60 * 60_000),
+    );
+    if (dayIdx >= 0 && dayIdx < 30) byDay[29 - dayIdx]++;
+  }
+  return { tiers, sparkline: byDay };
+}
+
 const KIND_ZH: Record<string, string> = {
   READING: "阅读",
   WRITING: "写作",
@@ -402,6 +494,7 @@ export default async function StudentDetailPage({
   })();
 
   const vocabData = await getStudentVocabSummary(studentId);
+  const grammarData = await getStudentGrammarSummary(studentId);
 
   // Enrich exam-point labels for the mistake breakdown
   const mistakeExamPointIds = topMistakesByExamPoint
@@ -684,6 +777,80 @@ export default async function StudentDetailPage({
                         : `rgba(22, 163, 74, ${Math.min(1, 0.2 + n / 10)})`,
                   }}
                   title={`${30 - i} 天前: ${n} 次复习`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <h2 className="mt-8 mb-3 text-lg font-semibold">语法练习</h2>
+        <div className="rounded-md border border-neutral-200 p-4">
+          {grammarData.tiers.map((t) => (
+            <div key={t.examType} className="mb-4 last:mb-0">
+              <div className="mb-2 flex items-baseline justify-between text-sm">
+                <span className="font-medium uppercase">{t.examType}</span>
+                <span className="text-neutral-600">
+                  {t.totalAttempted} 次答题 · 正确率{" "}
+                  <strong>{Math.round(t.accuracy * 100)}%</strong>
+                </span>
+              </div>
+              {t.perTopic.length > 0 ? (
+                <ul className="space-y-1 text-xs">
+                  {t.perTopic.slice(0, 6).map((tp) => {
+                    const pct = Math.round(tp.accuracy * 100);
+                    const colorClass =
+                      pct >= 80
+                        ? "bg-green-500"
+                        : pct >= 50
+                          ? "bg-amber-500"
+                          : "bg-red-500";
+                    return (
+                      <li
+                        key={tp.topicId}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="w-32 shrink-0 truncate text-neutral-700">
+                          {tp.labelZh}
+                        </span>
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200">
+                          <div
+                            className={`h-full ${colorClass}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="w-14 text-right font-mono text-neutral-500">
+                          {tp.correct}/{tp.attempted}
+                        </span>
+                      </li>
+                    );
+                  })}
+                  {t.perTopic.length > 6 && (
+                    <li className="text-neutral-400">
+                      … 还有 {t.perTopic.length - 6} 个主题
+                    </li>
+                  )}
+                </ul>
+              ) : (
+                <div className="text-xs text-neutral-500">未练习</div>
+              )}
+            </div>
+          ))}
+          <div className="mt-3">
+            <div className="mb-1 text-xs text-neutral-500">
+              近 30 天答题活跃度
+            </div>
+            <div className="flex gap-px">
+              {grammarData.sparkline.map((n, i) => (
+                <div
+                  key={i}
+                  className="h-6 flex-1"
+                  style={{
+                    background:
+                      n === 0
+                        ? "#f5f5f5"
+                        : `rgba(37, 99, 235, ${Math.min(1, 0.2 + n / 10)})`,
+                  }}
+                  title={`${30 - i} 天前: ${n} 次答题`}
                 />
               ))}
             </div>
