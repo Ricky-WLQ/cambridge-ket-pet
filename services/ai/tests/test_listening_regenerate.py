@@ -78,9 +78,15 @@ def _valid_response() -> ListeningTestResponse:
 
 
 def _mock_run_result(response: ListeningTestResponse) -> MagicMock:
-    """Pydantic AI run() returns an object whose .output is the typed response."""
+    """Pydantic AI run() returns an object whose .output is a JSON string.
+
+    listening_generator now uses str output_type + manual JSON parsing
+    (mirrors speaking_generator) to sidestep DeepSeek's tool-call
+    trailing-character quirk. The mock therefore returns the response
+    serialized to JSON, not the typed response object.
+    """
     m = MagicMock()
-    m.output = response
+    m.output = response.model_dump_json()
     return m
 
 
