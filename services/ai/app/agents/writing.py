@@ -57,6 +57,10 @@ async def generate_writing_test(req: WritingTestRequest) -> WritingTestResponse:
         model=model,
         output_type=WritingTestResponse,
         system_prompt=build_system_prompt(req.exam_type, req.part),
+        # DeepSeek's default output cap (~4096) can truncate the structured
+        # WritingTestResponse (prompt + content_points + scene_descriptions
+        # + sample_response). 8000 mirrors listening_generator.py.
+        model_settings={"max_tokens": 8000},
     )
 
     pinning: list[str] = []
@@ -92,6 +96,10 @@ async def grade_writing_response(req: WritingGradeRequest) -> WritingGradeRespon
             scene_descriptions=req.scene_descriptions,
             chosen_option=req.chosen_option,
         ),
+        # DeepSeek's default output cap (~4096) can truncate the structured
+        # WritingGradeResponse (4-criteria scores + per-criterion feedback
+        # in zh-CN + improvement suggestions). 8000 mirrors the pattern.
+        model_settings={"max_tokens": 8000},
     )
     user_message = (
         "Grade the student's response below using the 4 criteria in the system prompt. "
