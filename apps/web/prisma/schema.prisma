@@ -102,6 +102,7 @@ model User {
   mistakeNotes     MistakeNote[]
   authoredComments Comment[]         @relation("CommentAuthor")
   vocabProgress    VocabProgress[]
+  grammarProgress  GrammarProgress[]
 }
 
 model Account {
@@ -352,6 +353,85 @@ model VocabProgress {
   @@unique([userId, wordId])
   @@index([userId, examType, mastery])
   @@index([userId, examType, nextReview])
+}
+
+// =============== Phase 4: Grammar ===============
+
+// Cambridge handbook structure inventory + Murphy English Grammar in Use
+// cross-reference. One row per (examType, topicId). Hand-seeded from the
+// A2 Key handbook pp.49-51 + B1 Preliminary handbook pp.70-72.
+model GrammarTopic {
+  id            String   @id @default(cuid())
+  examType      ExamType
+  category      String              // "tenses" | "modals" | "verb_forms" | "clause_types" | etc.
+  topicId       String              // stable slug "present_perfect_simple"
+  labelEn       String              // "Present perfect simple"
+  labelZh       String              // "现在完成时" — AI-authored
+  spec          String              // Cambridge handbook spec text (verbatim quote)
+  description   String?             // longer explanation for future study-guide use
+  examples      String[]            // 3-5 hand- or AI-curated example sentences
+  murphyUnits   Int[]               // English Grammar in Use unit numbers
+  source        String              // "© UCLES 2025; A2 Key handbook 2020 p.49"
+
+  questions     GrammarQuestion[]
+  progress      GrammarProgress[]
+
+  @@unique([examType, topicId])
+  @@index([examType, category])
+}
+
+// AI-generated MCQ question bank, ~15 per (examType, topicId) seeded once;
+// /api/grammar/generate appends more if a teacher requests more variety.
+model GrammarQuestion {
+  id            String   @id @default(cuid())
+  examType      ExamType
+  topicId       String              // FK to GrammarTopic.id
+  topic         GrammarTopic @relation(fields: [topicId], references: [id])
+
+  questionType  String   @default("mcq")  // MVP = MCQ only; fill-blank later
+  question      String              // "She _____ in this factory since 2018."
+  options       String[]            // 4 options, e.g. ["works","worked","has worked","will work"]
+  correctIndex  Int                 // 0..3
+  explanationEn String?             // optional
+  explanationZh String              // always present
+  difficulty    Int      @default(2)  // 1-5
+  source        String              // "ai:deepseek:2026-04-26" or "seed:cambridge"
+  createdAt     DateTime @default(now())
+
+  @@index([examType, topicId])
+}
+
+/// Per-user grammar attempt log. Doubles as the mistake notebook.
+/// `questionText`/`questionOptions`/`correctIndex`/`explanationZh` are
+/// snapshotted into the row so the mistake notebook survives question
+/// deletes/edits (the pretco pattern — see VocabProgress in Phase 4a).
+model GrammarProgress {
+  id              String     @id @default(cuid())
+  userId          String
+  questionId      String              // FK to GrammarQuestion.id (no cascade — see below)
+  examType        ExamType
+  topicId         String              // denormalized for fast filtering
+  topic           GrammarTopic @relation(fields: [topicId], references: [id])
+
+  isCorrect       Boolean
+  userAnswer      Int                 // 0..3 index
+
+  // snapshot fields — survive question deletes/edits
+  questionText    String
+  questionOptions String[]
+  correctIndex    Int
+  explanationZh   String
+
+  status          NoteStatus @default(NEW)   // reuse existing enum
+  createdAt       DateTime   @default(now())
+  reviewedAt      DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, examType, topicId])
+  @@index([userId, examType, status])
+  @@index([userId, isCorrect])
 }
 
 // =============== Assignments ===============
