@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { checkAndRecordGeneration } from "@/lib/rateLimit";
 import { generateDiagnose } from "@/lib/aiClient";
 import { currentWeekStart, currentWeekEnd } from "@/lib/diagnose/week";
+import { fisherYates } from "@/lib/diagnose/random";
 import { SECTION_TIME_LIMIT_SEC } from "@/lib/diagnose/sectionLimits";
 import {
   generateListeningAudio,
@@ -278,9 +279,9 @@ export async function POST() {
     },
     take: 60,
   });
-  const vocabPicks = vocabCandidates
-    .slice() // copy before sort
-    .sort(() => Math.random() - 0.5)
+  // I5: Fisher-Yates shuffle eliminates the bias of `Math.random() - 0.5`
+  // as a sort comparator (which yields a non-uniform permutation).
+  const vocabPicks = fisherYates(vocabCandidates)
     .slice(0, 3)
     .map((w) => {
       // Build a fill-in-the-blank pattern from the example sentence,
@@ -301,11 +302,15 @@ export async function POST() {
     });
 
   // ──── Step 9: Bank-sample GRAMMAR ────────────────────────────────
-  // Find questionIds the user has seen in the last 4 weeks (avoid
-  // immediate repeats), then pick 3 unseen for examType.
+  // Find questionIds the user has seen recently (avoid immediate repeats),
+  // then pick 3 unseen for examType. I7: cap the lookback to the most
+  // recent 100 progress rows so the `notIn` clause stays bounded for
+  // power users who do hundreds of grammar questions per week.
   const fourWeeksAgo = new Date(weekStart.getTime() - 28 * 24 * 60 * 60 * 1000);
   const seenIds = await prisma.grammarProgress.findMany({
     where: { userId, createdAt: { gte: fourWeeksAgo } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
     select: { questionId: true },
   });
   const seenSet = new Set(seenIds.map((r) => r.questionId));
@@ -325,9 +330,8 @@ export async function POST() {
           where: { examType },
           take: 60,
         });
-  const grammarItems = grammarPool
-    .slice()
-    .sort(() => Math.random() - 0.5)
+  // I5: Fisher-Yates shuffle (see vocab note above).
+  const grammarItems = fisherYates(grammarPool)
     .slice(0, 3)
     .map((q) => ({
       questionId: q.id,

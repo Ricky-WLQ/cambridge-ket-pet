@@ -92,23 +92,23 @@ export async function runFinalizePipeline(
   }
 
   // ──── Step 2: Verify all 6 sections done ─────────────────────────
-  const finishedSet = new Set([
+  const finishedSet: Set<string> = new Set([
     "SUBMITTED",
     "GRADED",
     "AUTO_SUBMITTED",
-  ] as const);
+  ]);
   const inProgressSections: string[] = [];
-  if (!finishedSet.has(wd.readingStatus as never))
+  if (!finishedSet.has(wd.readingStatus))
     inProgressSections.push("READING");
-  if (!finishedSet.has(wd.listeningStatus as never))
+  if (!finishedSet.has(wd.listeningStatus))
     inProgressSections.push("LISTENING");
-  if (!finishedSet.has(wd.writingStatus as never))
+  if (!finishedSet.has(wd.writingStatus))
     inProgressSections.push("WRITING");
-  if (!finishedSet.has(wd.speakingStatus as never))
+  if (!finishedSet.has(wd.speakingStatus))
     inProgressSections.push("SPEAKING");
-  if (!finishedSet.has(wd.vocabStatus as never))
+  if (!finishedSet.has(wd.vocabStatus))
     inProgressSections.push("VOCAB");
-  if (!finishedSet.has(wd.grammarStatus as never))
+  if (!finishedSet.has(wd.grammarStatus))
     inProgressSections.push("GRAMMAR");
   if (inProgressSections.length > 0) {
     return { kind: "NOT_READY", inProgressSections };
@@ -230,14 +230,17 @@ export async function runFinalizePipeline(
         break;
       }
     }
+    // I4: final re-read after the loop closes the small race window where
+    // the speaking pipeline transitions to SCORED between our last poll
+    // tick and writing the timeout marker.
     if (
       speakingAttempt.speakingStatus !== "SCORED" &&
       speakingAttempt.speakingStatus !== "FAILED"
     ) {
-      const reloaded = await prisma.testAttempt.findUnique({
+      const finalCheck = await prisma.testAttempt.findUnique({
         where: { id: speakingAttempt.id },
       });
-      if (reloaded) speakingAttempt = reloaded;
+      if (finalCheck) speakingAttempt = finalCheck;
     }
     if (
       speakingAttempt.speakingStatus !== "SCORED" &&

@@ -137,6 +137,8 @@ export default function DiagnoseHub({
               kind={kind}
               status={sections[kind].status}
               attemptId={sections[kind].attemptId}
+              weeklyDiagnoseStatus={status}
+              testId={testId ?? null}
             />
           ))}
         </div>

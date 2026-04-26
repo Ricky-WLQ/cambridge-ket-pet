@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { SiteHeader } from "@/components/SiteHeader";
+import GateBanner from "@/components/diagnose/GateBanner";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redoAttemptAction } from "@/lib/attemptActions";
@@ -116,6 +117,13 @@ export default async function HistoryPage({
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
 
+  // I9: surface the diagnose-gate banner at the top of /history. The banner
+  // links to /diagnose so a gated user can finish this week's diagnose to
+  // unblock the rest of the app. Read from the JWT cache (no DB hit).
+  const requiredDiagnoseId = (
+    session?.user as { requiredDiagnoseId?: string | null } | undefined
+  )?.requiredDiagnoseId ?? null;
+
   const where: Prisma.TestAttemptWhereInput = { userId };
   if (sp.status && (STATUS_VALUES as readonly string[]).includes(sp.status)) {
     where.status = sp.status as (typeof STATUS_VALUES)[number];
@@ -166,6 +174,9 @@ export default async function HistoryPage({
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-4xl px-6 py-10">
+        {requiredDiagnoseId && (
+          <GateBanner requiredDiagnoseId={requiredDiagnoseId} />
+        )}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold">历史记录</h1>
           <Link

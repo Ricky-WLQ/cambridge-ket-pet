@@ -6,8 +6,12 @@
  * Displays the per-section title, a status pill, and an action button:
  *  - NOT_STARTED       → "开始" (links to /diagnose/runner/[section])
  *  - IN_PROGRESS       → "继续" (same target)
- *  - SUBMITTED/GRADED  → "查看作答" (links to the regular result page when available)
- *  - AUTO_SUBMITTED    → "查看作答" with an "自动提交" pill highlight
+ *  - SUBMITTED/GRADED  → "查看作答" → /diagnose/report/[testId] when the
+ *                        WeeklyDiagnose has reached REPORT_READY; a
+ *                        non-clickable "查看报告生成中…" hint when the row
+ *                        is still in COMPLETE awaiting finalize; CTA is
+ *                        hidden otherwise (I2).
+ *  - AUTO_SUBMITTED    → same as SUBMITTED/GRADED with an "自动提交" pill.
  *
  * Color tokens follow the existing convention in `history/page.tsx`:
  *  - green for completed (GRADED / SUBMITTED for writing — both treated as
@@ -28,6 +32,21 @@ export type DiagnoseSectionStatus =
   | "SUBMITTED"
   | "AUTO_SUBMITTED"
   | "GRADED";
+
+/**
+ * Mirrors `DiagnoseHubStatus` from ./DiagnoseHub. We keep a local copy
+ * (rather than importing DiagnoseHub) because SectionStatusCard is a child
+ * of DiagnoseHub — pulling the type from the parent would establish a
+ * circular import. The shape is stable (matches the WeeklyDiagnoseStatus
+ * Prisma enum surface), so duplication is cheap.
+ */
+type WeeklyDiagnoseStatus =
+  | "NEED_GENERATE"
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "COMPLETE"
+  | "REPORT_READY"
+  | "REPORT_FAILED";
 
 export const SECTION_TITLE_ZH: Record<DiagnoseSectionKind, string> = {
   READING: "阅读",
@@ -78,9 +97,23 @@ interface Props {
   status: DiagnoseSectionStatus;
   /** TestAttempt id once the section has been started; null for NOT_STARTED. */
   attemptId: string | null;
+  /**
+   * Parent WeeklyDiagnose status — used by the "查看作答" CTA to decide whether
+   * to link to the report viewer (REPORT_READY) or show a non-clickable
+   * "report being generated" hint (COMPLETE) (I2).
+   */
+  weeklyDiagnoseStatus?: WeeklyDiagnoseStatus;
+  /** Parent Test row id — needed to deep-link the report viewer. */
+  testId?: string | null;
 }
 
-export default function SectionStatusCard({ kind, status, attemptId }: Props) {
+export default function SectionStatusCard({
+  kind,
+  status,
+  attemptId,
+  weeklyDiagnoseStatus,
+  testId,
+}: Props) {
   const title = SECTION_TITLE_ZH[kind];
   const icon = SECTION_ICON[kind];
   const pill = STATUS_PILL[status];
@@ -97,19 +130,35 @@ export default function SectionStatusCard({ kind, status, attemptId }: Props) {
   // DiagnoseSectionKind enum.
   const sectionUrl = `/diagnose/runner/${kind.toLowerCase()}`;
 
-  // CTA wording mirrors the table in the SectionStatusCard module-doc.
+  // I2: when the section is done the CTA's destination depends on the
+  // PARENT WeeklyDiagnose status, not the section's own status:
+  //  - REPORT_READY  → link to /diagnose/report/[testId] (real review)
+  //  - COMPLETE      → show a non-clickable "查看报告生成中…" hint
+  //  - everything else (the report failed, or report not yet generated
+  //    because the user pulled this single section ahead of others) →
+  //    hide the CTA entirely. Routing back to the section runner here
+  //    would be wrong: the section is locked once submitted.
+  let ctaMode: "LINK" | "DISABLED" | "HIDDEN";
   let ctaLabel: string;
-  let ctaUrl: string;
+  let ctaUrl = "/diagnose";
   if (isDone) {
-    ctaLabel = t.diagnose.viewAttempt;
-    // Until the per-attempt review page is wired up in Phase 7 we just route
-    // back to the hub — the report viewer reachable from there shows the
-    // full breakdown once REPORT_READY is reached.
-    ctaUrl = attemptId ? sectionUrl : "/diagnose";
+    if (weeklyDiagnoseStatus === "REPORT_READY" && testId) {
+      ctaMode = "LINK";
+      ctaLabel = t.diagnose.viewAttempt;
+      ctaUrl = `/diagnose/report/${testId}`;
+    } else if (weeklyDiagnoseStatus === "COMPLETE") {
+      ctaMode = "DISABLED";
+      ctaLabel = "查看报告生成中…";
+    } else {
+      ctaMode = "HIDDEN";
+      ctaLabel = "";
+    }
   } else if (isInProgress) {
+    ctaMode = "LINK";
     ctaLabel = t.diagnose.continueSection;
     ctaUrl = sectionUrl;
   } else {
+    ctaMode = "LINK";
     ctaLabel = t.diagnose.startSection;
     ctaUrl = sectionUrl;
   }
@@ -143,16 +192,27 @@ export default function SectionStatusCard({ kind, status, attemptId }: Props) {
         </span>
       </div>
 
-      <Link
-        href={ctaUrl}
-        className={`mt-auto inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium transition ${
-          isDone
-            ? "border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
-            : "bg-neutral-900 text-white hover:bg-neutral-700"
-        }`}
-      >
-        {ctaLabel}
-      </Link>
+      {ctaMode === "LINK" && (
+        <Link
+          href={ctaUrl}
+          className={`mt-auto inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium transition ${
+            isDone
+              ? "border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
+              : "bg-neutral-900 text-white hover:bg-neutral-700"
+          }`}
+        >
+          {ctaLabel}
+        </Link>
+      )}
+      {ctaMode === "DISABLED" && (
+        <div className="mt-auto inline-flex items-center justify-center rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-1.5 text-xs text-neutral-500">
+          {ctaLabel}
+        </div>
+      )}
+      {/* attemptId surfaced for E2E tests / future deep-links even when CTA is hidden. */}
+      {ctaMode === "HIDDEN" && attemptId !== null && (
+        <span data-attempt-id={attemptId} className="hidden" aria-hidden />
+      )}
     </div>
   );
 }

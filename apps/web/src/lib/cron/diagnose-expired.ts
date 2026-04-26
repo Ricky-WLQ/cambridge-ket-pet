@@ -58,7 +58,7 @@ import type {
  */
 export async function forceSubmitExpiredDiagnoseSections(
   now: Date = new Date(),
-): Promise<{ forcedSubmitted: number }> {
+): Promise<{ forcedSubmitted: number; reapedAudio: number }> {
   // Find IN_PROGRESS attempts whose parent Test.kind is DIAGNOSE.
   // We don't filter by startedAt at the DB layer because the time-limit is
   // section-specific (varies 240s to 900s) and the cleanest correctness
@@ -221,7 +221,35 @@ export async function forceSubmitExpiredDiagnoseSections(
     void _exhaustive;
   }
 
-  return { forcedSubmitted: count };
+  // I6: stuck-audio reaper. Diagnose Test rows whose listening TTS pipeline
+  // never wrote a terminal status (audioStatus stays "GENERATING" past 10
+  // minutes) are force-marked FAILED with a sentinel reason so the listening
+  // section runner can show an explicit error instead of a forever-spinning
+  // "preparing audio" placeholder. Threshold is conservative — typical
+  // Edge-TTS render takes 30-90s.
+  const TEN_MIN_MS = 10 * 60_000;
+  const stuckAudio = await prisma.test.findMany({
+    where: {
+      kind: "DIAGNOSE",
+      audioStatus: "GENERATING",
+      audioGenStartedAt: { lt: new Date(now.getTime() - TEN_MIN_MS) },
+    },
+    select: { id: true },
+  });
+  let reapedAudio = 0;
+  for (const test of stuckAudio) {
+    await prisma.test.update({
+      where: { id: test.id },
+      data: {
+        audioStatus: "FAILED",
+        audioErrorMessage: "Audio generation timed out (>10min)",
+        audioGenCompletedAt: now,
+      },
+    });
+    reapedAudio++;
+  }
+
+  return { forcedSubmitted: count, reapedAudio };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────

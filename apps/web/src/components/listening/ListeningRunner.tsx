@@ -27,6 +27,19 @@ export interface ListeningRunnerProps {
    * `/api/diagnose/me/section/LISTENING/submit`.
    */
   submitUrl?: string;
+  /**
+   * Optional override for the post-submit redirect path. Defaults to the
+   * existing `/${portal}/listening/result/${attemptId}`. The diagnose
+   * runner wrapper passes `/diagnose` so a student lands back on the hub
+   * after a section submit (I3).
+   */
+  redirectAfterSubmit?: string;
+  /**
+   * When true, the runner is rendered in view-only mode — no submit button,
+   * a "练习模式 — 不计分" banner is shown. Used by the diagnose replay page
+   * (I1).
+   */
+  readOnly?: boolean;
 }
 
 type RunnerState = "LOADING" | "READY" | "LISTENING" | "REVIEW" | "SUBMITTING";
@@ -69,6 +82,8 @@ export function ListeningRunner(props: ListeningRunnerProps) {
   // Default preserves existing call-site behavior; diagnose wrapper overrides.
   const submitUrl =
     props.submitUrl ?? `/api/tests/${props.attemptId}/submit`;
+  const redirectAfterSubmit = props.redirectAfterSubmit;
+  const readOnly = props.readOnly ?? false;
 
   const submit = useCallback(
     async (forceSubmit = false) => {
@@ -79,14 +94,24 @@ export function ListeningRunner(props: ListeningRunnerProps) {
         body: JSON.stringify({ answers, forceSubmit }),
       });
       if (res.ok) {
-        router.push(`/${props.portal}/listening/result/${props.attemptId}`);
+        const target =
+          redirectAfterSubmit ??
+          `/${props.portal}/listening/result/${props.attemptId}`;
+        router.push(target);
       } else {
         const data = await res.json();
         alert(data.message ?? "提交失败");
         setState(forceSubmit ? "REVIEW" : "LISTENING");
       }
     },
-    [answers, props.attemptId, props.portal, router, submitUrl],
+    [
+      answers,
+      props.attemptId,
+      props.portal,
+      router,
+      submitUrl,
+      redirectAfterSubmit,
+    ],
   );
 
   if (state === "LOADING" || !payload) {
@@ -176,13 +201,19 @@ export function ListeningRunner(props: ListeningRunnerProps) {
         ))}
       </div>
 
-      <button
-        onClick={() => submit(false)}
-        className="px-6 py-3 bg-blue-600 text-white rounded-lg"
-        disabled={state === "SUBMITTING"}
-      >
-        {isMock && state === "LISTENING" ? "提交" : "立即提交"}
-      </button>
+      {readOnly ? (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          练习模式 — 不计分
+        </div>
+      ) : (
+        <button
+          onClick={() => submit(false)}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+          disabled={state === "SUBMITTING"}
+        >
+          {isMock && state === "LISTENING" ? "提交" : "立即提交"}
+        </button>
+      )}
     </div>
   );
 }

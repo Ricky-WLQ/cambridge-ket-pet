@@ -75,18 +75,18 @@ export async function maybeMarkDiagnoseComplete(
     return;
   }
 
-  const finishedSet = new Set([
+  const finishedSet: Set<string> = new Set([
     "SUBMITTED",
     "GRADED",
     "AUTO_SUBMITTED",
-  ] as const);
+  ]);
   const allDone =
-    finishedSet.has(wd.readingStatus as never) &&
-    finishedSet.has(wd.listeningStatus as never) &&
-    finishedSet.has(wd.writingStatus as never) &&
-    finishedSet.has(wd.speakingStatus as never) &&
-    finishedSet.has(wd.vocabStatus as never) &&
-    finishedSet.has(wd.grammarStatus as never);
+    finishedSet.has(wd.readingStatus) &&
+    finishedSet.has(wd.listeningStatus) &&
+    finishedSet.has(wd.writingStatus) &&
+    finishedSet.has(wd.speakingStatus) &&
+    finishedSet.has(wd.vocabStatus) &&
+    finishedSet.has(wd.grammarStatus);
 
   if (!allDone) return;
 

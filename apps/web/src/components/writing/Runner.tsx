@@ -22,6 +22,19 @@ export type WritingRunnerProps = {
    * `/api/diagnose/me/section/WRITING/submit`.
    */
   submitUrl?: string;
+  /**
+   * Optional override for the post-submit redirect path. Defaults to the
+   * existing `/${portal}/writing/result/${attemptId}`. The diagnose runner
+   * wrapper passes `/diagnose` so a student lands back on the hub after a
+   * section submit (I3).
+   */
+  redirectAfterSubmit?: string;
+  /**
+   * When true, the runner is rendered in view-only mode — no submit button,
+   * a "练习模式 — 不计分" banner is shown. Used by the diagnose replay page
+   * (I1).
+   */
+  readOnly?: boolean;
 };
 
 function countWords(s: string): number {
@@ -49,6 +62,8 @@ export default function WritingRunner({
   minWords,
   timeLimitSec,
   submitUrl: submitUrlProp,
+  redirectAfterSubmit,
+  readOnly = false,
 }: WritingRunnerProps) {
   const router = useRouter();
   // Default preserves existing call-site behavior; diagnose wrapper overrides.
@@ -101,7 +116,9 @@ export default function WritingRunner({
         return;
       }
       const portal = examType === "KET" ? "ket" : "pet";
-      router.push(`/${portal}/writing/result/${attemptId}`);
+      const target =
+        redirectAfterSubmit ?? `/${portal}/writing/result/${attemptId}`;
+      router.push(target);
     } catch {
       setError("网络错误，请重试");
       setSubmitting(false);
@@ -249,18 +266,24 @@ export default function WritingRunner({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={
-          submitting ||
-          wordCount === 0 ||
-          (taskType === "LETTER_OR_STORY" && !chosenOption)
-        }
-        className="w-full rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
-      >
-        {submitting ? "提交中…" : "提交作文"}
-      </button>
+      {readOnly ? (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          练习模式 — 不计分
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={
+            submitting ||
+            wordCount === 0 ||
+            (taskType === "LETTER_OR_STORY" && !chosenOption)
+          }
+          className="w-full rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+        >
+          {submitting ? "提交中…" : "提交作文"}
+        </button>
+      )}
     </div>
   );
 }

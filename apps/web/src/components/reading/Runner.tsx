@@ -33,6 +33,20 @@ export type RunnerProps = {
    * `/api/diagnose/me/section/READING/submit` route instead.
    */
   submitUrl?: string;
+  /**
+   * Optional override for the post-submit redirect path. Defaults to the
+   * existing `/${portal}/reading/result/${attemptId}` for the regular
+   * reading flow. The diagnose runner wrapper passes `/diagnose` so a
+   * student lands back on the hub after a section submit (I3).
+   */
+  redirectAfterSubmit?: string;
+  /**
+   * When true, the runner is rendered in view-only mode — no submit button,
+   * a "练习模式 — 不计分" banner is shown. Used by the diagnose replay page
+   * (I1) so re-takes against past-week testIds don't 404 the current-week
+   * submit endpoint.
+   */
+  readOnly?: boolean;
 };
 
 function formatTime(sec: number): string {
@@ -50,6 +64,8 @@ export default function ReadingRunner({
   questions,
   timeLimitSec,
   submitUrl: submitUrlProp,
+  redirectAfterSubmit,
+  readOnly = false,
 }: RunnerProps) {
   const router = useRouter();
   // Default preserves existing call-site behavior; diagnose wrappers override.
@@ -96,7 +112,9 @@ export default function ReadingRunner({
         return;
       }
       const portal = examType === "KET" ? "ket" : "pet";
-      router.push(`/${portal}/reading/result/${attemptId}`);
+      const target =
+        redirectAfterSubmit ?? `/${portal}/reading/result/${attemptId}`;
+      router.push(target);
     } catch {
       setError("网络错误，请重试");
       setSubmitting(false);
@@ -190,18 +208,26 @@ export default function ReadingRunner({
         </div>
       )}
 
+      {readOnly && (
+        <div className="mt-6 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          练习模式 — 不计分
+        </div>
+      )}
+
       <div className="mt-8 flex items-center justify-between gap-4">
         <div className="text-sm text-neutral-500">
           已作答 {answeredCount} / {questions.length}
         </div>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="rounded-md bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
-        >
-          {submitting ? "提交中…" : "提交答卷"}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="rounded-md bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+          >
+            {submitting ? "提交中…" : "提交答卷"}
+          </button>
+        )}
       </div>
     </div>
   );

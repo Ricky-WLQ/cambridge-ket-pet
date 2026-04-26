@@ -37,12 +37,14 @@ import type {
  * page idempotent: a reload doesn't create another attempt — we look up
  * the latest PRACTICE-mode TestAttempt for this test+sectionKind first.
  *
- * Caveat: the reused diagnose runner components (DiagnoseRunnerReading,
- * etc.) submit to `/api/diagnose/me/section/[KIND]/submit`, which expects
- * a CURRENT-week WeeklyDiagnose. Replay attempts will hit a 409 there.
- * That's the same constraint the bulk replay endpoint has — replay is
- * "for fun" only in v1. Documented as a TODO; v2 can introduce a
- * `?replay=true` query param the runners pass to a no-op submit endpoint.
+ * I1: replay is rendered VIEW-ONLY. The reused diagnose runner components
+ * (DiagnoseRunnerReading, etc.) submit to `/api/diagnose/me/section/[KIND]/
+ * submit`, which expects the CURRENT-week WeeklyDiagnose. Past-week testIds
+ * would 404 there. Rather than wire a separate "replay submit" endpoint we
+ * pass `readOnly` to the runners — they hide the submit button and skip
+ * any auto-submit-on-timer behavior. The user can still answer, see the
+ * questions and reflect; for grading they would re-take a current-week
+ * diagnose.
  */
 export default async function DiagnoseReplayPage({
   params,
@@ -198,6 +200,7 @@ function ReplayReadingSection({
       passage={content.passage}
       questions={questions}
       timeLimitSec={SECTION_TIME_LIMIT_SEC.READING}
+      readOnly
     />
   );
 }
@@ -217,6 +220,7 @@ function ReplayListeningSection({
       testId={testId}
       mode="PRACTICE"
       portal={examType === "KET" ? "ket" : "pet"}
+      readOnly
     />
   );
 }
@@ -251,6 +255,7 @@ function ReplayWritingSection({
       sceneDescriptions={[]}
       minWords={content.minWords}
       timeLimitSec={SECTION_TIME_LIMIT_SEC.WRITING}
+      readOnly
     />
   );
 }
@@ -267,6 +272,7 @@ function ReplayVocabSection({
       attemptId={attemptId}
       items={content.items}
       timeLimitSec={SECTION_TIME_LIMIT_SEC.VOCAB}
+      readOnly
     />
   );
 }
@@ -283,6 +289,7 @@ function ReplayGrammarSection({
       attemptId={attemptId}
       questions={content.questions}
       timeLimitSec={SECTION_TIME_LIMIT_SEC.GRAMMAR}
+      readOnly
     />
   );
 }

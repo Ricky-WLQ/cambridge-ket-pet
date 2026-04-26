@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
+import GateBanner from "@/components/diagnose/GateBanner";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { t } from "@/i18n/zh-CN";
@@ -10,6 +11,11 @@ export default async function MyClassesPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
+
+  // I9: surface the diagnose-gate banner here too.
+  const requiredDiagnoseId = (
+    session?.user as { requiredDiagnoseId?: string | null } | undefined
+  )?.requiredDiagnoseId ?? null;
 
   const memberships = await prisma.classMember.findMany({
     where: { userId },
@@ -32,6 +38,9 @@ export default async function MyClassesPage() {
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-3xl px-6 py-10">
+        {requiredDiagnoseId && (
+          <GateBanner requiredDiagnoseId={requiredDiagnoseId} />
+        )}
         <h1 className="mb-4 text-2xl font-semibold">
           {t.classes.student.title}
         </h1>

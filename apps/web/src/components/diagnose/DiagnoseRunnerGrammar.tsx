@@ -28,6 +28,12 @@ interface Props {
    * computes this with `remainingSec()` from the section's startedAt.
    */
   timeLimitSec: number;
+  /**
+   * When true, the runner is rendered in view-only mode — no submit button
+   * (and no auto-submit-on-timer), with a "练习模式 — 不计分" banner. Used
+   * by the diagnose replay page (I1).
+   */
+  readOnly?: boolean;
 }
 
 const LETTERS: Array<"A" | "B" | "C" | "D"> = ["A", "B", "C", "D"];
@@ -42,6 +48,7 @@ export default function DiagnoseRunnerGrammar({
   attemptId,
   questions,
   timeLimitSec,
+  readOnly = false,
 }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<(number | null)[]>(() =>
@@ -101,11 +108,12 @@ export default function DiagnoseRunnerGrammar({
 
   // Auto-submit when timer hits zero.
   useEffect(() => {
+    if (readOnly) return;
     if (remaining === 0 && !submittedRef.current) {
       void submit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining]);
+  }, [remaining, readOnly]);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
@@ -175,19 +183,27 @@ export default function DiagnoseRunnerGrammar({
         </div>
       )}
 
+      {readOnly && (
+        <div className="mt-6 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          练习模式 — 不计分
+        </div>
+      )}
+
       <div className="mt-8 flex items-center justify-between gap-4">
         <div className="text-sm text-neutral-500">
           已答 {answeredCount} / {questions.length}
         </div>
-        <button
-          type="button"
-          onClick={submit}
-          disabled={submitting}
-          data-attempt-id={attemptId}
-          className="rounded-md bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
-        >
-          {submitting ? "提交中…" : "提交"}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting}
+            data-attempt-id={attemptId}
+            className="rounded-md bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+          >
+            {submitting ? "提交中…" : "提交"}
+          </button>
+        )}
       </div>
     </div>
   );
