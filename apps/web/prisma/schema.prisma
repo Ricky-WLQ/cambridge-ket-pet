@@ -34,6 +34,23 @@ enum TestKind {
   GRAMMAR      // Phase 4 — grammar quizzes (uses GrammarProgress instead of TestAttempt)
   MOCK_FULL
   MOCK_SECTION
+  DIAGNOSE
+}
+
+enum DiagnoseStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETE
+  REPORT_READY
+  REPORT_FAILED
+}
+
+enum DiagnoseSectionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+  GRADED
 }
 
 enum AudioStatus {
@@ -103,6 +120,7 @@ model User {
   authoredComments Comment[]         @relation("CommentAuthor")
   vocabProgress    VocabProgress[]
   grammarProgress  GrammarProgress[]
+  weeklyDiagnoses  WeeklyDiagnose[]
 }
 
 model Account {
@@ -240,6 +258,7 @@ model Test {
 
   user     User?         @relation(fields: [userId], references: [id])
   attempts TestAttempt[]
+  weeklyDiagnose WeeklyDiagnose?
 
   @@index([userId, createdAt])
   @@index([examType, kind, part])
@@ -432,6 +451,51 @@ model GrammarProgress {
   @@index([userId, examType, topicId])
   @@index([userId, examType, status])
   @@index([userId, isCorrect])
+}
+
+// =============== Diagnose v2 — Weekly diagnostic test ===============
+
+model WeeklyDiagnose {
+  id        String   @id @default(cuid())
+  userId    String
+  weekStart DateTime  // CST Monday 00:00 stored as UTC
+  weekEnd   DateTime  // CST Sunday 23:59:59.999 stored as UTC
+  testId    String   @unique // 1-to-1 with parent Test row (kind=DIAGNOSE)
+  examType  ExamType
+  status    DiagnoseStatus @default(PENDING)
+
+  readingAttemptId   String?
+  listeningAttemptId String?
+  writingAttemptId   String?
+  speakingAttemptId  String?
+  vocabAttemptId     String?
+  grammarAttemptId   String?
+
+  readingStatus   DiagnoseSectionStatus @default(NOT_STARTED)
+  listeningStatus DiagnoseSectionStatus @default(NOT_STARTED)
+  writingStatus   DiagnoseSectionStatus @default(NOT_STARTED)
+  speakingStatus  DiagnoseSectionStatus @default(NOT_STARTED)
+  vocabStatus     DiagnoseSectionStatus @default(NOT_STARTED)
+  grammarStatus   DiagnoseSectionStatus @default(NOT_STARTED)
+
+  completedAt DateTime?
+  reportAt    DateTime?
+
+  knowledgePoints  Json?
+  summary          Json?
+  perSectionScores Json?
+  overallScore     Float?
+  reportError      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  test Test @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId, status])
+  @@index([weekStart])
 }
 
 // =============== Assignments ===============
