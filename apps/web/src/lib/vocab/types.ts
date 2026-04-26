@@ -35,6 +35,12 @@ export interface VocabStats {
   byMastery: number[];    // length 6, count per mastery 0..5
 }
 
+/** Wordlist totals (denominators for the hub) — independent of user progress. */
+export interface WordlistTotals {
+  total: number;
+  byTier: Record<WordTier, number>;
+}
+
 export interface PaginationDto {
   page: number;
   pageSize: number;

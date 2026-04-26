@@ -51,7 +51,22 @@ export async function GET(request: Request) {
   });
 
   const stats = aggregateStats(rows);
-  return NextResponse.json({ progress: rows.map(stripWordRef), stats });
+
+  // Wordlist totals (denominators for the hub) — independent of user progress.
+  const wordlistByTier = await prisma.word.groupBy({
+    by: ["tier"],
+    where: { examType, ...(tier ? { tier } : {}) },
+    _count: { _all: true },
+  });
+  const wordlistTotals = {
+    total: wordlistByTier.reduce((sum, g) => sum + g._count._all, 0),
+    byTier: { CORE: 0, RECOMMENDED: 0, EXTRA: 0 } as Record<WordTier, number>,
+  };
+  for (const g of wordlistByTier) {
+    wordlistTotals.byTier[g.tier as WordTier] = g._count._all;
+  }
+
+  return NextResponse.json({ progress: rows.map(stripWordRef), stats, wordlistTotals });
 }
 
 export async function POST(request: Request) {
