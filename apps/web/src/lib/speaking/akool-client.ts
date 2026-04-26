@@ -26,6 +26,61 @@ const GET_TOKEN_URL = `${AKOOL_BASE}/api/open/v3/getToken`;
 const SESSION_CREATE_URL = `${AKOOL_BASE}/api/open/v4/liveAvatar/session/create`;
 const SESSION_CLOSE_URL = `${AKOOL_BASE}/api/open/v4/liveAvatar/session/close`;
 
+// Default per-attempt timeout for Akool calls. The Node fetch's built-in
+// connect timeout (10s) is too tight for Akool's openapi endpoint from
+// behind some networks (notably China — see ConnectTimeoutError reports).
+const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
+const FETCH_BACKOFF_MS = [0, 1_000, 3_000]; // attempt 1: no wait, 2: 1s, 3: 3s
+
+/**
+ * fetch with explicit per-attempt AbortController timeout + exponential
+ * backoff retry on network errors. Does NOT retry on application-level
+ * failures (HTTP 4xx/5xx — caller decides). The function is idempotent-safe
+ * when used for read paths and POST endpoints that are safe to retry on
+ * connect-failure (the request never reached the server, so resending is OK).
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  options: { timeoutMs?: number; label?: string } = {},
+): Promise<Response> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS;
+  const label = options.label ?? url;
+
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < FETCH_BACKOFF_MS.length; attempt++) {
+    if (attempt > 0) {
+      const wait = FETCH_BACKOFF_MS[attempt];
+      console.warn(
+        `[akool] retry ${attempt + 1}/${FETCH_BACKOFF_MS.length} for ${label} after ${wait}ms (last error: ${lastErr instanceof Error ? lastErr.message : String(lastErr)})`,
+      );
+      await new Promise((r) => setTimeout(r, wait));
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...init, signal: ctrl.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      lastErr = err;
+      // Only retry on network/abort errors. AbortError, TypeError("fetch failed"),
+      // and ConnectTimeoutError all indicate the request never reached the
+      // server, so retrying is safe even for POST.
+      const isNetworkErr =
+        err instanceof TypeError ||
+        (err instanceof Error &&
+          (err.name === "AbortError" || /timeout|ETIMEDOUT|ECONNREFUSED|ENOTFOUND|EAI_AGAIN/i.test(err.message)));
+      if (!isNetworkErr) throw err;
+      // Fall through to next attempt
+    }
+  }
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error(`Akool fetch ${label} failed after ${FETCH_BACKOFF_MS.length} attempts`);
+}
+
 // --- Token cache ---------------------------------------------------------
 
 interface CachedToken {
@@ -71,15 +126,19 @@ export async function getAkoolToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  const res = await fetch(GET_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      clientId: readEnv("AKOOL_CLIENT_ID"),
-      clientSecret: readEnv("AKOOL_CLIENT_SECRET"),
-    }),
-    cache: "no-store",
-  });
+  const res = await fetchWithRetry(
+    GET_TOKEN_URL,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientId: readEnv("AKOOL_CLIENT_ID"),
+        clientSecret: readEnv("AKOOL_CLIENT_SECRET"),
+      }),
+      cache: "no-store",
+    },
+    { label: "getToken" },
+  );
 
   let json: { code?: number; token?: string; msg?: string };
   try {
@@ -169,15 +228,19 @@ export async function createAkoolSession(
   };
   if (input.voiceId) body.voice_id = input.voiceId;
 
-  const res = await fetch(SESSION_CREATE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const res = await fetchWithRetry(
+    SESSION_CREATE_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
     },
-    body: JSON.stringify(body),
-    cache: "no-store",
-  });
+    { label: "session/create" },
+  );
 
   let json: {
     code?: number;
@@ -228,15 +291,19 @@ export async function createAkoolSession(
 
 export async function closeAkoolSession(akoolSessionId: string): Promise<void> {
   const token = await getAkoolToken();
-  const res = await fetch(SESSION_CLOSE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+  const res = await fetchWithRetry(
+    SESSION_CLOSE_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ id: akoolSessionId }),
+      cache: "no-store",
     },
-    body: JSON.stringify({ id: akoolSessionId }),
-    cache: "no-store",
-  });
+    { label: "session/close" },
+  );
   if (!res.ok) {
     throw new Error(`Akool session/close HTTP ${res.status}`);
   }
