@@ -21,6 +21,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.listening import ListeningTestResponse
+from app.schemas.reading import ReadingTestResponse
+from app.schemas.speaking import SpeakingPrompts
+from app.schemas.writing import WritingTestResponse
+
 # ─── Common ──────────────────────────────────────────────────────────
 
 DiagnoseSectionKind = Literal[
@@ -86,18 +91,27 @@ class FocusArea(BaseModel):
 
 
 class DiagnoseGenerateRequest(BaseModel):
+    """Request shape for the diagnose generation orchestrator.
+
+    Note on `sections`: services/ai's orchestrator only generates the 4
+    AI-backed sections (READING/LISTENING/WRITING/SPEAKING). Vocab and
+    Grammar are bank-sampled in apps/web (T18 generate route), NOT here.
+    The default reflects this — even if a caller passes VOCAB/GRAMMAR
+    in the list, the orchestrator ignores them.
+    """
+
     exam_type: Literal["KET", "PET"]
     week_start: str  # ISO 8601 date YYYY-MM-DD
     focus_areas: list[FocusArea] = Field(default_factory=list)  # empty in cold start
-    # Sections requested (always all 6 in v1, but field is here for future flexibility)
+    # Sections requested. Default is the 4 AI-generated sections.
+    # The orchestrator silently ignores VOCAB/GRAMMAR if present (those
+    # come from bank-sampling in apps/web).
     sections: list[DiagnoseSectionKind] = Field(
         default_factory=lambda: [
             "READING",
             "LISTENING",
             "WRITING",
             "SPEAKING",
-            "VOCAB",
-            "GRAMMAR",
         ]
     )
 
@@ -184,12 +198,53 @@ class DiagnoseGrammarContent(BaseModel):
 
 
 class DiagnoseGenerateResponse(BaseModel):
+    """Full sections payload — what eventually lands in `Test.payload.sections`
+    after apps/web composes the AI-generated half (this services/ai orchestrator)
+    with the bank-sampled half (vocab + grammar)."""
+
     READING: DiagnoseReadingContent
     LISTENING: DiagnoseListeningContent
     WRITING: DiagnoseWritingContent
     SPEAKING: DiagnoseSpeakingContent
     VOCAB: DiagnoseVocabContent
     GRAMMAR: DiagnoseGrammarContent
+
+
+# ─── Orchestrator output shape (services/ai → apps/web) ──────────────
+#
+# This is what `agents/diagnose_generator.generate_diagnose_test()` returns.
+# It carries the raw outputs of the four per-kind generators so apps/web
+# can extract everything it needs (e.g., speaking prompts/persona/photoKeys
+# for `Test.speakingPrompts`/`Test.speakingPersona`/`Test.speakingPhotoKeys`,
+# listening audio_script for Edge-TTS rendering, etc.).
+#
+# apps/web later adapts these into `Test.payload.sections.<KIND>` shapes
+# (DiagnoseReadingContent, DiagnoseListeningContent, etc.) and merges with
+# bank-sampled vocab + grammar to produce the final DiagnoseGenerateResponse.
+
+class DiagnoseAIGenerateResponse(BaseModel):
+    """Response shape returned by the services/ai diagnose orchestrator.
+
+    Carries ONLY the 4 AI-generated sections — Reading, Listening, Writing,
+    Speaking. Each field holds the FULL raw output from the corresponding
+    per-kind generator (no truncation/adaptation here — that happens in
+    apps/web's T18 generate route, which composes this with bank-sampled
+    vocab + grammar to produce the full `Test.payload`).
+
+    Field naming: lowercase to flag these as "raw generator outputs"
+    distinct from the uppercase section-key shapes in DiagnoseGenerateResponse
+    that match `Test.payload.sections.<KIND>`.
+
+    Why services/ai stays stateless: vocab + grammar bank-sampling needs
+    Postgres access (the Cambridge wordlist + grammar topic tables live in
+    apps/web's database). Keeping that work in apps/web means services/ai
+    has no DB dep — it remains a pure AI generation/grading service.
+    """
+
+    reading: ReadingTestResponse
+    listening: ListeningTestResponse
+    writing: WritingTestResponse
+    speaking: SpeakingPrompts
 
 
 # ─── /v1/diagnose/analysis request/response ──────────────────────────
