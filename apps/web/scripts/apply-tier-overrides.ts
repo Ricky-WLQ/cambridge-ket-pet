@@ -29,7 +29,7 @@ async function main() {
   console.log(`[overrides] loaded ${rows.length} override rows`);
 
   let updated = 0;
-  let notFound: string[] = [];
+  const notFound: string[] = [];
   for (const r of rows) {
     const result = await prisma.word.updateMany({
       where: {
