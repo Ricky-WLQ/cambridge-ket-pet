@@ -142,7 +142,15 @@ export async function fetchListeningPayload(
   return snakeToCamelListening(raw);
 }
 
-function snakeToCamelListening(
+/**
+ * Convert the raw snake_case ListeningTestResponse from services/ai
+ * (Pydantic) into the camelCase ``ListeningTestPayloadV2`` consumed by
+ * the rest of the apps/web Node pipeline. Exported so the diagnose
+ * generate route (which already received the raw listening payload as
+ * part of the diagnose orchestrator response) can run TTS without
+ * making a second AI call.
+ */
+export function snakeToCamelListening(
   raw: Record<string, unknown>,
 ): ListeningTestPayloadV2 {
   const rawParts = raw.parts as Array<Record<string, unknown>>;

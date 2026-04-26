@@ -122,7 +122,10 @@ async def summarize_diagnose(
         result = await agent.run(user_prompt)
         last_response = result.output
 
-        errors = validate_diagnose_summary(last_response)
+        # Pass req so the validator can also run the score-misreading
+        # checks (PCT_AS_POINTS_*, BAD_FULL_MARKS_DENOMINATOR) against the
+        # request's per_section_scores + overall_score.
+        errors = validate_diagnose_summary(last_response, req)
         if not errors:
             return last_response
 

@@ -11,13 +11,10 @@ Two validators here:
   - ``validate_diagnose_summary`` — checks the 4-field summary, with the
     weekly-specific rule that ``narrative_zh`` must reference the week date
     (a 4-digit year token, since Chinese narrative usually opens with
-    "本周（2026年X月X日—X月X日）……").
-
-Pending follow-ups:
-  - See TODO(T13) on ``validate_diagnose_summary`` — the
-    percentage-as-points / "满分 X" score-misreading checks from
-    ``validators/analysis.py::validate_student_analysis`` need to be
-    ported here once the summary agent is wired up in T13.
+    "本周（2026年X月X日—X月X日）……") plus the same score-misreading
+    checks (PCT_AS_POINTS_*, BAD_FULL_MARKS_DENOMINATOR) used by the
+    student-analysis validator. Both validators delegate to the shared
+    ``_score_misreading.check_score_misreading`` helper.
 """
 
 from __future__ import annotations
@@ -28,9 +25,11 @@ from typing import get_args
 from app.schemas.diagnose import (
     DiagnoseAnalysisResponse,
     DiagnoseSectionKind,
+    DiagnoseSummaryRequest,
     DiagnoseSummaryResponse,
     KnowledgePointCategory,
 )
+from app.validators._score_misreading import check_score_misreading
 
 # Derive the closed-set whitelists from the Literal types in schemas so
 # taxonomy edits happen in ONE place. ``typing.get_args`` returns the tuple
@@ -85,19 +84,72 @@ def validate_diagnose_analysis(response: DiagnoseAnalysisResponse) -> list[str]:
     return errors
 
 
-def validate_diagnose_summary(response: DiagnoseSummaryResponse) -> list[str]:
+def _collect_percentage_scores(req: DiagnoseSummaryRequest) -> set[int]:
+    """All 0-100 percentage scores referenced in the diagnose summary input.
+
+    Pulls from ``per_section_scores`` (six possibly-null section scores) and
+    ``overall_score`` (always present, since the schema has it as ``float``).
+    Floats are floored to int via ``int()`` because the score-misreading
+    checks rely on whole-number string matches like '25 分'.
+    """
+    scores: set[int] = set()
+    pss = req.per_section_scores
+    for v in (
+        pss.READING,
+        pss.LISTENING,
+        pss.WRITING,
+        pss.SPEAKING,
+        pss.VOCAB,
+        pss.GRAMMAR,
+    ):
+        if v is not None:
+            scores.add(int(v))
+    scores.add(int(req.overall_score))
+    return scores
+
+
+def _all_summary_text(response: DiagnoseSummaryResponse) -> str:
+    """Combined haystack for score-misreading scan: narrative + bullet lists."""
+    return "\n".join(
+        [
+            *response.strengths,
+            *response.weaknesses,
+            *response.priority_actions,
+            response.narrative_zh,
+        ]
+    )
+
+
+def validate_diagnose_summary(
+    response: DiagnoseSummaryResponse,
+    request: DiagnoseSummaryRequest | None = None,
+) -> list[str]:
     """Validate the 4-field summary.
 
-    TODO(T13): Port the score-misreading checks from validate_student_analysis
-      (percentage-as-points confusion, bogus '满分 X' claims) when the
-      summary agent is wired up. Currently this validator only checks
-      structural emptiness + the year-token rule. The same LLM failure
-      modes apply here because the diagnose summary will reference
-      per_section_scores + overall_score in narrative_zh.
+    Args:
+        response: Agent output to validate.
+        request: Optional request — when provided, the validator runs the
+            score-misreading checks against the percentage scores referenced
+            in ``per_section_scores`` + ``overall_score``. When omitted (e.g.,
+            from a unit test that only cares about structural checks), the
+            score-misreading checks are skipped.
 
-    Reuses the analyze_student validator semantics but adds the
-    weekly-specific rule: ``narrative_zh`` must contain a 4-digit year token
-    (enforces the "first sentence names the week" rule).
+    Returns:
+        Empty list when the output is acceptable; a list of human-readable
+        error strings otherwise. The caller may choose to retry, log, or
+        return-anyway based on its retry budget.
+
+    Checks:
+      - ``narrative_zh`` non-empty + contains a 4-digit year token
+        (enforces "first sentence names the week" rule).
+      - ``strengths`` and ``priority_actions`` each have >= 1 entry.
+      - When ``request`` is provided: PCT_AS_POINTS_* and
+        BAD_FULL_MARKS_DENOMINATOR checks via the shared
+        ``check_score_misreading`` helper. Same failure modes the
+        ``validate_student_analysis`` validator catches — the LLM
+        sometimes confuses the 0-100 percentage scores with raw point
+        totals (e.g., emitting "听力得了 25 分（满分 100）" when the
+        actual score was 25%).
     """
     errors: list[str] = []
 
@@ -117,5 +169,12 @@ def validate_diagnose_summary(response: DiagnoseSummaryResponse) -> list[str]:
 
     if not response.priority_actions:
         errors.append("priority_actions must have >=1 entry")
+
+    # Score-misreading checks — only when caller provided the request so
+    # we know which percentages to scan for.
+    if request is not None:
+        text = _all_summary_text(response)
+        percent_scores = _collect_percentage_scores(request)
+        errors.extend(check_score_misreading(text, percent_scores))
 
     return errors

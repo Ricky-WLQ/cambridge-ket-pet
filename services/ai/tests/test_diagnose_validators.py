@@ -21,9 +21,11 @@ from pydantic import ValidationError
 
 from app.schemas.diagnose import (
     DiagnoseAnalysisResponse,
+    DiagnoseSummaryRequest,
     DiagnoseSummaryResponse,
     KnowledgePointGroup,
     KnowledgePointQuestion,
+    PerSectionScores,
 )
 from app.validators.diagnose import (
     validate_diagnose_analysis,
@@ -216,3 +218,112 @@ def test_validate_summary_rejects_empty_priority_actions() -> None:
     resp = _summary(priority_actions=[])
     errors = validate_diagnose_summary(resp)
     assert any("priority_actions" in e for e in errors)
+
+
+# ─── validate_diagnose_summary — score-misreading checks ─────────────────
+#
+# These tests mirror ``test_analysis_validators.py``'s percent/full-marks
+# checks. The same LLM failure modes apply to diagnose summaries because
+# ``narrative_zh`` references ``per_section_scores`` + ``overall_score``.
+
+
+def _summary_req(
+    *,
+    listening: float | None = 25.0,
+    reading: float | None = 60.0,
+    overall: float = 45.0,
+) -> DiagnoseSummaryRequest:
+    """Build a minimal DiagnoseSummaryRequest with given percentage scores."""
+    return DiagnoseSummaryRequest(
+        exam_type="KET",
+        week_start="2026-04-20",
+        week_end="2026-04-26",
+        per_section_scores=PerSectionScores(
+            READING=reading,
+            LISTENING=listening,
+            WRITING=None,
+            SPEAKING=None,
+            VOCAB=None,
+            GRAMMAR=None,
+        ),
+        overall_score=overall,
+        knowledge_points=[],
+        weak_count=0,
+    )
+
+
+def test_validate_summary_detects_pct_written_as_points() -> None:
+    """'听力得了 25 分' when the actual score was 25% must flag PCT_AS_POINTS."""
+    req = _summary_req(listening=25.0)
+    resp = _summary(
+        narrative_zh=(
+            "本周（2026-04-20 至 2026-04-26）你的听力得了 25 分，"
+            "需要重点提升。"
+        ),
+    )
+    errors = validate_diagnose_summary(resp, req)
+    assert any("PCT_AS_POINTS_25" in e for e in errors), (
+        f"expected PCT_AS_POINTS_25, got: {errors}"
+    )
+
+
+def test_validate_summary_detects_bad_full_marks_denominator() -> None:
+    """'满分 100' (or 25, 40, 50 etc.) is a hallucination — only 满分 5 is valid."""
+    req = _summary_req()
+    resp = _summary(
+        narrative_zh=(
+            "本周（2026-04-20 至 2026-04-26）你的整体得分 45 分（满分 100），"
+            "仍需努力。"
+        ),
+    )
+    errors = validate_diagnose_summary(resp, req)
+    assert any("BAD_FULL_MARKS_DENOMINATOR" in e for e in errors), (
+        f"expected BAD_FULL_MARKS_DENOMINATOR, got: {errors}"
+    )
+
+
+def test_validate_summary_accepts_correct_percentage_phrasing() -> None:
+    """'听力得分 25%' (using the % sign) must NOT flag — it's the correct form."""
+    req = _summary_req(listening=25.0, reading=60.0, overall=45.0)
+    resp = _summary(
+        narrative_zh=(
+            "本周（2026-04-20 至 2026-04-26）你的听力得分 25%，"
+            "阅读 60%，整体 45%，需要继续加油。"
+        ),
+    )
+    errors = validate_diagnose_summary(resp, req)
+    assert errors == [], f"expected no errors, got: {errors}"
+
+
+def test_validate_summary_allows_rubric_band_phrasing() -> None:
+    """'X 分（满分 5 分）' (rubric band score) must remain legal."""
+    req = _summary_req()
+    resp = _summary(
+        weaknesses=[
+            "Writing Content 3 分（满分 5 分），段落连接词不足",
+        ],
+        narrative_zh=(
+            "本周（2026-04-20 至 2026-04-26）写作仅得 3/5 分，"
+            "建议加强。"
+        ),
+    )
+    errors = validate_diagnose_summary(resp, req)
+    assert errors == [], f"expected no errors, got: {errors}"
+
+
+def test_validate_summary_skips_score_checks_without_request() -> None:
+    """When called without a request, score-misreading checks must NOT run.
+
+    This documents the test-only / structural-check pathway: passing only
+    the response argument runs only the year-token + emptiness checks.
+    """
+    resp = _summary(
+        narrative_zh=(
+            "本周（2026-04-20 至 2026-04-26）你的听力得了 25 分（满分 100），"
+            "需要重点提升。"  # Would flag if req were provided.
+        ),
+    )
+    errors = validate_diagnose_summary(resp)
+    # No PCT_AS_POINTS / BAD_FULL_MARKS errors when req is omitted.
+    assert not any("PCT_AS_POINTS" in e for e in errors)
+    assert not any("BAD_FULL_MARKS" in e for e in errors)

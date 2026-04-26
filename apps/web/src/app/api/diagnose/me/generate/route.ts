@@ -7,6 +7,11 @@ import { checkAndRecordGeneration } from "@/lib/rateLimit";
 import { generateDiagnose } from "@/lib/aiClient";
 import { currentWeekStart, currentWeekEnd } from "@/lib/diagnose/week";
 import { SECTION_TIME_LIMIT_SEC } from "@/lib/diagnose/sectionLimits";
+import {
+  generateListeningAudio,
+  snakeToCamelListening,
+} from "@/lib/audio/generate";
+import type { AudioSegmentRecord } from "@/lib/audio/types";
 
 export const maxDuration = 180; // long-running due to AI orchestration (4 parallel generators)
 
@@ -36,16 +41,15 @@ const DIAGNOSE_RATE_LIMIT_PER_HOUR = 3;
  *    Word + GrammarQuestion tables live in apps/web's database. Keeping
  *    services/ai stateless is a deliberate simplification (see
  *    services/ai/app/agents/diagnose_generator.py docstring).
- *  - Listening audio rendering is deferred. The existing listening pattern
- *    in `apps/web/src/app/api/tests/generate/route.ts` (semaphore + fire-
- *    and-forget setImmediate + Edge-TTS pipeline) is tightly coupled to
- *    `ListeningTestPayloadV2` (camelCase). The diagnose's listening payload
- *    arrives in the raw snake_case Pydantic shape and the conversion helper
- *    `snakeToCamelListening` in lib/audio/generate.ts is private. Rather
- *    than expand scope here, we set audioStatus=GENERATING and leave a TODO
- *    for a follow-up task to wire up actual TTS rendering. The diagnose
- *    listening section runner can already render a "preparing audio"
- *    placeholder while audioStatus=GENERATING.
+ *  - Listening audio rendering is wired up via the same Edge-TTS pipeline
+ *    (semaphore + setImmediate + generateListeningAudio) used by the
+ *    standalone listening generator at `apps/web/src/app/api/tests/generate/
+ *    route.ts`. The orchestrator's raw snake_case ListeningTestResponse is
+ *    converted to camelCase via the now-exported `snakeToCamelListening`.
+ *    After TTS completes the route writes the per-part audioStartSec/
+ *    audioEndSec derived from the segment records back into the diagnose
+ *    payload's `sections.LISTENING.parts` so the listening section runner
+ *    can index audio playback per part.
  *  - Focus-area extraction from last week's knowledgePoints is approximate —
  *    we count category frequencies, not real ExamPoint FKs. The Python
  *    orchestrator currently treats focus_areas as seed_exam_points hints
@@ -395,14 +399,9 @@ export async function POST() {
         difficulty: examType === "KET" ? "A2" : "B1",
         payload: payload as unknown as Prisma.JsonObject,
         generatedBy: "deepseek-chat",
-        // Listening audio: marked GENERATING for background pickup.
-        // TODO(diagnose-listening-audio): wire up Edge-TTS rendering of
-        // the diagnose listening payload. Mirror the pattern in
-        // apps/web/src/app/api/tests/generate/route.ts (semaphore +
-        // setImmediate + generateListeningAudio). Will need to either
-        // (a) export `snakeToCamelListening` from lib/audio/generate.ts
-        // and pass rawListening in, or (b) re-fetch listening separately
-        // via fetchListeningPayload (wastes one AI call but is clean).
+        // Listening audio: marked GENERATING; the fire-and-forget
+        // pipeline below transitions it to READY (or FAILED) once Edge-TTS
+        // finishes rendering and the result is uploaded to R2.
         audioStatus: "GENERATING",
         audioGenStartedAt: new Date(),
         // Speaking row-columns
@@ -429,7 +428,26 @@ export async function POST() {
   });
 
   // ──── Step 12: Trigger listening audio generation (background) ──
-  // Deferred — see TODO above. A future task will wire this up.
+  // Fire-and-forget: render the listening audio with Edge-TTS, upload the
+  // concatenated mp3 to R2, then write back R2 key + per-segment timing
+  // records + per-part audioStartSec/audioEndSec into the diagnose payload.
+  //
+  // We do NOT acquire the audioSemaphore here — diagnose generation is
+  // user-initiated and rate-limited (3/hour) and the listening section
+  // runner can fall back to a "preparing audio" placeholder. If the
+  // global audio queue is busy, queueing here would block the listening
+  // section indefinitely; on failure we mark audioStatus=FAILED so the
+  // runner can show an explicit error.
+  //
+  // Caveat: this fires AFTER the response is sent, so failures are only
+  // visible via `audioStatus`/`audioErrorMessage` on the Test row. The
+  // `/status` polling on the listening section runner picks that up.
+  void runListeningTtsInBackground({
+    testId: test.id,
+    examType,
+    rawListening: rawListening as unknown as Record<string, unknown>,
+    diagnosePayload: payload,
+  });
 
   // ──── Step 13: Return ─────────────────────────────────────────────
   return NextResponse.json(
@@ -440,4 +458,86 @@ export async function POST() {
     },
     { status: 201 },
   );
+}
+
+/**
+ * Background TTS pipeline for the diagnose's listening section.
+ *
+ * Steps:
+ *  1. Convert raw snake_case listening payload → camelCase
+ *     `ListeningTestPayloadV2` via the audio/generate helper.
+ *  2. Run `generateListeningAudio` to synthesize segments, concat to mp3,
+ *     and upload to R2. Returns { r2Key, segments }.
+ *  3. Compute per-part audioStartSec/audioEndSec from the segment records
+ *     by min(startMs)/max(endMs) over segments tagged with that partNumber.
+ *  4. Patch the diagnose payload's `sections.LISTENING.parts` with those
+ *     timestamps so the listening section runner can index audio playback.
+ *  5. Update Test row: audioStatus=READY, audioR2Key, audioSegments,
+ *     payload (now with per-part timestamps).
+ *
+ * On failure, marks audioStatus=FAILED with the error message; never
+ * throws (the route has already returned). The listening section runner
+ * polls `/api/tests/[id]/audio` (or similar) and surfaces the failure.
+ */
+async function runListeningTtsInBackground(args: {
+  testId: string;
+  examType: "KET" | "PET";
+  rawListening: Record<string, unknown>;
+  diagnosePayload: Record<string, unknown>;
+}): Promise<void> {
+  const { testId, examType, rawListening, diagnosePayload } = args;
+  try {
+    const camel = snakeToCamelListening(rawListening);
+    const ratePercent = examType === "KET" ? -5 : 0;
+    const { r2Key, segments } = await generateListeningAudio({
+      testId,
+      payload: camel,
+      ratePercent,
+    });
+
+    // Patch per-part audioStartSec/audioEndSec into the diagnose payload's
+    // listening section so the runner can index playback. We mutate a
+    // structural-cloned copy to avoid touching shared state.
+    const patched = JSON.parse(JSON.stringify(diagnosePayload));
+    type LP = { partNumber: number; audioStartSec: number; audioEndSec: number };
+    const parts: LP[] = patched.sections.LISTENING.parts;
+    for (const p of parts) {
+      const inPart = segments.filter(
+        (s: AudioSegmentRecord) => s.partNumber === p.partNumber,
+      );
+      if (inPart.length > 0) {
+        p.audioStartSec = Math.min(...inPart.map((s) => s.startMs)) / 1000;
+        p.audioEndSec = Math.max(...inPart.map((s) => s.endMs)) / 1000;
+      }
+    }
+
+    await prisma.test.update({
+      where: { id: testId },
+      data: {
+        payload: patched as unknown as Prisma.JsonObject,
+        audioStatus: "READY",
+        audioR2Key: r2Key,
+        audioSegments: segments as unknown as Prisma.JsonObject,
+        audioGenCompletedAt: new Date(),
+      },
+    });
+  } catch (err) {
+    console.error("[diagnose] listening audio gen failed:", err);
+    try {
+      await prisma.test.update({
+        where: { id: testId },
+        data: {
+          audioStatus: "FAILED",
+          audioErrorMessage: (err instanceof Error ? err.message : String(err))
+            .slice(0, 500),
+          audioGenCompletedAt: new Date(),
+        },
+      });
+    } catch (innerErr) {
+      console.error(
+        "[diagnose] failed to record audio FAILED status:",
+        innerErr,
+      );
+    }
+  }
 }

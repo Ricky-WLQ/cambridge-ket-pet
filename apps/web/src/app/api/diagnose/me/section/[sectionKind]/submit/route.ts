@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { currentWeekStart } from "@/lib/diagnose/week";
+import { maybeMarkDiagnoseComplete } from "@/lib/diagnose/markComplete";
 import {
   DIAGNOSE_SECTION_KINDS,
   type DiagnoseSectionKind,
@@ -196,7 +197,7 @@ export async function POST(req: Request, ctx: RouteCtx) {
       },
     });
     await updateSectionStatusMirror(wd.id, sectionKind, "SUBMITTED");
-    await maybeMarkComplete(wd.id);
+    await maybeMarkDiagnoseComplete(wd.id);
     return NextResponse.json({
       attemptId: attempt.id,
       status: "SUBMITTED",
@@ -282,7 +283,7 @@ export async function POST(req: Request, ctx: RouteCtx) {
     },
   });
   await updateSectionStatusMirror(wd.id, sectionKind, "GRADED");
-  await maybeMarkComplete(wd.id);
+  await maybeMarkDiagnoseComplete(wd.id);
 
   // ──── Step 8: Return ─────────────────────────────────────────────
   return NextResponse.json({
@@ -381,51 +382,7 @@ async function updateSectionStatusMirror(
   }
 }
 
-/**
- * Recompute WeeklyDiagnose.status: if all 6 section statuses are now in
- * {SUBMITTED, GRADED, AUTO_SUBMITTED}, transition the row to COMPLETE +
- * completedAt = now(). This is the gate-release moment — once COMPLETE,
- * `requireUngated` lets the user back into /ket and /pet pages.
- *
- * Note: Speaking's diagnose section status is mirrored from the speaking
- * pipeline — when /api/speaking/[attemptId]/submit succeeds, a follow-up
- * (T26 / T28 hook, or speaking submit itself if expanded later) sets
- * WeeklyDiagnose.speakingStatus = SUBMITTED. Until that happens,
- * speakingStatus stays IN_PROGRESS and this function is a no-op.
- */
-async function maybeMarkComplete(wdId: string): Promise<void> {
-  const wd = await prisma.weeklyDiagnose.findUnique({
-    where: { id: wdId },
-    select: {
-      readingStatus: true,
-      listeningStatus: true,
-      writingStatus: true,
-      speakingStatus: true,
-      vocabStatus: true,
-      grammarStatus: true,
-      status: true,
-    },
-  });
-  if (!wd) return;
-  if (wd.status === "COMPLETE" || wd.status === "REPORT_READY") return;
-
-  const finishedSet = new Set([
-    "SUBMITTED",
-    "GRADED",
-    "AUTO_SUBMITTED",
-  ] as const);
-  const allDone =
-    finishedSet.has(wd.readingStatus as never) &&
-    finishedSet.has(wd.listeningStatus as never) &&
-    finishedSet.has(wd.writingStatus as never) &&
-    finishedSet.has(wd.speakingStatus as never) &&
-    finishedSet.has(wd.vocabStatus as never) &&
-    finishedSet.has(wd.grammarStatus as never);
-
-  if (!allDone) return;
-
-  await prisma.weeklyDiagnose.update({
-    where: { id: wdId },
-    data: { status: "COMPLETE", completedAt: new Date() },
-  });
-}
+// `maybeMarkComplete` was extracted to ``@/lib/diagnose/markComplete`` so the
+// speaking submit route (which mirrors `WeeklyDiagnose.speakingStatus` from
+// a separate code path) can call the same recompute. See that module's
+// docstring for the rationale.
