@@ -28,7 +28,7 @@ export async function synthesizeSegment(args: SynthesizeArgs): Promise<void> {
   await tts.ttsPromise(args.text, args.outPath);
 }
 
-const RETRY_MAX_ATTEMPTS = 3;
+const RETRY_MAX_ATTEMPTS = 5;
 const RETRY_BACKOFF_MS = 2000;
 
 function isTransient(err: unknown): boolean {
@@ -39,7 +39,11 @@ function isTransient(err: unknown): boolean {
     code === "ECONNRESET" ||
     code === "ETIMEDOUT" ||
     code === "ECONNREFUSED" ||
-    /ECONNRESET|WebSocket|socket hang up/i.test(msg)
+    code === "ENOTFOUND" ||
+    code === "EAI_AGAIN" ||
+    /ECONNRESET|WebSocket|socket hang up|timed?\s*out|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|abort/i.test(
+      msg,
+    )
   );
 }
 
