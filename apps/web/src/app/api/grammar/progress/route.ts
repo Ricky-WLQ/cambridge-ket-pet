@@ -90,6 +90,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing or invalid required fields" }, { status: 400 });
   }
 
+  // Server-recompute isCorrect to prevent client-side stat corruption.
+  const isCorrect = body.userAnswer === body.correctIndex;
+
   const existing = await prisma.grammarProgress.findUnique({
     where: { userId_questionId: { userId, questionId: body.questionId } },
     select: { id: true },
@@ -105,7 +108,7 @@ export async function POST(request: Request) {
       examType,
       topicId: body.topicId,
       userAnswer: body.userAnswer,
-      isCorrect: body.isCorrect,
+      isCorrect,
       questionText: body.questionText,
       questionOptions: body.questionOptions,
       correctIndex: body.correctIndex,

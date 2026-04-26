@@ -81,6 +81,28 @@ describe("POST /api/grammar/progress", () => {
     expect(args.data.status).toBeUndefined();
   });
 
+  it("server-recomputes isCorrect — ignores client-supplied value", async () => {
+    findUnique.mockResolvedValue(null);
+    create.mockResolvedValue({ id: "p2" });
+    const res = await POST(reqWith("/api/grammar/progress", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        questionId: "q2", examType: "KET", topicId: "tenses_present",
+        userAnswer: 0,            // wrong
+        isCorrect: true,          // CLIENT LIES — server should ignore
+        questionText: "She _____ since 2018.",
+        questionOptions: ["works", "worked", "has worked", "will work"],
+        correctIndex: 2,
+        explanationZh: "现在完成时。",
+      }),
+    }));
+    expect(res.status).toBe(200);
+    const args = create.mock.calls[0][0];
+    expect(args.data.isCorrect).toBe(false);  // server saw 0 !== 2
+    expect(args.data.userAnswer).toBe(0);
+  });
+
   it("is idempotent — skips create when (userId, questionId) already exists", async () => {
     findUnique.mockResolvedValue({ id: "existing-p" });
     const res = await POST(reqWith("/api/grammar/progress", {
