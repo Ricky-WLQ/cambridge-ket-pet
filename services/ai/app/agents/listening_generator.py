@@ -50,6 +50,14 @@ def _build_agent() -> Agent[None, ListeningTestResponse]:
         output_type=ListeningTestResponse,
         system_prompt=LISTENING_SYSTEM_PROMPT,
         retries=1,
+        # DeepSeek's default max_tokens (~4096) is too small for the structured
+        # listening response: a single PART produces 5 questions × {prompt,
+        # 3 options, answer, explanation} + a multi-turn audio_script + per-
+        # part metadata. The pydantic-ai tool-call wrapping easily pushes
+        # output past 4k. When truncated mid-tool-call, pydantic-ai raises
+        # IncompleteToolCall and the diagnose orchestrator surfaces 502.
+        # 8000 is just under DeepSeek-chat's 8192 ceiling.
+        model_settings={"max_tokens": 8000},
     )
 
 
