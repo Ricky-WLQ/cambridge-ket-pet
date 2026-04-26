@@ -31,40 +31,19 @@
  * Pure: no I/O, no module mutation. Imports only from `./types` and `./grade`.
  */
 
-import type { DiagnosePayload, WrongAnswer } from "./types";
-import type { SectionGradeResult } from "./grade";
+import type {
+  DiagnoseGradeResults,
+  DiagnosePayload,
+  WrongAnswer,
+} from "./types";
 
-/** Per-section grade results (4 auto-graded + 2 AI-graded). */
-export interface DiagnoseGradeResults {
-  READING: SectionGradeResult;
-  LISTENING: SectionGradeResult;
-  VOCAB: SectionGradeResult;
-  GRAMMAR: SectionGradeResult;
-  /** Writing rubric scores (Cambridge 4-criteria, each 0-5) + feedback string. Null if AI grading failed. */
-  WRITING: WritingGrade | null;
-  /** Speaking rubric scores + transcript. Null if AI grading failed or speaking pending. */
-  SPEAKING: SpeakingGrade | null;
-}
-
-export interface WritingGrade {
-  scores: {
-    content: number; // 0-5
-    communicative: number; // 0-5
-    organisation: number; // 0-5
-    language: number; // 0-5
-  };
-  feedbackZh: string;
-}
-
-export interface SpeakingGrade {
-  scores: {
-    grammar: number; // 0-5 (Cambridge speaking rubric criteria)
-    vocabulary: number; // 0-5
-    pronunciation: number; // 0-5
-    interactiveCommunication: number; // 0-5
-  };
-  transcript: string; // user's spoken response (transcribed)
-}
+// Re-export for back-compat with existing consumers that import these from
+// this module (the canonical home is now `./types`).
+export type {
+  DiagnoseGradeResults,
+  WritingGrade,
+  SpeakingGrade,
+} from "./types";
 
 /** Maximum wrong answers collected — bounds the AI analysis prompt size. */
 const MAX_WRONG_ANSWERS = 40;

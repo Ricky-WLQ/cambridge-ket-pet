@@ -34,32 +34,16 @@ import type {
   DiagnoseReadingContent,
   DiagnoseVocabContent,
   GrammarAnswers,
+  ItemResult,
   ListeningAnswers,
   ReadingAnswers,
+  SectionGradeResult,
   VocabAnswers,
 } from "./types";
 
-/** Per-item grading detail. Consumed by the report's wrong-answer collector. */
-export interface ItemResult {
-  questionId: string;
-  isCorrect: boolean;
-  /** For MCQ sections, the option text the user picked; for Vocab, the user's typed text. null if unanswered. */
-  userAnswer: string | null;
-  /** For MCQ sections, options[correctIndex]; for Vocab, item.word. */
-  correctAnswer: string;
-}
-
-/** Result of grading any auto-gradeable section. */
-export interface SectionGradeResult {
-  /** Number of correct answers. */
-  rawScore: number;
-  /** Total number of items in the section. */
-  totalPossible: number;
-  /** 0-100 percent, integer-rounded. 0 when totalPossible is 0. */
-  scaledScore: number;
-  /** Detail per item, in the same order as the section's items. */
-  perItem: ItemResult[];
-}
+// Re-export for back-compat with existing consumers that import these from
+// this module (the canonical home is now `./types`).
+export type { ItemResult, SectionGradeResult } from "./types";
 
 /** Compute (rawScore, totalPossible, scaledScore) from a list of correctness flags. */
 function computeScore(perItem: ItemResult[]): {
@@ -74,7 +58,11 @@ function computeScore(perItem: ItemResult[]): {
   return { rawScore, totalPossible, scaledScore };
 }
 
-/** Look up an option by index, returning "<invalid>" when out of range. null userIndex → null. */
+/** Convert a user's selected MCQ index to the option text.
+ *  Returns null for null input; returns the literal string "<invalid>" for
+ *  out-of-range indexes so downstream wrong-answer collection can spot
+ *  malformed payloads. Submit-route Zod should clamp before reaching here.
+ */
 function optionTextOrNull(
   options: string[],
   userIndex: number | null,

@@ -40,7 +40,7 @@
  *    `findCurrentWeekDiagnose` + `decideGateState`.
  */
 
-import type { WeeklyDiagnose } from "@prisma/client";
+import type { DiagnoseStatus, WeeklyDiagnose } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentWeekStart } from "./week";
@@ -83,16 +83,25 @@ export function decideGateState(wd: WeeklyDiagnose | null): GateDecision {
   if (wd === null) {
     return { kind: "NEED_GENERATE", id: null };
   }
-  // COMPLETE, REPORT_READY, REPORT_FAILED all unblock.
-  // Only PENDING and IN_PROGRESS keep the user gated.
-  if (
-    wd.status === "COMPLETE" ||
-    wd.status === "REPORT_READY" ||
-    wd.status === "REPORT_FAILED"
-  ) {
-    return { kind: "UNBLOCKED", id: wd.id };
+  // Switch with TypeScript exhaustiveness check via `never`: if a new
+  // DiagnoseStatus enum value is added to the Prisma schema, the `default`
+  // branch's `const _exhaustive: never = status` becomes a compile error,
+  // forcing an explicit decision rather than silently re-gating users.
+  const status: DiagnoseStatus = wd.status;
+  switch (status) {
+    case "COMPLETE":
+    case "REPORT_READY":
+    case "REPORT_FAILED":
+      return { kind: "UNBLOCKED", id: wd.id };
+    case "PENDING":
+    case "IN_PROGRESS":
+      return { kind: "IN_PROGRESS", id: wd.id };
+    default: {
+      const _exhaustive: never = status;
+      void _exhaustive;
+      return { kind: "IN_PROGRESS", id: wd.id }; // safe fallback
+    }
   }
-  return { kind: "IN_PROGRESS", id: wd.id };
 }
 
 // ─── DB-touching helpers ─────────────────────────────────────────────────────

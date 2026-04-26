@@ -263,3 +263,61 @@ export type DiagnoseSectionAnswers =
   | SpeakingAnswers
   | VocabAnswers
   | GrammarAnswers;
+
+// ─── Grade Results (per-section + composite) ──────────────────────────────
+
+/** Per-item grading detail. Consumed by the report's wrong-answer collector. */
+export interface ItemResult {
+  questionId: string;
+  isCorrect: boolean;
+  /** For MCQ sections, the option text the user picked; for Vocab, the user's typed text. null if unanswered. */
+  userAnswer: string | null;
+  /** For MCQ sections, options[correctIndex]; for Vocab, item.word. */
+  correctAnswer: string;
+}
+
+/** Result of grading any auto-gradeable section. */
+export interface SectionGradeResult {
+  /** Number of correct answers. */
+  rawScore: number;
+  /** Total number of items in the section. */
+  totalPossible: number;
+  /** 0-100 percent, integer-rounded. 0 when totalPossible is 0. */
+  scaledScore: number;
+  /** Detail per item, in the same order as the section's items. */
+  perItem: ItemResult[];
+}
+
+/** Writing rubric scores (Cambridge 4-criteria, each 0-5) + feedback string. */
+export interface WritingGrade {
+  scores: {
+    content: number; // 0-5
+    communicative: number; // 0-5
+    organisation: number; // 0-5
+    language: number; // 0-5
+  };
+  feedbackZh: string;
+}
+
+/** Speaking rubric scores + transcript. */
+export interface SpeakingGrade {
+  scores: {
+    grammar: number; // 0-5 (Cambridge speaking rubric criteria)
+    vocabulary: number; // 0-5
+    pronunciation: number; // 0-5
+    interactiveCommunication: number; // 0-5
+  };
+  transcript: string; // user's spoken response (transcribed)
+}
+
+/** Per-section grade results (4 auto-graded + 2 AI-graded). */
+export interface DiagnoseGradeResults {
+  READING: SectionGradeResult;
+  LISTENING: SectionGradeResult;
+  VOCAB: SectionGradeResult;
+  GRAMMAR: SectionGradeResult;
+  /** Writing rubric scores (Cambridge 4-criteria, each 0-5) + feedback string. Null if AI grading failed. */
+  WRITING: WritingGrade | null;
+  /** Speaking rubric scores + transcript. Null if AI grading failed or speaking pending. */
+  SPEAKING: SpeakingGrade | null;
+}
