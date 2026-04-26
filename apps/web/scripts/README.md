@@ -68,3 +68,24 @@ Expected: `total 4624  glossed 4624  audio 4624`.
 |------------------------------|---------------------------------------------------------|
 | `fetch-speaking-photos.ts`   | Pull Pexels photos by topic → `apps/web/prisma/data`    |
 | `seed-speaking-photos.ts`    | Upload to R2 + insert `SpeakingPhoto` rows              |
+
+---
+
+## Phase 4b grammar seed pipeline
+
+Run in this order, all idempotent:
+
+1. `pnpm tsx scripts/parse-handbook-grammar.ts` — handbook JSON → GrammarTopic rows (40 total)
+2. `pnpm tsx scripts/seed-grammar-glosses.ts` — DeepSeek → labelZh + examples per topic (~5 min, ~$0.05)
+3. `pnpm tsx scripts/seed-grammar-questions.ts` — AI service /grammar-generate → ~15 MCQs per topic (~10-25 min, ~$1-2)
+
+Total: ~30 min wall time, ~$1.50 spend, one-time at deploy + annually for refresh.
+
+Prereq for step 3: AI service running on port 8001. Start it with:
+`cd services/ai && .venv/Scripts/python.exe -m uvicorn app.main:app --port 8001`
+
+## Annual refresh
+
+1. Re-download handbook PDFs if Cambridge has updated them.
+2. Edit `data/raw/grammar-topics.json` to reflect any new structure-inventory items.
+3. Re-run all 3 grammar scripts above. Step 1 is upsert (re-syncs schema fields). Steps 2-3 only touch missing/under-quota rows.
