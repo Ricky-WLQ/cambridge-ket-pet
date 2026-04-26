@@ -19,17 +19,23 @@ from fastapi import Depends, FastAPI, Header, HTTPException, status
 from pydantic import BaseModel
 
 from app.agents.analysis import analyze_student
+from app.agents.grammar_generator import run_grammar_generate
 from app.agents.listening_generator import generate_listening_test
 from app.agents.reading import generate_reading_test
 from app.agents.speaking_examiner import run_examiner_turn
 from app.agents.speaking_generator import generate_speaking_prompts
 from app.agents.speaking_scorer import score_speaking_attempt
+from app.agents.vocab_gloss import run_vocab_gloss
 from app.agents.writing import generate_writing_test, grade_writing_response
 from app.prompts.reading import UnsupportedReadingPart
 from app.prompts.writing import UnsupportedWritingPart
 from app.schemas.analysis import (
     StudentAnalysisRequest,
     StudentAnalysisResponse,
+)
+from app.schemas.grammar import (
+    GrammarGenerateRequest,
+    GrammarGenerateResponse,
 )
 from app.schemas.listening import ListeningTestResponse
 from app.schemas.reading import ReadingTestRequest, ReadingTestResponse
@@ -38,6 +44,7 @@ from app.schemas.speaking import (
     SpeakingPrompts,
     SpeakingScore,
 )
+from app.schemas.vocab import VocabGlossRequest, VocabGlossResponse
 from app.schemas.writing import (
     WritingGradeRequest,
     WritingGradeResponse,
@@ -371,3 +378,67 @@ async def speaking_score(body: SpeakingScoreBody) -> SpeakingScore:
     return await score_speaking_attempt(
         level=body.level, transcript=body.transcript
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 4a Vocab — batch gloss generation for Cambridge wordlists
+# ---------------------------------------------------------------------------
+
+
+@app.post(
+    "/vocab-gloss",
+    response_model=VocabGlossResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def vocab_gloss_endpoint(req: VocabGlossRequest) -> VocabGlossResponse:
+    """Batch-translate Cambridge wordlist entries to Chinese gloss + example.
+
+    Called by the seed script `apps/web/scripts/generate-vocab-glosses.ts`
+    one batch (≤100 words) per request. The agent retries up to 3 times on
+    validator failure (coverage + per-item example-contains-headword).
+    Returns 422 if generation fails after all retries.
+    """
+    try:
+        return await run_vocab_gloss(req)
+    except Exception as e:  # noqa: BLE001 — surface validator failure as 422
+        log.exception("vocab_gloss endpoint failed after retries")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "vocab_gloss_failed", "message": str(e)},
+        ) from e
+
+
+# ---------------------------------------------------------------------------
+# Phase 4b Grammar — per-topic MCQ generation for Cambridge grammar topics
+# ---------------------------------------------------------------------------
+
+
+@app.post(
+    "/grammar-generate",
+    response_model=GrammarGenerateResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def grammar_generate_endpoint(
+    req: GrammarGenerateRequest,
+) -> GrammarGenerateResponse:
+    """Generate a batch of 4-option MCQ grammar items for one topic.
+
+    Called by the seed script `apps/web/scripts/seed-grammar-questions.ts`
+    one batch (count <= 30) per request. The agent retries up to 3 times on
+    validator failure (blank-count + classification-reject + vocab-in-level
+    + dedupe). Returns 422 on validator failure after all retries; 500 on
+    unexpected errors (e.g., DeepSeek connectivity).
+    """
+    try:
+        return await run_grammar_generate(req)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "grammar_generate_failed", "message": str(e)},
+        ) from e
+    except Exception as e:  # noqa: BLE001 — surface unexpected as 500
+        log.exception("grammar_generate endpoint failed unexpectedly")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "grammar_generate_unexpected", "message": str(e)},
+        ) from e

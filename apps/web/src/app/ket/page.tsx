@@ -63,6 +63,26 @@ export default async function KetPortalPage() {
               Speaking · 与 AI 考官 Mina 实时对话
             </div>
           </Link>
+
+          <Link
+            href="/ket/vocab"
+            className="rounded-lg border border-neutral-300 p-5 transition hover:border-neutral-900 hover:shadow-sm"
+          >
+            <div className="text-lg font-semibold">词汇</div>
+            <div className="mt-1 text-xs text-neutral-500">
+              Vocabulary · A2 Key 官方词表 · 1,599 词
+            </div>
+          </Link>
+
+          <Link
+            href="/ket/grammar"
+            className="rounded-lg border border-neutral-300 p-5 transition hover:border-neutral-900 hover:shadow-sm"
+          >
+            <div className="text-lg font-semibold">语法</div>
+            <div className="mt-1 text-xs text-neutral-500">
+              Grammar · A2 Key 官方语法清单 · 19 个主题
+            </div>
+          </Link>
         </div>
       </main>
     </div>

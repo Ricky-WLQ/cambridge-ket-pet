@@ -1,0 +1,364 @@
+{
+  "topics": [
+    {
+      "examType": "KET",
+      "category": "tenses",
+      "topicId": "present_simple",
+      "labelEn": "Present simple",
+      "spec": "States, habits, systems and processes; routines; general truths; scheduled events.",
+      "murphyUnits": [3, 4, 5],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.49"
+    },
+    {
+      "examType": "KET",
+      "category": "tenses",
+      "topicId": "present_continuous",
+      "labelEn": "Present continuous",
+      "spec": "Present actions; planned future; temporary situations.",
+      "murphyUnits": [1, 2],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.49"
+    },
+    {
+      "examType": "KET",
+      "category": "tenses",
+      "topicId": "past_simple",
+      "labelEn": "Past simple",
+      "spec": "Past events; finished actions at a definite past time; with adverbs ago/yesterday/last...",
+      "murphyUnits": [5, 6, 7],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.49"
+    },
+    {
+      "examType": "KET",
+      "category": "tenses",
+      "topicId": "past_continuous",
+      "labelEn": "Past continuous",
+      "spec": "Parallel past actions; continuous actions interrupted by past simple.",
+      "murphyUnits": [6],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.49"
+    },
+    {
+      "examType": "KET",
+      "category": "tenses",
+      "topicId": "present_perfect_simple",
+      "labelEn": "Present perfect simple",
+      "spec": "Recent past with just; indefinite past with yet/already/never/ever; unfinished past with for/since.",
+      "murphyUnits": [7, 8, 11, 12, 13],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.49"
+    },
+    {
+      "examType": "KET",
+      "category": "tenses",
+      "topicId": "future_will_going_to",
+      "labelEn": "Future with will / going to",
+      "spec": "Offers, promises, predictions (will); plans, intentions, evidence-based predictions (going to).",
+      "murphyUnits": [21, 22, 23],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.49"
+    },
+    {
+      "examType": "KET",
+      "category": "modals",
+      "topicId": "modals_basic",
+      "labelEn": "Modals (can/could/would/will/shall/should/may/must/needn't)",
+      "spec": "Ability (can/could); polite requests (would/could); future (will); offer/suggestion (shall); advice (should); possibility (may); obligation (must, have got to); prohibition (mustn't); lack of necessity (needn't).",
+      "murphyUnits": [25, 26, 27, 28, 29, 30, 31, 32, 33],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.49"
+    },
+    {
+      "examType": "KET",
+      "category": "verb_forms",
+      "topicId": "imperatives",
+      "labelEn": "Imperatives",
+      "spec": "Affirmative + negative imperatives; let's for suggestions.",
+      "murphyUnits": [37],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "verb_forms",
+      "topicId": "gerunds",
+      "labelEn": "Gerunds (-ing form)",
+      "spec": "Gerunds after verbs (enjoy/like/finish); after prepositions; as subjects and objects.",
+      "murphyUnits": [56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "verb_forms",
+      "topicId": "infinitives_with_to",
+      "labelEn": "Infinitives with/without to",
+      "spec": "Infinitive with to after verbs (want/decide/plan); after adjectives; bare infinitive after modals.",
+      "murphyUnits": [54, 55],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "verb_forms",
+      "topicId": "passive_present_past_simple",
+      "labelEn": "Passive forms (present + past simple)",
+      "spec": "Present simple passive (is/are + past participle); past simple passive (was/were + past participle).",
+      "murphyUnits": [42, 43, 44],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "clause_types",
+      "topicId": "subordinate_clauses_basic",
+      "labelEn": "Main + subordinate (if/when/because)",
+      "spec": "Main clause coordination (and/but/or); subordinate clauses with if/when/because; verbs of mental state (sure/certain/know/think/believe/hope; say/tell).",
+      "murphyUnits": [110, 111, 112, 113, 114, 115, 116, 117],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "interrogatives",
+      "topicId": "questions_wh_yesno_short",
+      "labelEn": "Question forms (wh-, yes/no, short answers)",
+      "spec": "Wh-questions (what/where/when/who/whose/which/how-much/how-many/how-often/how-long/why); yes/no questions; short answers; tag questions.",
+      "murphyUnits": [49, 50, 51],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "nouns",
+      "topicId": "nouns_basic",
+      "labelEn": "Nouns (countable/uncountable, plurals, possessives)",
+      "spec": "Singular and plural (regular and irregular); countable and uncountable; possessive 's and of.",
+      "murphyUnits": [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "pronouns",
+      "topicId": "pronouns_basic",
+      "labelEn": "Pronouns (subject/object/possessive)",
+      "spec": "Subject (I/you/he/she/it/we/they); object (me/you/him/her/it/us/them); possessive determiners (my/your/his/her/its/our/their) + possessive pronouns (mine/yours/his/hers/ours/theirs).",
+      "murphyUnits": [80, 81, 82, 83, 84, 85, 86, 87, 88, 89],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "adjectives",
+      "topicId": "adjectives_comparatives",
+      "labelEn": "Adjectives (comparatives, superlatives, common adjectives)",
+      "spec": "Adjectives before nouns + after be; comparatives -er/more; superlatives -est/most; (not) as...as.",
+      "murphyUnits": [96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.50"
+    },
+    {
+      "examType": "KET",
+      "category": "adverbs",
+      "topicId": "adverbs_frequency_manner_degree",
+      "labelEn": "Adverbs (frequency, manner, degree)",
+      "spec": "Frequency (always/usually/often/sometimes/never); manner (slowly/quickly/well/badly); degree (very/quite/really/too).",
+      "murphyUnits": [101, 102, 105, 106, 107],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.51"
+    },
+    {
+      "examType": "KET",
+      "category": "prepositions",
+      "topicId": "prepositions_time_place_movement",
+      "labelEn": "Prepositions (time, place, movement)",
+      "spec": "Time (at/on/in/for/since/from...to/until/before/after); place (at/on/in/by/under/over/between/in front of/behind); movement (to/from/into/out of/up/down/across).",
+      "murphyUnits": [120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.51"
+    },
+    {
+      "examType": "KET",
+      "category": "connectives",
+      "topicId": "connectives_basic",
+      "labelEn": "Connectives (and, but, or; when, while, until; because, since, so)",
+      "spec": "Coordinating (and/but/or); time (when/while/until/before/after/as soon as); reason (because/since/as/for); result (so/so that).",
+      "murphyUnits": [110, 111, 112, 113, 114, 115, 116, 117],
+      "source": "© UCLES 2025; A2 Key handbook 2020 p.51"
+    },
+    {
+      "examType": "PET",
+      "category": "tenses",
+      "topicId": "present_simple",
+      "labelEn": "Present simple",
+      "spec": "States, habits, systems and processes; routines; general truths; scheduled events.",
+      "murphyUnits": [3, 4, 5],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "tenses",
+      "topicId": "present_continuous",
+      "labelEn": "Present continuous",
+      "spec": "Present actions; planned future; temporary situations.",
+      "murphyUnits": [1, 2],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "tenses",
+      "topicId": "past_simple",
+      "labelEn": "Past simple",
+      "spec": "Past events; finished actions at a definite past time.",
+      "murphyUnits": [5, 6, 7],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "tenses",
+      "topicId": "past_continuous",
+      "labelEn": "Past continuous",
+      "spec": "Parallel past actions; continuous actions interrupted by past simple.",
+      "murphyUnits": [6],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "tenses",
+      "topicId": "present_perfect_simple",
+      "labelEn": "Present perfect simple",
+      "spec": "Recent past with just; indefinite past with yet/already/never/ever; unfinished past with for/since.",
+      "murphyUnits": [7, 8, 11, 12, 13],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "tenses",
+      "topicId": "future_will_going_to_was_were_going_to",
+      "labelEn": "Future (will / going to / was/were going to)",
+      "spec": "Predictions (will); plans + evidence (going to); past intention/plan (was/were going to).",
+      "murphyUnits": [21, 22, 23, 24],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "modals",
+      "topicId": "modals_extended",
+      "labelEn": "Modals (can/could/would/will/shall/should/may/must/might/ought to/used to + needn't)",
+      "spec": "All KET modals + might (possibility); ought to (advice); used to + infinitive (past habits).",
+      "murphyUnits": [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "verb_forms",
+      "topicId": "imperatives",
+      "labelEn": "Imperatives",
+      "spec": "Affirmative + negative imperatives; let's for suggestions.",
+      "murphyUnits": [37],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "verb_forms",
+      "topicId": "gerunds_infinitives_to",
+      "labelEn": "Gerunds vs infinitives (verb + ing/to)",
+      "spec": "Verb + gerund (enjoy/finish/avoid); verb + infinitive (want/decide/plan); verb + object + infinitive (ask/tell/want).",
+      "murphyUnits": [56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "verb_forms",
+      "topicId": "passive_extended_modal",
+      "labelEn": "Passive forms (present/past simple + modal passive)",
+      "spec": "Present + past simple passive; modal passive (must/should/can be + past participle).",
+      "murphyUnits": [42, 43, 44, 45],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.70"
+    },
+    {
+      "examType": "PET",
+      "category": "clause_types",
+      "topicId": "relative_clauses",
+      "labelEn": "Relative clauses (defining + non-defining)",
+      "spec": "Defining (who/which/that/whose) without commas; non-defining (who/which/whose) with commas.",
+      "murphyUnits": [90, 91, 92, 93, 94, 95],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "interrogatives",
+      "topicId": "questions_extended",
+      "labelEn": "Question forms + indirect/embedded questions",
+      "spec": "All KET question forms + indirect questions (Could you tell me what time...?); embedded questions in statements.",
+      "murphyUnits": [49, 50, 51],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "nouns",
+      "topicId": "nouns_basic",
+      "labelEn": "Nouns (countable/uncountable, plurals, possessives, compound)",
+      "spec": "All KET noun rules + compound nouns (toothbrush, swimming pool).",
+      "murphyUnits": [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "pronouns",
+      "topicId": "pronouns_extended_reflexive",
+      "labelEn": "Pronouns (subject/object/possessive + reflexive/emphatic)",
+      "spec": "All KET pronouns + reflexive pronouns (myself/yourself/himself/herself/itself/ourselves/yourselves/themselves) for emphasis or when subject = object.",
+      "murphyUnits": [80, 81, 82, 83, 84, 85, 86, 87, 88, 89],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "adjectives",
+      "topicId": "adjectives_comparison_patterns",
+      "labelEn": "Adjectives (comparison patterns: as...as, too...to, enough to)",
+      "spec": "Comparatives + superlatives + (not) as...as + too + adjective + to + infinitive + adjective + enough + to + infinitive + compound adjectives.",
+      "murphyUnits": [96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "adverbs",
+      "topicId": "adverbs_extended_sentence",
+      "labelEn": "Adverbs (frequency, manner, degree + sentence adverbs)",
+      "spec": "All KET adverbs + sentence adverbs (too, either, also, however).",
+      "murphyUnits": [101, 102, 105, 106, 107],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "prepositions",
+      "topicId": "prepositions_extended_following_words",
+      "labelEn": "Prepositions (time, place, movement + following nouns/adjectives/verbs)",
+      "spec": "All KET prepositions + prepositions following nouns (advice on, opinion of); adjectives (afraid of, interested in); verbs (laugh at, ask for, listen to, look at).",
+      "murphyUnits": [120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "connectives",
+      "topicId": "connectives_extended",
+      "labelEn": "Connectives (coordinating, time, reason, result + concession + condition)",
+      "spec": "All KET connectives + concession (although/while/whereas/even though); condition (if/unless/in case); result (so/so that/such...that/so...that).",
+      "murphyUnits": [110, 111, 112, 113, 114, 115, 116, 117],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "conditionals",
+      "topicId": "conditionals_zero_first_second",
+      "labelEn": "Conditionals (Type 0, Type 1, Type 2)",
+      "spec": "Type 0 (if + present simple, present simple — general truths); Type 1 (if + present simple, will + infinitive — likely future); Type 2 (if + past simple, would + infinitive — hypothetical).",
+      "murphyUnits": [38, 39, 40],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.71"
+    },
+    {
+      "examType": "PET",
+      "category": "reported_speech",
+      "topicId": "reported_speech_basic",
+      "labelEn": "Reported speech (statements, questions, commands)",
+      "spec": "Statements with say/tell + tense backshift; reported wh-questions and yes/no questions; reported commands with tell/ask + object + (not) to + infinitive.",
+      "murphyUnits": [47, 48, 49, 50],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.72"
+    },
+    {
+      "examType": "PET",
+      "category": "phrasal_verbs",
+      "topicId": "phrasal_verbs_common",
+      "labelEn": "Phrasal verbs (common, separable + inseparable)",
+      "spec": "Common phrasal verbs from Cambridge B1 wordlist (look after, find out, give up, turn on, put off, pick up, etc.); separable vs inseparable.",
+      "murphyUnits": [134, 135, 136, 137, 138, 139, 140, 141, 142],
+      "source": "© UCLES 2025; B1 Preliminary handbook 2020 p.72"
+    }
+  ]
+}

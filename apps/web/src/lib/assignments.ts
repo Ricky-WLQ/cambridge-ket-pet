@@ -1,9 +1,12 @@
 // Shared helpers for reading assignments and deriving per-student completion.
-// Completion is NOT stored — it's derived from matching TestAttempt rows.
-// See schema.prisma Assignment comment for rationale.
+// Completion is NOT stored — it's derived from matching TestAttempt rows
+// (READING/WRITING/LISTENING/SPEAKING) or from VocabProgress mastery counts
+// (VOCAB). See schema.prisma Assignment comment for rationale.
 
 import type { ExamType, TestKind } from "@prisma/client";
 import { prisma } from "./prisma";
+import { isGrammarAssignmentComplete } from "./grammar/completion";
+import { isVocabAssignmentComplete } from "./vocab/completion";
 
 export type StudentAssignment = {
   id: string;
@@ -54,7 +57,8 @@ export async function getStudentAssignments(
   if (assignments.length === 0) return [];
 
   // Fetch all GRADED attempts once; filter in-memory per assignment.
-  // Cheaper than N+1 queries.
+  // Cheaper than N+1 queries. (VOCAB assignments are evaluated separately
+  // below — they have no TestAttempt rows.)
   const attempts = await prisma.testAttempt.findMany({
     where: {
       userId,
@@ -68,44 +72,96 @@ export async function getStudentAssignments(
     },
   });
 
-  return assignments.map((a) => {
-    const matching = attempts.filter(
-      (att) =>
-        att.test.examType === a.examType &&
-        att.test.kind === a.kind &&
-        (a.part === null || att.test.part === a.part),
-    );
-    const passing = matching.filter(
-      (att) =>
-        att.scaledScore !== null &&
-        (a.minScore === null || att.scaledScore >= a.minScore),
-    );
-    const best =
-      matching.length === 0
-        ? null
-        : matching.reduce(
-            (mx, att) =>
-              att.scaledScore !== null && att.scaledScore > mx
-                ? att.scaledScore
-                : mx,
-            0,
-          );
-    return {
-      id: a.id,
-      title: a.title,
-      description: a.description,
-      examType: a.examType,
-      kind: a.kind,
-      part: a.part,
-      minScore: a.minScore,
-      dueAt: a.dueAt,
-      className: classNameMap.get(a.classId) ?? "",
-      classId: a.classId,
-      completed: passing.length > 0,
-      bestScore: best,
-      attemptsCount: matching.length,
-    };
-  });
+  return Promise.all(
+    assignments.map(async (a) => {
+      // VOCAB completion derives from VocabProgress, not TestAttempt.
+      if (a.kind === "VOCAB") {
+        const completed = await isVocabAssignmentComplete({
+          userId,
+          examType: a.examType,
+          targetTier: a.targetTier,
+          targetWordCount: a.targetWordCount,
+        });
+        return {
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          examType: a.examType,
+          kind: a.kind,
+          part: a.part,
+          minScore: a.minScore,
+          dueAt: a.dueAt,
+          className: classNameMap.get(a.classId) ?? "",
+          classId: a.classId,
+          completed,
+          bestScore: null,
+          attemptsCount: 0,
+        };
+      }
+
+      // GRAMMAR completion derives from GrammarProgress, not TestAttempt.
+      if (a.kind === "GRAMMAR") {
+        const completed = await isGrammarAssignmentComplete({
+          userId,
+          examType: a.examType,
+          targetTopicId: a.targetTopicId,
+          minScore: a.minScore,
+        });
+        return {
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          examType: a.examType,
+          kind: a.kind,
+          part: a.part,
+          minScore: a.minScore,
+          dueAt: a.dueAt,
+          className: classNameMap.get(a.classId) ?? "",
+          classId: a.classId,
+          completed,
+          bestScore: null,
+          attemptsCount: 0,
+        };
+      }
+
+      const matching = attempts.filter(
+        (att) =>
+          att.test.examType === a.examType &&
+          att.test.kind === a.kind &&
+          (a.part === null || att.test.part === a.part),
+      );
+      const passing = matching.filter(
+        (att) =>
+          att.scaledScore !== null &&
+          (a.minScore === null || att.scaledScore >= a.minScore),
+      );
+      const best =
+        matching.length === 0
+          ? null
+          : matching.reduce(
+              (mx, att) =>
+                att.scaledScore !== null && att.scaledScore > mx
+                  ? att.scaledScore
+                  : mx,
+              0,
+            );
+      return {
+        id: a.id,
+        title: a.title,
+        description: a.description,
+        examType: a.examType,
+        kind: a.kind,
+        part: a.part,
+        minScore: a.minScore,
+        dueAt: a.dueAt,
+        className: classNameMap.get(a.classId) ?? "",
+        classId: a.classId,
+        completed: passing.length > 0,
+        bestScore: best,
+        attemptsCount: matching.length,
+      };
+    }),
+  );
 }
 
 export type ClassAssignmentWithCounts = {
@@ -176,32 +232,65 @@ export async function getClassAssignments(
     },
   });
 
-  return assignments.map((a) => {
-    const passingUserIds = new Set<string>();
-    for (const att of attempts) {
-      if (
-        att.test.examType !== a.examType ||
-        att.test.kind !== a.kind ||
-        (a.part !== null && att.test.part !== a.part) ||
-        att.scaledScore === null
-      ) {
-        continue;
+  return Promise.all(
+    assignments.map(async (a) => {
+      let completedStudents: number;
+      if (a.kind === "VOCAB") {
+        // VOCAB completion derives from VocabProgress per-student.
+        // Per-(student,assignment) calls; rare enough to be acceptable here.
+        const flags = await Promise.all(
+          memberUserIds.map((uid) =>
+            isVocabAssignmentComplete({
+              userId: uid,
+              examType: a.examType,
+              targetTier: a.targetTier,
+              targetWordCount: a.targetWordCount,
+            }),
+          ),
+        );
+        completedStudents = flags.filter(Boolean).length;
+      } else if (a.kind === "GRAMMAR") {
+        // GRAMMAR completion derives from GrammarProgress per-student.
+        const flags = await Promise.all(
+          memberUserIds.map((uid) =>
+            isGrammarAssignmentComplete({
+              userId: uid,
+              examType: a.examType,
+              targetTopicId: a.targetTopicId,
+              minScore: a.minScore,
+            }),
+          ),
+        );
+        completedStudents = flags.filter(Boolean).length;
+      } else {
+        const passingUserIds = new Set<string>();
+        for (const att of attempts) {
+          if (
+            att.test.examType !== a.examType ||
+            att.test.kind !== a.kind ||
+            (a.part !== null && att.test.part !== a.part) ||
+            att.scaledScore === null
+          ) {
+            continue;
+          }
+          if (a.minScore !== null && att.scaledScore < a.minScore) continue;
+          passingUserIds.add(att.userId);
+        }
+        completedStudents = passingUserIds.size;
       }
-      if (a.minScore !== null && att.scaledScore < a.minScore) continue;
-      passingUserIds.add(att.userId);
-    }
-    return {
-      id: a.id,
-      title: a.title,
-      description: a.description,
-      examType: a.examType,
-      kind: a.kind,
-      part: a.part,
-      minScore: a.minScore,
-      dueAt: a.dueAt,
-      createdAt: a.createdAt,
-      totalStudents,
-      completedStudents: passingUserIds.size,
-    };
-  });
+      return {
+        id: a.id,
+        title: a.title,
+        description: a.description,
+        examType: a.examType,
+        kind: a.kind,
+        part: a.part,
+        minScore: a.minScore,
+        dueAt: a.dueAt,
+        createdAt: a.createdAt,
+        totalStudents,
+        completedStudents,
+      };
+    }),
+  );
 }

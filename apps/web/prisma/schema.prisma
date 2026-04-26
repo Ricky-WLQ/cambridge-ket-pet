@@ -30,6 +30,8 @@ enum TestKind {
   WRITING
   LISTENING
   SPEAKING
+  VOCAB        // Phase 4 — vocabulary practice (no per-attempt row; uses VocabProgress instead)
+  GRAMMAR      // Phase 4 — grammar quizzes (uses GrammarProgress instead of TestAttempt)
   MOCK_FULL
   MOCK_SECTION
 }
@@ -67,6 +69,12 @@ enum NoteStatus {
   MASTERED
 }
 
+enum WordTier {
+  CORE          // 必修 ★★★ — must master to pass
+  RECOMMENDED   // 推荐 ★★  — strongly recommended for confident pass
+  EXTRA         // 拓展 ★   — extension; not required, helps high scores
+}
+
 // =============== Users + Auth (Auth.js) ===============
 
 model User {
@@ -93,6 +101,8 @@ model User {
   generationEvents GenerationEvent[]
   mistakeNotes     MistakeNote[]
   authoredComments Comment[]         @relation("CommentAuthor")
+  vocabProgress    VocabProgress[]
+  grammarProgress  GrammarProgress[]
 }
 
 model Account {
@@ -290,6 +300,140 @@ model MistakeNote {
   @@index([attemptId])
 }
 
+// =============== Phase 4: Vocab ===============
+
+// Cambridge wordlist source-of-truth. One row per (examType, cambridgeId).
+// Source content snapshot — refreshed annually; SHA256 of source PDF
+// recorded in scripts/README.md.
+model Word {
+  id            String    @id @default(cuid())
+  examType      ExamType
+  cambridgeId   String              // stable key, e.g. "ket-act-v"
+  word          String              // headword as in list
+  pos           String              // "adj" | "n" | "v" | "phr v" | etc.
+  phonetic      String?             // IPA from EVP if available
+  glossEn       String?             // Cambridge example or short EN defn
+  glossZh       String              // DeepSeek-authored Chinese gloss
+  example       String?             // example sentence
+  topics        String[]            // appendix-2 topic tags
+  tier          WordTier  @default(RECOMMENDED)
+  audioKey      String?             // R2 key
+  source        String              // attribution string
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  vocabProgress VocabProgress[]
+
+  @@unique([examType, cambridgeId])
+  @@index([examType, tier])
+  @@index([topics], type: Gin)
+}
+
+/// Per-user SRS state. mastery 0-5; nextReview drives the "due now" query.
+/// `word` and `examType` are denormalized snapshots — they survive Word deletion
+/// via annual Cambridge wordlist refresh (see Restrict cascade on wordRef).
+model VocabProgress {
+  id            String    @id @default(cuid())
+  userId        String
+  examType      ExamType
+  wordId        String
+  word          String              // denormalized snapshot
+  mastery       Int       @default(0)
+  lastReviewed  DateTime?
+  nextReview    DateTime?
+  reviewCount   Int       @default(0)
+  correctCount  Int       @default(0)
+  source        String?             // "spell" | "listen" | "assignment"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wordRef Word @relation(fields: [wordId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, wordId])
+  @@index([userId, examType, mastery])
+  @@index([userId, examType, nextReview])
+}
+
+// =============== Phase 4: Grammar ===============
+
+// Cambridge handbook structure inventory + Murphy English Grammar in Use
+// cross-reference. One row per (examType, topicId). Hand-seeded from the
+// A2 Key handbook pp.49-51 + B1 Preliminary handbook pp.70-72.
+model GrammarTopic {
+  id            String   @id @default(cuid())
+  examType      ExamType
+  category      String              // "tenses" | "modals" | "verb_forms" | "clause_types" | etc.
+  topicId       String              // stable slug "present_perfect_simple"
+  labelEn       String              // "Present perfect simple"
+  labelZh       String              // "现在完成时" — AI-authored
+  spec          String              // Cambridge handbook spec text (verbatim quote)
+  description   String?             // longer explanation for future study-guide use
+  examples      String[]            // 3-5 hand- or AI-curated example sentences
+  murphyUnits   Int[]               // English Grammar in Use unit numbers
+  source        String              // "© UCLES 2025; A2 Key handbook 2020 p.49"
+
+  questions     GrammarQuestion[]
+  progress      GrammarProgress[]
+
+  @@unique([examType, topicId])
+  @@index([examType, category])
+}
+
+// AI-generated MCQ question bank, ~15 per (examType, topicId) seeded once;
+// /api/grammar/generate appends more if a teacher requests more variety.
+model GrammarQuestion {
+  id            String   @id @default(cuid())
+  examType      ExamType
+  topicId       String              // FK to GrammarTopic.id
+  topic         GrammarTopic @relation(fields: [topicId], references: [id])
+
+  questionType  String   @default("mcq")  // MVP = MCQ only; fill-blank later
+  question      String              // "She _____ in this factory since 2018."
+  options       String[]            // 4 options, e.g. ["works","worked","has worked","will work"]
+  correctIndex  Int                 // 0..3
+  explanationEn String?             // optional
+  explanationZh String              // always present
+  difficulty    Int      @default(2)  // 1-5
+  source        String              // "ai:deepseek:2026-04-26" or "seed:cambridge"
+  createdAt     DateTime @default(now())
+
+  @@index([examType, topicId])
+}
+
+/// Per-user grammar attempt log. Doubles as the mistake notebook.
+/// `questionText`/`questionOptions`/`correctIndex`/`explanationZh` are
+/// snapshotted into the row so the mistake notebook survives question
+/// deletes/edits (the pretco pattern — see VocabProgress in Phase 4a).
+model GrammarProgress {
+  id              String     @id @default(cuid())
+  userId          String
+  questionId      String              // FK to GrammarQuestion.id (no cascade — see below)
+  examType        ExamType
+  topicId         String              // denormalized for fast filtering
+  topic           GrammarTopic @relation(fields: [topicId], references: [id])
+
+  isCorrect       Boolean
+  userAnswer      Int                 // 0..3 index
+
+  // snapshot fields — survive question deletes/edits
+  questionText    String
+  questionOptions String[]
+  correctIndex    Int
+  explanationZh   String
+
+  status          NoteStatus @default(NEW)   // reuse existing enum
+  createdAt       DateTime   @default(now())
+  reviewedAt      DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, examType, topicId])
+  @@index([userId, examType, status])
+  @@index([userId, isCorrect])
+}
+
 // =============== Assignments ===============
 
 // Teacher-created target for a class. Completion is derived from TestAttempt
@@ -310,6 +454,15 @@ model Assignment {
   dueAt       DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  // === Phase 4 additions ===
+  // VOCAB-kind only:
+  targetTier       WordTier?    // null = "all tiers"
+  targetWordCount  Int?         // "master >= N words from targetTier"
+  // GRAMMAR-kind only (added now to avoid a second migration in slice 4b):
+  targetTopicId    String?      // null = "any topic"
+  // existing minScore: Int? (0-100) is reused — for GRAMMAR it's accuracy %;
+  // for VOCAB use targetWordCount instead (minScore ignored).
 
   class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
 

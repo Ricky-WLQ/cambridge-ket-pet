@@ -5,7 +5,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type ExamType = "KET" | "PET";
-type TestKind = "READING" | "WRITING" | "LISTENING";
+type TestKind = "READING" | "WRITING" | "LISTENING" | "VOCAB" | "GRAMMAR";
+type WordTier = "CORE" | "RECOMMENDED" | "EXTRA";
 
 const KET_READING_PARTS = [1, 2, 3, 4, 5] as const;
 const KET_WRITING_PARTS = [6, 7] as const;
@@ -16,7 +17,7 @@ const PET_LISTENING_PARTS = [1, 2, 3, 4] as const;
 
 function isValidPart(
   examType: ExamType,
-  kind: TestKind,
+  kind: Exclude<TestKind, "VOCAB" | "GRAMMAR">,
   part: number | null,
 ): boolean {
   if (part === null) return true;
@@ -54,23 +55,72 @@ export async function createAssignmentAction(formData: FormData): Promise<void> 
     String(formData.get("description") ?? "").trim() || null;
   const examType = String(formData.get("examType") ?? "") as ExamType;
   const kind = String(formData.get("kind") ?? "") as TestKind;
-  const partRaw = String(formData.get("part") ?? "").trim();
-  const part =
-    partRaw === "" || partRaw === "ANY" ? null : Number.parseInt(partRaw, 10);
-  const minScoreRaw = String(formData.get("minScore") ?? "").trim();
-  const minScore = minScoreRaw === "" ? null : Number.parseInt(minScoreRaw, 10);
   const dueAtRaw = String(formData.get("dueAt") ?? "").trim();
   const dueAt = dueAtRaw ? new Date(dueAtRaw) : null;
 
   if (!classId || !title) throw new Error("缺少必要字段");
   if (examType !== "KET" && examType !== "PET")
     throw new Error("科目无效");
-  if (kind !== "READING" && kind !== "WRITING" && kind !== "LISTENING")
-    throw new Error("题型无效（仅支持阅读/写作/听力）");
-  if (!isValidPart(examType, kind, part))
-    throw new Error(`该 ${examType} ${kind} 不存在 Part ${part}`);
-  if (minScore !== null && (minScore < 0 || minScore > 100))
-    throw new Error("最低及格分 (0-100) 超出范围");
+  if (
+    kind !== "READING" &&
+    kind !== "WRITING" &&
+    kind !== "LISTENING" &&
+    kind !== "VOCAB" &&
+    kind !== "GRAMMAR"
+  )
+    throw new Error("题型无效（仅支持阅读/写作/听力/词汇/语法）");
+
+  // Per-kind fields. VOCAB uses (targetTier, targetWordCount); GRAMMAR uses
+  // (targetTopicId, minScore as accuracy %); paper kinds use (part, minScore).
+  // We deliberately leave the other sets null to avoid accidentally persisting
+  // fields that don't apply.
+  let part: number | null = null;
+  let minScore: number | null = null;
+  let targetTier: WordTier | null = null;
+  let targetWordCount: number | null = null;
+  let targetTopicId: string | null = null;
+
+  if (kind === "VOCAB") {
+    const tierRaw = String(formData.get("targetTier") ?? "").trim();
+    if (tierRaw && tierRaw !== "ALL") {
+      if (
+        tierRaw !== "CORE" &&
+        tierRaw !== "RECOMMENDED" &&
+        tierRaw !== "EXTRA"
+      ) {
+        throw new Error("目标等级无效");
+      }
+      targetTier = tierRaw;
+    }
+    const countRaw = String(formData.get("targetWordCount") ?? "").trim();
+    const count = countRaw === "" ? NaN : Number.parseInt(countRaw, 10);
+    if (!Number.isFinite(count) || count < 1 || count > 4000) {
+      throw new Error("需掌握词数应在 1-4000 之间");
+    }
+    targetWordCount = count;
+  } else if (kind === "GRAMMAR") {
+    const topicRaw = String(formData.get("targetTopicId") ?? "").trim();
+    targetTopicId = topicRaw === "" ? null : topicRaw;
+    const minScoreRaw = String(formData.get("minScore") ?? "").trim();
+    const score = minScoreRaw === "" ? NaN : Number.parseInt(minScoreRaw, 10);
+    if (!Number.isFinite(score) || score < 1 || score > 100) {
+      throw new Error("正确率达标线应在 1-100 之间");
+    }
+    minScore = score;
+  } else {
+    const partRaw = String(formData.get("part") ?? "").trim();
+    part =
+      partRaw === "" || partRaw === "ANY"
+        ? null
+        : Number.parseInt(partRaw, 10);
+    const minScoreRaw = String(formData.get("minScore") ?? "").trim();
+    minScore =
+      minScoreRaw === "" ? null : Number.parseInt(minScoreRaw, 10);
+    if (!isValidPart(examType, kind, part))
+      throw new Error(`该 ${examType} ${kind} 不存在 Part ${part}`);
+    if (minScore !== null && (minScore < 0 || minScore > 100))
+      throw new Error("最低及格分 (0-100) 超出范围");
+  }
 
   // Authz: teacher owns the class
   const cls = await prisma.class.findUnique({
@@ -90,6 +140,9 @@ export async function createAssignmentAction(formData: FormData): Promise<void> 
       kind,
       part,
       minScore,
+      targetTier,
+      targetWordCount,
+      targetTopicId,
       dueAt,
     },
   });

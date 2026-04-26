@@ -1,12 +1,161 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import type { Prisma } from "@prisma/client";
+import type { ExamType, Prisma } from "@prisma/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getClassAssignments } from "@/lib/assignments";
 import { deleteAssignmentAction } from "@/lib/assignmentActions";
+import { MASTERY_MASTERED_THRESHOLD } from "@/lib/vocab/srs";
 import ActivityFilter from "./ActivityFilter";
+
+interface ClassVocabRow {
+  userId: string;
+  userName: string;
+  coreMastered: number;
+  coreTotal: number;
+}
+
+interface ClassVocabSummary {
+  ket: ClassVocabRow[];
+  pet: ClassVocabRow[];
+}
+
+async function getClassVocabSummary(
+  members: ReadonlyArray<{ userId: string; user: { id: string; email: string; name: string | null } }>,
+): Promise<ClassVocabSummary> {
+  const userIds = members.map((m) => m.userId);
+
+  const buildRows = async (examType: ExamType): Promise<ClassVocabRow[]> => {
+    const coreTotal = await prisma.word.count({
+      where: { examType, tier: "CORE" },
+    });
+    const counts =
+      userIds.length > 0
+        ? await prisma.vocabProgress.groupBy({
+            by: ["userId"],
+            where: {
+              userId: { in: userIds },
+              examType,
+              mastery: { gte: MASTERY_MASTERED_THRESHOLD },
+              wordRef: { tier: "CORE" },
+            },
+            _count: { _all: true },
+          })
+        : [];
+    const byUser = new Map(counts.map((c) => [c.userId, c._count._all]));
+    return members.map((m) => ({
+      userId: m.userId,
+      userName: m.user.name ?? m.user.email ?? m.userId,
+      coreMastered: byUser.get(m.userId) ?? 0,
+      coreTotal,
+    }));
+  };
+
+  const [ket, pet] = await Promise.all([buildRows("KET"), buildRows("PET")]);
+  return { ket, pet };
+}
+
+interface ClassGrammarRow {
+  userId: string;
+  userName: string;
+  attempted: number;
+  correct: number;
+  accuracy: number;
+}
+interface CommonWeakness {
+  topicId: string;
+  labelZh: string;
+  classAccuracy: number;
+  classAttempts: number;
+}
+
+async function getClassGrammarSummary(
+  members: ReadonlyArray<{
+    userId: string;
+    user: { id: string; email: string; name: string | null };
+  }>,
+): Promise<{
+  ket: { rows: ClassGrammarRow[]; weakTopics: CommonWeakness[] };
+  pet: { rows: ClassGrammarRow[]; weakTopics: CommonWeakness[] };
+}> {
+  const userIds = members.map((m) => m.userId);
+
+  const buildExam = async (examType: ExamType) => {
+    if (userIds.length === 0) {
+      return {
+        rows: [] as ClassGrammarRow[],
+        weakTopics: [] as CommonWeakness[],
+      };
+    }
+    const rowsByUser = await prisma.grammarProgress.groupBy({
+      by: ["userId"],
+      where: { userId: { in: userIds }, examType },
+      _count: { _all: true },
+    });
+    const correctByUser = await prisma.grammarProgress.groupBy({
+      by: ["userId"],
+      where: { userId: { in: userIds }, examType, isCorrect: true },
+      _count: { _all: true },
+    });
+    const attemptedMap = new Map(
+      rowsByUser.map((r) => [r.userId, r._count._all]),
+    );
+    const correctMap = new Map(
+      correctByUser.map((r) => [r.userId, r._count._all]),
+    );
+    const rows: ClassGrammarRow[] = members.map((m) => {
+      const attempted = attemptedMap.get(m.userId) ?? 0;
+      const correct = correctMap.get(m.userId) ?? 0;
+      const accuracy = attempted === 0 ? 0 : correct / attempted;
+      return {
+        userId: m.userId,
+        userName: m.user.name ?? m.user.email ?? m.userId,
+        attempted,
+        correct,
+        accuracy,
+      };
+    });
+
+    // Common weakness topics — class-aggregated, accuracy < 60% with ≥ 3 class-wide attempts
+    const topicAgg = await prisma.grammarProgress.groupBy({
+      by: ["topicId"],
+      where: { userId: { in: userIds }, examType },
+      _count: { _all: true },
+    });
+    const topicCorrect = await prisma.grammarProgress.groupBy({
+      by: ["topicId"],
+      where: { userId: { in: userIds }, examType, isCorrect: true },
+      _count: { _all: true },
+    });
+    const correctByTopic = new Map(
+      topicCorrect.map((t) => [t.topicId, t._count._all]),
+    );
+    const topicMeta = await prisma.grammarTopic.findMany({
+      where: { examType, id: { in: topicAgg.map((t) => t.topicId) } },
+      select: { id: true, labelZh: true },
+    });
+    const labelMap = new Map(topicMeta.map((t) => [t.id, t.labelZh]));
+    const weakTopics: CommonWeakness[] = topicAgg
+      .map((t) => {
+        const c = correctByTopic.get(t.topicId) ?? 0;
+        return {
+          topicId: t.topicId,
+          labelZh: labelMap.get(t.topicId) ?? t.topicId,
+          classAttempts: t._count._all,
+          classAccuracy: t._count._all === 0 ? 0 : c / t._count._all,
+        };
+      })
+      .filter((t) => t.classAttempts >= 3 && t.classAccuracy < 0.6)
+      .sort((a, b) => a.classAccuracy - b.classAccuracy)
+      .slice(0, 3);
+
+    return { rows, weakTopics };
+  };
+
+  const [ket, pet] = await Promise.all([buildExam("KET"), buildExam("PET")]);
+  return { ket, pet };
+}
 
 const KIND_ZH: Record<string, string> = {
   READING: "阅读",
@@ -217,6 +366,9 @@ export default async function ClassOverviewPage({
     perStudentSpeaking.map((s) => [s.userId, s]),
   );
 
+  const vocabSummary = await getClassVocabSummary(cls.members);
+  const grammarSummary = await getClassGrammarSummary(cls.members);
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -273,6 +425,206 @@ export default async function ClassOverviewPage({
                 : "—"
             }
           />
+        </div>
+
+        {/* Vocab progress (class-aggregated CORE-tier mastery) */}
+        <div className="mb-8 rounded-md border border-neutral-200 p-4">
+          <h2 className="mb-3 text-lg font-semibold">词汇练习概况</h2>
+          {(["ket", "pet"] as const).map((k) => {
+            const rows = vocabSummary[k];
+            const totalMastered = rows.reduce(
+              (a, r) => a + r.coreMastered,
+              0,
+            );
+            const totalDenom = rows.reduce((a, r) => a + r.coreTotal, 0);
+            const pct =
+              totalDenom === 0
+                ? 0
+                : Math.round((totalMastered / totalDenom) * 100);
+            const sortedDesc = [...rows].sort(
+              (a, b) => b.coreMastered - a.coreMastered,
+            );
+            const sortedAsc = [...rows].sort(
+              (a, b) => a.coreMastered - b.coreMastered,
+            );
+            const top = sortedDesc.slice(0, 5);
+            const bottom = sortedAsc.slice(0, 5);
+            return (
+              <div key={k} className="mb-4 last:mb-0">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-semibold uppercase">{k}</span>
+                  <span className="text-xs text-neutral-600">
+                    班级平均必修掌握{" "}
+                    <strong className="text-neutral-900">{pct}%</strong>
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-100">
+                  <div
+                    className="h-full bg-amber-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                {rows.length === 0 ? (
+                  <p className="mt-3 text-xs text-neutral-400">
+                    班级还没有学生。
+                  </p>
+                ) : (
+                  <div className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+                    <div>
+                      <div className="mb-1 font-semibold text-green-700">
+                        熟练度前 5
+                      </div>
+                      <ul className="space-y-0.5">
+                        {top.map((r) => (
+                          <li
+                            key={r.userId}
+                            className="flex justify-between gap-2"
+                          >
+                            <span className="truncate">{r.userName}</span>
+                            <span className="shrink-0 font-mono text-neutral-500">
+                              {r.coreMastered}/{r.coreTotal}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="mb-1 font-semibold text-red-700">
+                        需关注 (后 5)
+                      </div>
+                      <ul className="space-y-0.5">
+                        {bottom.map((r) => (
+                          <li
+                            key={r.userId}
+                            className="flex justify-between gap-2"
+                          >
+                            <span className="truncate">{r.userName}</span>
+                            <span className="shrink-0 font-mono text-neutral-500">
+                              {r.coreMastered}/{r.coreTotal}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Grammar progress (class-aggregated accuracy + weak-topic spotter) */}
+        <div className="mb-8 rounded-md border border-neutral-200 bg-white p-4">
+          <h2 className="mb-3 text-lg font-semibold">语法练习概况</h2>
+          {(["ket", "pet"] as const).map((k) => {
+            const { rows, weakTopics } = grammarSummary[k];
+            const totalAttempted = rows.reduce((s, r) => s + r.attempted, 0);
+            const totalCorrect = rows.reduce((s, r) => s + r.correct, 0);
+            const classAcc =
+              totalAttempted === 0
+                ? 0
+                : Math.round((totalCorrect / totalAttempted) * 100);
+            const top = [...rows]
+              .sort((a, b) => b.accuracy - a.accuracy)
+              .slice(0, 5);
+            const bottom = [...rows]
+              .sort((a, b) => a.accuracy - b.accuracy)
+              .filter((r) => r.attempted > 0)
+              .slice(0, 5);
+            return (
+              <div key={k} className="mb-4 last:mb-0">
+                <div className="mb-2 flex items-baseline justify-between">
+                  <span className="text-sm font-semibold uppercase">{k}</span>
+                  <span className="text-xs text-neutral-600">
+                    班级平均正确率{" "}
+                    <strong className="text-neutral-900">{classAcc}%</strong> (
+                    {totalAttempted} 次答题)
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-100">
+                  <div
+                    className={`h-full ${
+                      classAcc >= 80
+                        ? "bg-green-600"
+                        : classAcc >= 50
+                          ? "bg-amber-500"
+                          : "bg-red-600"
+                    }`}
+                    style={{ width: `${classAcc}%` }}
+                  />
+                </div>
+                {rows.length > 0 ? (
+                  <div className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+                    <div>
+                      <div className="mb-1 font-semibold text-green-700">
+                        正确率前 5
+                      </div>
+                      <ul className="space-y-0.5">
+                        {top.map((r) => (
+                          <li
+                            key={r.userId}
+                            className="flex justify-between gap-2"
+                          >
+                            <span className="truncate">{r.userName}</span>
+                            <span className="shrink-0 font-mono text-neutral-500">
+                              {Math.round(r.accuracy * 100)}%
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="mb-1 font-semibold text-red-700">
+                        需关注 (后 5)
+                      </div>
+                      <ul className="space-y-0.5">
+                        {bottom.length > 0 ? (
+                          bottom.map((r) => (
+                            <li
+                              key={r.userId}
+                              className="flex justify-between gap-2"
+                            >
+                              <span className="truncate">{r.userName}</span>
+                              <span className="shrink-0 font-mono text-neutral-500">
+                                {Math.round(r.accuracy * 100)}%
+                              </span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="text-neutral-400">尚无答题学生</li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-neutral-400">
+                    班级还没有学生。
+                  </p>
+                )}
+                {weakTopics.length > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-1 text-xs font-semibold text-amber-700">
+                      常见薄弱主题
+                    </div>
+                    <ul className="space-y-1 text-xs">
+                      {weakTopics.map((t) => (
+                        <li
+                          key={t.topicId}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="truncate">{t.labelZh}</span>
+                          <span className="shrink-0 font-mono text-neutral-500">
+                            {Math.round(t.classAccuracy * 100)}% (
+                            {t.classAttempts}次)
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Assignments */}
