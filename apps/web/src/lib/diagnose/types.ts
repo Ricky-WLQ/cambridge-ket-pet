@@ -104,9 +104,15 @@ export type PerSectionScores = {
 };
 
 // ─── Generated Content per Section (the parent Test.payload shape) ───────────
+//
+// SOURCE-OF-TRUTH NOTE: Listening audio metadata (audioR2Key, audioStatus,
+// audioSegments) lives on the Test row's columns directly, NOT inside payload.
+// Same for speaking (Test.speakingPrompts, Test.speakingPhotoKeys,
+// Test.speakingPersona). The shapes below carry only what's actually
+// serialized into Test.payload.sections.<KIND>.
 
 /** Reading section content. */
-export interface ReadingQuestion {
+export interface DiagnoseReadingQuestion {
   id: string;
   text: string;
   options: string[];
@@ -116,31 +122,29 @@ export interface ReadingQuestion {
 
 export interface DiagnoseReadingContent {
   passage: string | null;
-  questions: ReadingQuestion[];
+  questions: DiagnoseReadingQuestion[];
   timeLimitSec: 480;
 }
 
 /** Listening section content. Audio rendered via Edge-TTS to R2 (status tracked on Test row). */
-export interface ListeningQuestion {
+export interface DiagnoseListeningQuestion {
   id: string;
   text: string;
   options: string[];
   correctIndex: number;
 }
 
-export interface ListeningPart {
+export interface DiagnoseListeningPart {
   partNumber: number;
   partType: string;
   audioStartSec: number;
   audioEndSec: number;
-  questions: ListeningQuestion[];
+  questions: DiagnoseListeningQuestion[];
 }
 
 export interface DiagnoseListeningContent {
-  parts: ListeningPart[];
+  parts: DiagnoseListeningPart[];
   timeLimitSec: 600;
-  audioR2Key: string | null;
-  audioStatus: "GENERATING" | "READY" | "FAILED";
 }
 
 /** Writing section — one prompt, AI-graded against Cambridge 4-criteria rubric. */
@@ -153,17 +157,10 @@ export interface DiagnoseWritingContent {
 }
 
 /** Speaking section — one prompt via Akool TRTC avatar (Mina). */
-export interface SpeakingPrompt {
-  partNumber: number;
-  question: string;
-}
-
 export interface DiagnoseSpeakingContent {
-  prompts: SpeakingPrompt[];
-  initialGreeting: string;
-  photoKeys: string[];
-  persona: "KET" | "PET";
   timeLimitSec: 300;
+  // All other content (prompts, photoKeys, persona, initialGreeting) lives
+  // on the Test row directly — see Test.speakingPrompts/speakingPhotoKeys/speakingPersona.
 }
 
 /** Vocab section — 3 fill-blank items drawn from Word table by weak-topic weighting. */
