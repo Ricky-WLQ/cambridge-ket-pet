@@ -3,9 +3,77 @@ import { notFound, redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { MASTERY_MASTERED_THRESHOLD } from "@/lib/vocab/srs";
 import AnalysisPanel from "./AnalysisPanel";
 import CommentPanel, { type CommentItem } from "./CommentPanel";
 import ScoreTrend from "./ScoreTrend";
+
+type WordTierKey = "CORE" | "RECOMMENDED" | "EXTRA";
+
+interface StudentVocabTier {
+  examType: "KET" | "PET";
+  totalByTier: Record<WordTierKey, number>;
+  masteredByTier: Record<WordTierKey, number>;
+}
+
+interface StudentVocabSummary {
+  tiers: StudentVocabTier[];
+  sparkline: number[];
+}
+
+async function getStudentVocabSummary(
+  userId: string,
+): Promise<StudentVocabSummary> {
+  const tiers = await Promise.all(
+    (["KET", "PET"] as const).map(async (examType) => {
+      const totals = await prisma.word.groupBy({
+        by: ["tier"],
+        where: { examType },
+        _count: { _all: true },
+      });
+      const mastered = await prisma.vocabProgress.findMany({
+        where: {
+          userId,
+          examType,
+          mastery: { gte: MASTERY_MASTERED_THRESHOLD },
+        },
+        select: { wordRef: { select: { tier: true } } },
+      });
+      const masteredByTier: Record<WordTierKey, number> = {
+        CORE: 0,
+        RECOMMENDED: 0,
+        EXTRA: 0,
+      };
+      for (const r of mastered) {
+        if (r.wordRef) masteredByTier[r.wordRef.tier]++;
+      }
+      const totalByTier: Record<WordTierKey, number> = {
+        CORE: 0,
+        RECOMMENDED: 0,
+        EXTRA: 0,
+      };
+      for (const t of totals) {
+        totalByTier[t.tier as WordTierKey] = t._count._all;
+      }
+      return { examType, totalByTier, masteredByTier };
+    }),
+  );
+  // 30-day sparkline — count of mastery-bumps per day (most recent on the right)
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60_000);
+  const recent = await prisma.vocabProgress.findMany({
+    where: { userId, lastReviewed: { gte: since } },
+    select: { lastReviewed: true, mastery: true },
+  });
+  const byDay = new Array(30).fill(0);
+  for (const r of recent) {
+    if (!r.lastReviewed) continue;
+    const dayIdx = Math.floor(
+      (Date.now() - r.lastReviewed.getTime()) / (24 * 60 * 60_000),
+    );
+    if (dayIdx >= 0 && dayIdx < 30) byDay[29 - dayIdx]++;
+  }
+  return { tiers, sparkline: byDay };
+}
 
 const KIND_ZH: Record<string, string> = {
   READING: "阅读",
@@ -333,6 +401,8 @@ export default async function StudentDetailPage({
     };
   })();
 
+  const vocabData = await getStudentVocabSummary(studentId);
+
   // Enrich exam-point labels for the mistake breakdown
   const mistakeExamPointIds = topMistakesByExamPoint
     .map((m) => m.examPointId)
@@ -580,6 +650,45 @@ export default async function StudentDetailPage({
             </div>
           </>
         )}
+
+        <h2 className="mt-8 mb-3 text-lg font-semibold">词汇练习</h2>
+        <div className="rounded-md border border-neutral-200 p-4">
+          {vocabData.tiers.map((t) => (
+            <div key={t.examType} className="mb-3 last:mb-0">
+              <div className="mb-1 text-sm font-medium uppercase">
+                {t.examType}
+              </div>
+              <div className="grid gap-2 text-xs sm:grid-cols-3">
+                {(["CORE", "RECOMMENDED", "EXTRA"] as const).map((tier) => (
+                  <div key={tier}>
+                    <div className="text-neutral-500">{tier}</div>
+                    <div className="font-semibold">
+                      {t.masteredByTier[tier]} / {t.totalByTier[tier]}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="mt-3">
+            <div className="mb-1 text-xs text-neutral-500">近 30 天活跃度</div>
+            <div className="flex gap-px">
+              {vocabData.sparkline.map((n, i) => (
+                <div
+                  key={i}
+                  className="h-6 flex-1"
+                  style={{
+                    background:
+                      n === 0
+                        ? "#f5f5f5"
+                        : `rgba(22, 163, 74, ${Math.min(1, 0.2 + n / 10)})`,
+                  }}
+                  title={`${30 - i} 天前: ${n} 次复习`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
 
         {topMistakesByExamPoint.length > 0 && (
           <>
