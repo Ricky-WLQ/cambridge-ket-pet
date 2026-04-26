@@ -49,4 +49,12 @@ describe("GET /api/vocab/audio/[wordId]", () => {
     expect(res.headers.get("location")).toBe("https://r2.example/signed?x=1");
     expect(res.headers.get("cache-control")).toContain("private");
   });
+
+  it("resolves relative signed URLs against request origin (NextResponse.redirect requires absolute)", async () => {
+    findUnique.mockResolvedValue({ id: "w1", audioKey: "vocab/S1_male/ket-actor-n.mp3" });
+    sign.mockResolvedValue("/api/r2/vocab/S1_male/ket-actor-n.mp3");  // server-relative, like signR2PublicUrl actually returns
+    const res = await GET(mkReq(), mkCtx("w1"));
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("http://t/api/r2/vocab/S1_male/ket-actor-n.mp3");
+  });
 });

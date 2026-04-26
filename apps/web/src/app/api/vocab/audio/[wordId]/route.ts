@@ -21,7 +21,7 @@ import { vocabAudioSignedUrl } from "@/lib/vocab/audio-url";
  *   302 — Location: <signed audio URL>
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ wordId: string }> },
 ) {
   const session = await auth();
@@ -47,7 +47,10 @@ export async function GET(
   }
 
   const signed = await vocabAudioSignedUrl(word.audioKey);
-  return NextResponse.redirect(signed, {
+  // signed is a server-relative path (/api/r2/...); NextResponse.redirect
+  // requires absolute. Resolve against the inbound request's origin.
+  const absolute = new URL(signed, request.url);
+  return NextResponse.redirect(absolute, {
     status: 302,
     headers: { "cache-control": "private, max-age=240" },
   });
