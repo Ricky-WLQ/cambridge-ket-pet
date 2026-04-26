@@ -42,21 +42,17 @@ export default function VocabListenRunner({ examType }: Props) {
 
   const cur = batch[idx] ?? null;
 
-  // Play audio when card changes.
+  // Play audio when card changes. Silent on autoplay-block; if R2 audio
+  // genuinely fails, we'd rather show no sound than fall back to a robotic
+  // browser TTS voice — the user can click 播放发音 to retry.
   useEffect(() => {
     if (!cur || !audioRef.current) return;
     setRevealed(false);
     audioRef.current.src = `/api/vocab/audio/${cur.id}`;
     audioRef.current.play().catch((err: DOMException) => {
-      // Browser autoplay policy blocks the FIRST play before user interaction —
-      // don't fall back to Web Speech for that (the user will click 播放发音).
-      // Only fall back on REAL failures (network / 4xx / 5xx).
-      if (err?.name === "NotAllowedError") return;
-      try {
-        const u = new SpeechSynthesisUtterance(cur.word);
-        u.lang = "en-GB";
-        window.speechSynthesis.speak(u);
-      } catch { /* both audio paths failed; carry on silently */ }
+      if (err?.name !== "NotAllowedError") {
+        console.warn("[vocab/listen] audio play failed:", err?.name, err?.message);
+      }
     });
     if (autoReveal) {
       const t = setTimeout(() => setRevealed(true), 1500);
@@ -68,14 +64,9 @@ export default function VocabListenRunner({ examType }: Props) {
     if (!cur || !audioRef.current) return;
     audioRef.current.currentTime = 0;
     audioRef.current.play().catch((err: DOMException) => {
-      // User-initiated play — autoplay policy doesn't apply here, so any
-      // rejection is a real failure. Web Speech fallback is appropriate.
-      if (err?.name === "NotAllowedError") return;
-      try {
-        const u = new SpeechSynthesisUtterance(cur.word);
-        u.lang = "en-GB";
-        window.speechSynthesis.speak(u);
-      } catch { /* ignore */ }
+      if (err?.name !== "NotAllowedError") {
+        console.warn("[vocab/listen] audio replay failed:", err?.name, err?.message);
+      }
     });
   };
 
