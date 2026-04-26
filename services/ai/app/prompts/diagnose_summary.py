@@ -5,10 +5,13 @@ weaknesses, priority_actions, narrative_zh) but framed for an ISO-week
 diagnostic summary rather than a multi-attempt teacher diagnostic.
 
 Two prompts here:
-  - ``DIAGNOSE_SUMMARY_SYSTEM_PROMPT`` — the system prompt constant. Inlines
-    the percent-vs-rubric scoring conventions from ``analysis.py`` because
-    the diagnose summary references percent scores (per-section + overall)
-    that the LLM has historically misinterpreted as raw point totals.
+  - ``build_diagnose_summary_system_prompt(exam_type)`` — renders the system
+    prompt with the exam type substituted in. Inlines the percent-vs-rubric
+    scoring conventions from ``analysis.py`` because the diagnose summary
+    references percent scores (per-section + overall) that the LLM has
+    historically misinterpreted as raw point totals. Callers MUST go through
+    this builder rather than a default-KET constant — shipping a KET-framed
+    prompt to a PET student is a silent-wrong-exam footgun.
   - ``build_diagnose_summary_user_prompt(req)`` — renders the user prompt
     using the labeled-units block format from ``agents/analysis.py::
     _format_summary``. Each numeric is pre-tagged with its unit and
@@ -90,13 +93,6 @@ def _build_system_prompt_template() -> str:
 
 
 _SYSTEM_PROMPT_TEMPLATE = _build_system_prompt_template()
-
-# Default constant pre-formatted with exam_type="KET" for inspection / logging.
-# Callers in T13 should call ``build_diagnose_summary_system_prompt(exam_type)``
-# to render the PET variant.
-DIAGNOSE_SUMMARY_SYSTEM_PROMPT: str = _SYSTEM_PROMPT_TEMPLATE.format(
-    exam_type="KET"
-)
 
 
 def build_diagnose_summary_system_prompt(

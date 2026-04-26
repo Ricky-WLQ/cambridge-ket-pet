@@ -30,27 +30,17 @@ from app.schemas.diagnose import WrongAnswer
 
 # ─── System prompt ───────────────────────────────────────────────────
 #
-# The system prompt is a constant string template — but the exam_type
-# placeholder needs runtime substitution. We expose it as a *function-style
-# constant*: callers do ``DIAGNOSE_ANALYSIS_SYSTEM_PROMPT.format(exam_type=...)``
-# OR use the convenience helper ``build_diagnose_analysis_system_prompt``.
-#
-# A bare module-level string with ``{exam_type}`` is fine for ``.format()``;
-# we pre-format with KET as a default for callers that just want to read
-# the constant for logging/inspection.
+# The system prompt is a string template with an ``{exam_type}`` placeholder
+# that requires runtime substitution. Callers MUST go through
+# ``build_diagnose_analysis_system_prompt(exam_type)`` — there is no
+# default-KET module-level constant, because shipping a KET-framed prompt
+# to a PET student is a silent-wrong-exam footgun that's hard to debug
+# from downstream symptoms.
 
 _SYSTEM_PROMPT_TEMPLATE = (
     "你是一位专业的剑桥英语{exam_type}考试分析专家。请分析学生的每一道错题，"
     "识别涉及的知识点，并按知识点分类归纳。回复必须是纯JSON格式。\n\n"
     "剑桥KET（A2 Key）与PET（B1 Preliminary）——请使用剑桥考点术语作为category的归类依据。"
-)
-
-# Default constant — pre-formatted with exam_type="KET". Callers that need
-# the PET variant should call ``build_diagnose_analysis_system_prompt("PET")``.
-# This constant exists primarily to satisfy the public-API contract of
-# exposing ``DIAGNOSE_ANALYSIS_SYSTEM_PROMPT`` as a top-level name.
-DIAGNOSE_ANALYSIS_SYSTEM_PROMPT: str = _SYSTEM_PROMPT_TEMPLATE.format(
-    exam_type="KET"
 )
 
 
