@@ -5,6 +5,7 @@
 
 import type { ExamType, TestKind } from "@prisma/client";
 import { prisma } from "./prisma";
+import { isGrammarAssignmentComplete } from "./grammar/completion";
 import { isVocabAssignmentComplete } from "./vocab/completion";
 
 export type StudentAssignment = {
@@ -80,6 +81,31 @@ export async function getStudentAssignments(
           examType: a.examType,
           targetTier: a.targetTier,
           targetWordCount: a.targetWordCount,
+        });
+        return {
+          id: a.id,
+          title: a.title,
+          description: a.description,
+          examType: a.examType,
+          kind: a.kind,
+          part: a.part,
+          minScore: a.minScore,
+          dueAt: a.dueAt,
+          className: classNameMap.get(a.classId) ?? "",
+          classId: a.classId,
+          completed,
+          bestScore: null,
+          attemptsCount: 0,
+        };
+      }
+
+      // GRAMMAR completion derives from GrammarProgress, not TestAttempt.
+      if (a.kind === "GRAMMAR") {
+        const completed = await isGrammarAssignmentComplete({
+          userId,
+          examType: a.examType,
+          targetTopicId: a.targetTopicId,
+          minScore: a.minScore,
         });
         return {
           id: a.id,
@@ -219,6 +245,19 @@ export async function getClassAssignments(
               examType: a.examType,
               targetTier: a.targetTier,
               targetWordCount: a.targetWordCount,
+            }),
+          ),
+        );
+        completedStudents = flags.filter(Boolean).length;
+      } else if (a.kind === "GRAMMAR") {
+        // GRAMMAR completion derives from GrammarProgress per-student.
+        const flags = await Promise.all(
+          memberUserIds.map((uid) =>
+            isGrammarAssignmentComplete({
+              userId: uid,
+              examType: a.examType,
+              targetTopicId: a.targetTopicId,
+              minScore: a.minScore,
             }),
           ),
         );
