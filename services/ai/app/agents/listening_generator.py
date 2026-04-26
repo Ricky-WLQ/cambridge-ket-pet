@@ -1,18 +1,18 @@
 """Pydantic AI agent for Phase 2 listening generation.
 
-Uses the same "string output + json_object response_format + manual extract"
-pattern as `speaking_generator.py` because pydantic-ai's tool-call output_type
-mode trips on a known DeepSeek quirk: tool-call args occasionally include
-trailing characters after the closing `}`, surfacing as
-`pydantic_core.ValidationError: Invalid JSON: trailing characters` even though
-the JSON itself is well-formed. Bypassing tool-call output and using
-`extract_json_object` (which strips fences and trims to the first balanced
-`{...}`) sidesteps that.
+Mirrors the pattern from reading_generator and writing_generator in Phase 1.
 
 **Lazy-build note:** the Agent is built on first call to
 `get_listening_generator()`, NOT at module import time. This ensures
 `load_dotenv()` (called in app/main.py during FastAPI startup) has already
-populated `DEEPSEEK_API_KEY` before we read it.
+populated `DEEPSEEK_API_KEY` before we read it. A previous version of
+this module built the Agent at import time, which captured None for the
+key in environments where `.env` provided it, causing silent 401s at
+request time.
+
+The built Agent is cached on first call; subsequent calls return the
+cached instance. For tests, patch `get_listening_generator` to return
+a mock Agent.
 """
 
 from __future__ import annotations
@@ -29,18 +29,12 @@ from app.prompts.listening_system import LISTENING_SYSTEM_PROMPT
 from app.schemas.listening import ListeningTestResponse
 from app.validators.listening import validate_listening_response
 from app.validators.reading import ValidationError
-from app.validators.speaking import extract_json_object
 
 log = logging.getLogger(__name__)
 
 
-def _build_agent() -> Agent[None, str]:
+def _build_agent() -> Agent[None, ListeningTestResponse]:
     """Build a new listening generator Agent with DeepSeek backend.
-
-    `output_type` is implicitly `str` — we don't use pydantic-ai's tool-call
-    structured-output mode because DeepSeek emits trailing characters after
-    the closing `}` of tool-call args, which fails strict JSON parsing. We
-    parse + validate manually below via `extract_json_object`.
 
     Reads `DEEPSEEK_API_KEY` from env at call time (not at import time).
     """
@@ -53,32 +47,32 @@ def _build_agent() -> Agent[None, str]:
     )
     return Agent(
         model=model,
+        output_type=ListeningTestResponse,
         system_prompt=LISTENING_SYSTEM_PROMPT,
+        retries=1,
     )
 
 
 # DeepSeek's default max_tokens (~4096) is too small for the structured
 # listening response: a single PART produces 5 questions × {prompt, 3 options,
-# answer, explanation} + a multi-turn audio_script + per-part metadata. 8000
-# is just under DeepSeek-chat's 8192 ceiling.
-#
-# `response_format: json_object` forces DeepSeek to emit only a JSON object
-# (no surrounding prose), the prerequisite for `extract_json_object` to find
-# a balanced `{...}` cleanly.
-#
+# answer, explanation} + a multi-turn audio_script + per-part metadata. The
+# pydantic-ai tool-call wrapping easily pushes output past 4k. When truncated
+# mid-tool-call, pydantic-ai raises IncompleteToolCall and the diagnose
+# orchestrator surfaces 502. 8000 is just under DeepSeek-chat's 8192 ceiling.
 # IMPORTANT: pydantic-ai applies model_settings only when passed to
-# `agent.run(...)`, NOT to `Agent(...)` constructor — see speaking_examiner.py:60.
-LISTENING_MODEL_SETTINGS = {
-    "max_tokens": 8000,
-    "response_format": {"type": "json_object"},
-}
+# `agent.run(...)`, NOT when passed to `Agent(...)` constructor — see the
+# working pattern in speaking_examiner.py:60.
+LISTENING_MODEL_SETTINGS = {"max_tokens": 8000}
 
 
-_agent_cache: Agent[None, str] | None = None
+_agent_cache: Agent[None, ListeningTestResponse] | None = None
 
 
-def get_listening_generator() -> Agent[None, str]:
-    """Return the cached listening generator Agent, building on first call."""
+def get_listening_generator() -> Agent[None, ListeningTestResponse]:
+    """Return the cached listening generator Agent, building on first call.
+
+    Cached at module scope after first successful build.
+    """
     global _agent_cache
     if _agent_cache is None:
         _agent_cache = _build_agent()
@@ -95,13 +89,9 @@ async def generate_listening_test(
     part: int | None = None,
     seed_exam_points: list[str] | None = None,
 ) -> ListeningTestResponse:
-    """Generate + validate a listening test, retrying up to MAX_ATTEMPTS times.
+    """Generate + validate a listening test, retrying up to MAX_ATTEMPTS on validation failure.
 
-    Each attempt produces a raw string from DeepSeek, extracts the first
-    balanced JSON object (strips markdown fences and trailing characters
-    from DeepSeek's "tool-call response" quirk), validates it as
-    `ListeningTestResponse`, and runs format validators. Failure to parse
-    OR validate triggers retry; final failure raises ValueError.
+    Raises ValueError if all MAX_ATTEMPTS attempts fail validation.
     """
     seed_exam_points = seed_exam_points or []
 
@@ -118,38 +108,10 @@ async def generate_listening_test(
 
     last_errors: list[ValidationError] | None = None
     last_response: ListeningTestResponse | None = None
-    last_parse_error: Exception | None = None
-
     for _attempt in range(MAX_ATTEMPTS):
         agent = get_listening_generator()
         run = await agent.run(prompt, model_settings=LISTENING_MODEL_SETTINGS)
-        raw = str(run.output)
-
-        # Step 1: extract the JSON object (handles trailing chars / fences).
-        try:
-            cleaned = extract_json_object(raw)
-        except ValueError as e:
-            last_parse_error = e
-            log.warning(
-                "generate_listening_test attempt %d: could not extract JSON object: %s",
-                _attempt + 1,
-                e,
-            )
-            continue
-
-        # Step 2: validate against the Pydantic schema.
-        try:
-            response = ListeningTestResponse.model_validate_json(cleaned)
-        except Exception as e:  # pydantic.ValidationError, etc.
-            last_parse_error = e
-            log.warning(
-                "generate_listening_test attempt %d: schema validation failed: %s",
-                _attempt + 1,
-                str(e)[:500],
-            )
-            continue
-
-        # Step 3: run format validators (validate_listening_response).
+        response: ListeningTestResponse = run.output
         errors = validate_listening_response(response)
         if not errors:
             if _attempt > 0:
@@ -167,12 +129,7 @@ async def generate_listening_test(
             [f"{e.code}: {e.message}" for e in errors],
         )
 
-    if last_errors is None:
-        # All attempts failed at parse/schema, never reached format validation.
-        raise ValueError(
-            f"Listening generation failed after {MAX_ATTEMPTS} attempts; "
-            f"last parse/schema error: {last_parse_error}"
-        )
+    assert last_errors is not None
     error_msgs = "; ".join(f"{e.code}: {e.message}" for e in last_errors)
     log.error(
         "generate_listening_test gave up after %d attempts; last response: %s",
