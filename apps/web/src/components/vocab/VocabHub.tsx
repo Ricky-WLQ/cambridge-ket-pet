@@ -142,10 +142,13 @@ export default function VocabHub({ examType }: Props) {
           const pct = total === 0 ? 0 : Math.round((mastered / total) * 100);
           const isCore = t === "CORE";
           return (
-            <div
+            <Link
               key={t}
-              className={`rounded-lg border p-4 ${
-                isCore ? "border-yellow-600 bg-yellow-50" : "border-neutral-300 bg-white"
+              href={`/${examType.toLowerCase()}/vocab/listen?tier=${t}`}
+              className={`block rounded-lg border p-4 transition hover:shadow-sm ${
+                isCore
+                  ? "border-yellow-600 bg-yellow-50 hover:bg-yellow-100"
+                  : "border-neutral-300 bg-white hover:border-neutral-900"
               }`}
             >
               <div className={`text-xs font-semibold uppercase tracking-wide ${isCore ? "text-yellow-700" : "text-neutral-500"}`}>
@@ -161,7 +164,7 @@ export default function VocabHub({ examType }: Props) {
                 />
               </div>
               <div className="mt-2 text-xs text-neutral-500">{meta.sub}</div>
-            </div>
+            </Link>
           );
         })}
       </div>
