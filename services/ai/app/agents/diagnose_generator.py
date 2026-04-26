@@ -171,18 +171,28 @@ async def _generate_diagnose_listening(
 ) -> ListeningTestResponse:
     """Sub-orchestrator for the Listening section.
 
-    Uses scope=FULL so we get the whole listening exam (apps/web later
-    extracts a subset for the diagnose's smaller question count when
-    composing Test.payload). The audio_script lives inside the response;
-    apps/web's T18 route renders it via Edge-TTS to populate the Test
-    row's audio_r2_key column.
+    Uses scope=PART (single part) instead of FULL because:
+      1. FULL renders ~50-80 Edge-TTS WebSocket segments at concurrency 4.
+         A single slow segment under load surfaces as 'Timed out' and
+         poisons the whole job, leaving Test.audioStatus=FAILED.
+      2. PART renders ~10 segments, matching the production listening
+         flow (`/api/tests/generate` defaults to PART) which has been
+         shipping reliably since Phase 2.
+      3. The diagnose's listening section only renders 3 questions for
+         the student anyway — generating 5 parts × multiple questions
+         each is wasteful DeepSeek cost the student never sees.
+
+    Pin to Part 1 for both KET and PET — short notice/sign + 5 multi-choice
+    questions, the simplest format and the one that synthesizes most
+    quickly. apps/web's diagnose generate route trims to 3 questions
+    when composing Test.payload.
     """
     return await _retry_on_unexpected_model_behavior(
         "LISTENING",
         lambda: generate_listening_test(
             exam_type=req.exam_type,
-            scope="FULL",
-            part=None,
+            scope="PART",
+            part=1,
             seed_exam_points=_focus_exam_points(req),
         ),
     )

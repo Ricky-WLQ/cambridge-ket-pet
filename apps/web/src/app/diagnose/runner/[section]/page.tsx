@@ -335,7 +335,18 @@ function SpeakingSection({
   // speaking pipeline and already handle DIAGNOSE TestAttempts because the
   // attempt's parent Test row has kind=DIAGNOSE with the speaking* columns
   // populated by the diagnose generator.
-  return <ClientSpeakingRunner attemptId={attemptId} level={examType} />;
+  //
+  // redirectAfterSubmit="/diagnose" so the post-submit nav lands on the
+  // diagnose hub. Without it, SpeakingRunner navigates to
+  // `/${portal}/speaking/result/${attemptId}` which 404s for diagnose
+  // attempts (the regular result page rejects kind != "SPEAKING").
+  return (
+    <ClientSpeakingRunner
+      attemptId={attemptId}
+      level={examType}
+      redirectAfterSubmit="/diagnose"
+    />
+  );
 }
 
 // ─── Per-section FK helpers (mirror /start API route) ─────────────────────
