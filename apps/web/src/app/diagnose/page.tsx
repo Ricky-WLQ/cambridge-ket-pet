@@ -11,6 +11,7 @@ import SessionRefresher from "@/components/diagnose/SessionRefresher";
 import type { DiagnoseSectionStatus } from "@/components/diagnose/SectionStatusCard";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { t } from "@/i18n/zh-CN";
 import { findCurrentWeekDiagnose } from "@/lib/diagnose/eligibility";
 import { runFinalizePipeline } from "@/lib/diagnose/finalize";
 import { currentWeekStart, currentWeekEnd } from "@/lib/diagnose/week";
@@ -160,10 +161,10 @@ export default async function DiagnoseHubPage() {
                 >
                   AI
                 </span>
-                本周诊断
+                {t.diagnose.pageTitle}
               </h1>
               <p className="mt-0.5 text-xs text-indigo-700/80">
-                AI 一键综合分析你本周的练习
+                {t.diagnose.pageSubtitle}
               </p>
               <p className="mt-1 text-xs text-indigo-700/70">
                 {weekStart.toISOString().slice(0, 10)} 至{" "}

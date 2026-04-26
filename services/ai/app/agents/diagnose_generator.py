@@ -59,6 +59,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import Awaitable, Callable, TypeVar
+
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from app.agents.listening_generator import generate_listening_test
 from app.agents.reading import generate_reading_test
@@ -76,6 +79,46 @@ log = logging.getLogger(__name__)
 # Section pinning — see module docstring for rationale.
 _READING_PART_BY_EXAM = {"KET": 4, "PET": 4}
 _WRITING_PART_BY_EXAM = {"KET": 6, "PET": 1}
+
+# Outer retry budget for sub-generators. The existing per-kind generators each
+# have their own internal validator-retry loop (typically retries=1), but
+# DeepSeek's outputs occasionally fail strict validators twice in a row,
+# producing UnexpectedModelBehavior. Wrapping each sub-call with one outer
+# retry doubles the chance of success at the cost of an extra DeepSeek call
+# on transient failures only.
+_OUTER_RETRIES = 2
+
+T = TypeVar("T")
+
+
+async def _retry_on_unexpected_model_behavior(
+    label: str,
+    factory: Callable[[], Awaitable[T]],
+    max_retries: int = _OUTER_RETRIES,
+) -> T:
+    """Call ``factory()`` up to ``max_retries + 1`` times, retrying on
+    ``UnexpectedModelBehavior`` (the typed exception that surfaces when the
+    inner agent exhausted its own retry budget). Other exceptions propagate.
+    """
+    last_exc: UnexpectedModelBehavior | None = None
+    for attempt in range(max_retries + 1):
+        try:
+            return await factory()
+        except UnexpectedModelBehavior as exc:
+            last_exc = exc
+            if attempt < max_retries:
+                log.warning(
+                    "[diagnose_generator] %s outer-retry %d/%d after %r",
+                    label,
+                    attempt + 1,
+                    max_retries,
+                    exc,
+                )
+                continue
+            raise
+    # Unreachable but satisfies type-checker.
+    assert last_exc is not None
+    raise last_exc
 
 
 class DiagnoseGenerationError(Exception):
@@ -118,7 +161,9 @@ async def _generate_diagnose_reading(
         mode="PRACTICE",
         seed_exam_points=_focus_exam_points(req),
     )
-    return await generate_reading_test(reading_req)
+    return await _retry_on_unexpected_model_behavior(
+        "READING", lambda: generate_reading_test(reading_req)
+    )
 
 
 async def _generate_diagnose_listening(
@@ -132,11 +177,14 @@ async def _generate_diagnose_listening(
     apps/web's T18 route renders it via Edge-TTS to populate the Test
     row's audio_r2_key column.
     """
-    return await generate_listening_test(
-        exam_type=req.exam_type,
-        scope="FULL",
-        part=None,
-        seed_exam_points=_focus_exam_points(req),
+    return await _retry_on_unexpected_model_behavior(
+        "LISTENING",
+        lambda: generate_listening_test(
+            exam_type=req.exam_type,
+            scope="FULL",
+            part=None,
+            seed_exam_points=_focus_exam_points(req),
+        ),
     )
 
 
@@ -154,7 +202,9 @@ async def _generate_diagnose_writing(
         part=_WRITING_PART_BY_EXAM[req.exam_type],
         seed_exam_points=_focus_exam_points(req),
     )
-    return await generate_writing_test(writing_req)
+    return await _retry_on_unexpected_model_behavior(
+        "WRITING", lambda: generate_writing_test(writing_req)
+    )
 
 
 async def _generate_diagnose_speaking(
@@ -173,9 +223,12 @@ async def _generate_diagnose_speaking(
       - SpeakingPrompts.initialGreeting → Test.speakingPersona / payload
       - per-part photoKey → Test.speakingPhotoKeys (resolved from R2)
     """
-    return await generate_speaking_prompts(
-        level=req.exam_type,
-        photo_briefs=[],
+    return await _retry_on_unexpected_model_behavior(
+        "SPEAKING",
+        lambda: generate_speaking_prompts(
+            level=req.exam_type,
+            photo_briefs=[],
+        ),
     )
 
 
