@@ -14,7 +14,7 @@ import { ListeningRunner } from "@/components/listening/ListeningRunner";
 export default function DiagnoseRunnerListening(
   props: Omit<
     ComponentProps<typeof ListeningRunner>,
-    "submitUrl" | "redirectAfterSubmit"
+    "submitUrl" | "redirectAfterSubmit" | "audioFailedRedirect"
   >,
 ) {
   return (
@@ -22,6 +22,7 @@ export default function DiagnoseRunnerListening(
       {...props}
       submitUrl="/api/diagnose/me/section/LISTENING/submit"
       redirectAfterSubmit="/diagnose"
+      audioFailedRedirect="/diagnose"
     />
   );
 }

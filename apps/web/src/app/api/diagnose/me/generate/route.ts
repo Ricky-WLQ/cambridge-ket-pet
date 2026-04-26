@@ -213,16 +213,48 @@ export async function POST() {
   const rawSpeaking = aiResponse.speaking as RawSpeakingResponse;
 
   // Reading: take up to 3 questions for diagnose's smaller scope.
+  //
+  // The reading agent at part=4 sometimes emits paragraph-matching content
+  // (passage with paragraphs A./B./C./D. and questions like "This paragraph
+  // describes X") with `options: []` and a single-letter `answer`. The
+  // ReadingRunner's MCQ branch needs a non-empty `options` array to render
+  // clickable radios; if we leave `options` empty the questions appear as
+  // plain text with no input UI. Detect this case and synthesize letter
+  // options from the passage's paragraph headings ("段落 A" etc.) so the
+  // runner has something to render.
+  const passageParagraphLetters = (() => {
+    if (!rawReading.passage) return [] as string[];
+    const matches = Array.from(rawReading.passage.matchAll(/^([A-Z])\.\s/gm));
+    const seen = new Set<string>();
+    for (const m of matches) seen.add(m[1]);
+    return Array.from(seen).sort(); // ["A","B","C","D"]
+  })();
+
   const readingQuestions = rawReading.questions.slice(0, 3).map((q, idx) => {
-    // For MCQ-style questions, derive correctIndex from `answer` letter
-    // ('A'/'B'/'C'/'D'). For non-MCQ, we fall back to 0 (the diagnose
-    // reading section assumes MCQ — this is a known caveat documented in
-    // the v2 plan; non-MCQ reading parts are disabled for diagnose v1).
-    const opts = q.options ?? [];
+    const rawOpts = q.options ?? [];
+    const isParagraphMatching =
+      rawOpts.length === 0 &&
+      q.answer.length === 1 &&
+      /^[A-Z]$/.test(q.answer.toUpperCase()) &&
+      passageParagraphLetters.length >= 2;
+
+    const opts = isParagraphMatching
+      ? passageParagraphLetters.map((letter) => `段落 ${letter}`)
+      : rawOpts;
+
+    // Derive correctIndex from the AI's single-letter `answer` against `opts`.
+    // For paragraph-matching: index of the answer letter in the synthesized
+    // letter list. For MCQ: A→0, B→1, etc.
     let correctIndex = 0;
     if (q.answer.length === 1) {
-      const letter = q.answer.toUpperCase().charCodeAt(0) - 65;
-      if (letter >= 0 && letter < opts.length) correctIndex = letter;
+      const letter = q.answer.toUpperCase();
+      if (isParagraphMatching) {
+        const found = passageParagraphLetters.indexOf(letter);
+        if (found >= 0) correctIndex = found;
+      } else {
+        const lc = letter.charCodeAt(0) - 65;
+        if (lc >= 0 && lc < opts.length) correctIndex = lc;
+      }
     }
     return {
       id: q.id ?? `r${idx + 1}`,

@@ -40,6 +40,13 @@ export interface ListeningRunnerProps {
    * (I1).
    */
   readOnly?: boolean;
+  /**
+   * Optional override for the redirect when audio generation fails. Defaults
+   * to `/${portal}/listening/new` (the regular practice flow). Diagnose
+   * wrapper sets this to `/diagnose` so a student lands back on the hub
+   * instead of the practice-listening start page.
+   */
+  audioFailedRedirect?: string;
 }
 
 type RunnerState = "LOADING" | "READY" | "LISTENING" | "REVIEW" | "SUBMITTING";
@@ -69,7 +76,9 @@ export function ListeningRunner(props: ListeningRunnerProps) {
         setState("READY");
       } else if (data.audioStatus === "FAILED") {
         alert("生成听力测试失败，请重试");
-        router.push(`/${props.portal}/listening/new`);
+        router.push(
+          props.audioFailedRedirect ?? `/${props.portal}/listening/new`,
+        );
       }
     };
     poll();
