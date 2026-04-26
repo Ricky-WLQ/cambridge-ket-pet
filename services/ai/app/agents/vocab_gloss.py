@@ -25,10 +25,7 @@ from app.schemas.vocab import (
     VocabGlossRequest,
     VocabGlossResponse,
 )
-from app.validators.vocab import (
-    validate_gloss_item,
-    validate_response_covers_all_words,
-)
+from app.validators.vocab import validate_response_covers_all_words
 
 logger = logging.getLogger(__name__)
 
@@ -116,14 +113,13 @@ async def run_vocab_gloss(req: VocabGlossRequest) -> VocabGlossResponse:
             # Coverage check: every requested cambridgeId is present in items.
             validate_response_covers_all_words(req.words, response.items)
 
-            # Per-item check: example contains the headword (or an inflected form).
-            inputs_by_id = {w.cambridgeId: w for w in req.words}
+            # Sanity: items must reference real input cambridgeIds (catches AI hallucinations).
+            inputs_by_id = {w.cambridgeId for w in req.words}
             for item in response.items:
                 if item.cambridgeId not in inputs_by_id:
                     raise ValueError(
                         f"response contains unknown cambridgeId {item.cambridgeId!r}",
                     )
-                validate_gloss_item(inputs_by_id[item.cambridgeId], item)
 
             if attempt > 1:
                 logger.info(

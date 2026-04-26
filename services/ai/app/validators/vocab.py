@@ -5,40 +5,14 @@ catches these and triggers retry (up to 3 attempts per spec).
 
 Note: cefrLevel field on VocabGlossItem is validated by Pydantic's Literal type
 (A1|A2|B1|B2|C1|C2). No extra validator function needed.
+
+Note: the per-item example-contains-headword check was removed (2026-04-26)
+because its substring-match heuristic produced too many false positives for
+multi-token headwords ("look after") and irregular inflections (find→found).
+The schema's required example: str (min_length=3) is sufficient. Schema-level
+CJK check on glossZh remains the primary gloss validator.
 """
-import re
 from app.schemas.vocab import VocabGlossItem, VocabWordInput
-
-
-# Letter sequence — ignores apostrophes/hyphens for matching.
-_NORMALIZE_RE = re.compile(r"[^a-z]")
-
-
-def _normalize(s: str) -> str:
-    return _NORMALIZE_RE.sub("", s.lower())
-
-
-def _example_contains_word(example: str, headword: str) -> bool:
-    """True if the example sentence contains the headword (any inflected form).
-
-    We strip non-letters, lowercase, then check if the normalized headword
-    is a substring of any normalized whitespace-separated token. This catches
-    'act' inside 'acts', 'acted', 'acting', 'actor'.
-    """
-    h = _normalize(headword)
-    if not h:
-        return False
-    tokens = [_normalize(t) for t in example.split()]
-    return any(h in tok for tok in tokens)
-
-
-def validate_gloss_item(input_word: VocabWordInput, item: VocabGlossItem) -> None:
-    """Validate one (input, item) pair. Raises ValueError on rejection."""
-    if not _example_contains_word(item.example, input_word.word):
-        raise ValueError(
-            f"example for {input_word.word!r} must contain the headword "
-            f"(or an inflected form): got {item.example!r}",
-        )
 
 
 def validate_response_covers_all_words(
