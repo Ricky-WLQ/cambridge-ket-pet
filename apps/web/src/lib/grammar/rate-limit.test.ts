@@ -4,8 +4,6 @@ import { rateLimit, _resetForTests } from "./rate-limit";
 beforeEach(() => _resetForTests());
 
 describe("rateLimit", () => {
-  const now = () => Date.now();
-
   it("allows the first N calls within the window", () => {
     for (let i = 0; i < 5; i++) {
       expect(rateLimit("user-1", { max: 5, windowMs: 60_000 })).toEqual({

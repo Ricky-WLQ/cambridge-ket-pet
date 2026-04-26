@@ -36,6 +36,7 @@ export default function GrammarMistakes({ examType }: Props) {
     setLoading(false);
   }, [examType, activeTab]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- standard data-fetch effect
   useEffect(() => { load(); }, [load]);
 
   const updateStatus = async (id: string, newStatus: NoteStatus) => {

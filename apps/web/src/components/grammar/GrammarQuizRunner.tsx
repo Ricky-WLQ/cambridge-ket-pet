@@ -43,9 +43,11 @@ export default function GrammarQuizRunner({ examType }: Props) {
     setLoading(false);
   }, [examType, topicId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- standard data-fetch effect
   useEffect(() => { loadQuiz(); }, [loadQuiz]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- standard data-fetch effect
     if (!topicId) { setTopicLabel("混合主题"); return; }
     fetch(`/api/grammar/topics?examType=${examType}`)
       .then((r) => r.json() as Promise<TopicsResponse>)
