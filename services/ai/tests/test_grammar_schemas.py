@@ -85,6 +85,17 @@ def test_mcq_rejects_difficulty_out_of_range():
         _valid_mcq(difficulty=6)
 
 
+def test_mcq_rejects_duplicate_options():
+    # Direct duplicates rejected.
+    with pytest.raises(ValidationError):
+        _valid_mcq(options=["works", "works", "has worked", "will work"])
+    # Case-insensitive trim normalization — "Works" / "works " duplicates "works".
+    with pytest.raises(ValidationError):
+        _valid_mcq(options=["works", "Works", "has worked", "will work"])
+    with pytest.raises(ValidationError):
+        _valid_mcq(options=["works", "works ", "has worked", "will work"])
+
+
 def test_response_accepts_list_of_mcqs():
     r = GrammarGenerateResponse(questions=[_valid_mcq(), _valid_mcq(question="It _____ rain tomorrow.")])
     assert len(r.questions) == 2
