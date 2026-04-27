@@ -18,44 +18,49 @@ export async function SiteHeader() {
   const isTeacher = dbUser?.role === "TEACHER" || dbUser?.role === "ADMIN";
 
   return (
-    <header className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-      <Link href="/" className="text-lg font-semibold">
-        {t.app.name}
+    <header className="site-header">
+      <Link href="/" className="flex items-center gap-2.5">
+        <span className="grid h-9 w-9 place-items-center rounded-lg bg-ink text-white font-extrabold text-sm">
+          K
+        </span>
+        <span className="font-extrabold text-base">{t.app.name}</span>
       </Link>
-      <nav className="flex items-center gap-3 text-sm">
+      <nav className="flex flex-wrap items-center gap-1.5 text-sm font-bold">
         {loggedIn ? (
           <>
-            <span className="flex items-center gap-2 text-neutral-600">
+            <span className="hidden sm:inline-flex items-center gap-2">
               {isTeacher && (
-                <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+                <span className="rounded-full bg-ink px-2.5 py-0.5 text-xs font-extrabold text-white">
                   {t.nav.teacherBadge}
                 </span>
               )}
-              <span>{dbUser?.email}</span>
+              <span className="rounded-full bg-mist px-3.5 py-1.5 text-ink/70">
+                {dbUser?.email}
+              </span>
             </span>
             <Link
               href="/history"
-              className="text-neutral-700 hover:text-neutral-900"
+              className="rounded-full px-3.5 py-1.5 hover:bg-ink/5 transition"
             >
               {t.nav.history}
             </Link>
             <Link
               href="/classes"
-              className="text-neutral-700 hover:text-neutral-900"
+              className="rounded-full px-3.5 py-1.5 hover:bg-ink/5 transition"
             >
               {t.nav.myClasses}
             </Link>
             {isTeacher ? (
               <Link
                 href="/teacher/classes"
-                className="text-neutral-700 hover:text-neutral-900"
+                className="rounded-full px-3.5 py-1.5 hover:bg-ink/5 transition"
               >
                 {t.nav.teacherPanel}
               </Link>
             ) : (
               <Link
                 href="/teacher/activate"
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+                className="rounded-full border-2 border-ink/15 px-3.5 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
               >
                 {t.nav.applyTeacher}
               </Link>
@@ -68,7 +73,7 @@ export async function SiteHeader() {
             >
               <button
                 type="submit"
-                className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+                className="rounded-full border-2 border-ink/15 px-3.5 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
               >
                 {t.nav.signOut}
               </button>
@@ -78,13 +83,13 @@ export async function SiteHeader() {
           <>
             <Link
               href="/login"
-              className="text-neutral-700 hover:text-neutral-900"
+              className="rounded-full px-3.5 py-1.5 hover:bg-ink/5 transition"
             >
               {t.nav.login}
             </Link>
             <Link
               href="/signup"
-              className="rounded-md bg-neutral-900 px-3 py-1.5 text-white hover:bg-neutral-700"
+              className="rounded-full bg-ink px-4 py-1.5 text-white font-extrabold hover:bg-ink/90 transition"
             >
               {t.nav.signup}
             </Link>
