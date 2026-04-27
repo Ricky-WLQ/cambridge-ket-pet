@@ -91,33 +91,31 @@ export default function NewAssignmentForm({
       <input type="hidden" name="classId" value={classId} />
 
       <div>
-        <label className="mb-1 block text-sm font-medium">标题</label>
+        <label className="mb-1 block text-sm font-bold">标题</label>
         <input
           name="title"
           type="text"
           required
           maxLength={80}
           placeholder="例如：本周 KET Reading Part 3 练习"
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+          className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">
-          说明（可选）
-        </label>
+        <label className="mb-1 block text-sm font-bold">说明（可选）</label>
         <textarea
           name="description"
           rows={3}
           maxLength={500}
           placeholder="给学生的简短说明、提示或鼓励"
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+          className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
         />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium">科目</label>
+          <label className="mb-1 block text-sm font-bold">科目</label>
           <div className="flex gap-2">
             {(["KET", "PET"] as const).map((et) => (
               <button
@@ -127,10 +125,10 @@ export default function NewAssignmentForm({
                   setExamType(et);
                   setPart("ANY");
                 }}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm transition ${
+                className={`flex-1 rounded-full border-2 px-3 py-2 text-sm font-bold transition ${
                   examType === et
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 bg-white hover:border-neutral-900"
+                    ? "border-ink bg-ink text-white"
+                    : "border-ink/15 bg-white hover:bg-ink/5"
                 }`}
               >
                 {et}
@@ -141,25 +139,37 @@ export default function NewAssignmentForm({
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">题型</label>
+          <label className="mb-1 block text-sm font-bold">题型</label>
           <div className="flex flex-wrap gap-2">
-            {(["READING", "WRITING", "LISTENING", "VOCAB", "GRAMMAR"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => {
-                  setKind(k);
-                  setPart("ANY");
-                }}
-                className={`flex-1 rounded-md border px-3 py-2 text-sm transition ${
-                  kind === k
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 bg-white hover:border-neutral-900"
-                }`}
-              >
-                {KIND_LABEL[k]}
-              </button>
-            ))}
+            {(
+              ["READING", "WRITING", "LISTENING", "VOCAB", "GRAMMAR"] as const
+            ).map((k) => {
+              // P-Skill-Color canonical mapping
+              const tileMap: Record<Kind, string> = {
+                READING: "tile-lavender",
+                WRITING: "tile-butter",
+                LISTENING: "tile-sky",
+                VOCAB: "tile-mint",
+                GRAMMAR: "tile-cream",
+              };
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => {
+                    setKind(k);
+                    setPart("ANY");
+                  }}
+                  className={`flex-1 rounded-full border-2 px-3 py-2 text-sm font-bold transition ${
+                    kind === k
+                      ? "border-ink bg-ink text-white"
+                      : `border-ink/15 ${tileMap[k]} hover:border-ink/30`
+                  }`}
+                >
+                  {KIND_LABEL[k]}
+                </button>
+              );
+            })}
           </div>
           <input type="hidden" name="kind" value={kind} />
         </div>
@@ -167,17 +177,17 @@ export default function NewAssignmentForm({
 
       {isPaperKind && (
         <div>
-          <label className="mb-1 block text-sm font-medium">
+          <label className="mb-1 block text-sm font-bold">
             Part（可选 — 留「任意」则该题型任意 Part 均计入）
           </label>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setPart("ANY")}
-              className={`rounded-md border px-3 py-1.5 text-sm transition ${
+              className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold transition ${
                 part === "ANY"
-                  ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-300 bg-white hover:border-neutral-900"
+                  ? "border-ink bg-ink text-white"
+                  : "border-ink/15 bg-white hover:bg-ink/5"
               }`}
             >
               任意
@@ -187,10 +197,10 @@ export default function NewAssignmentForm({
                 key={p}
                 type="button"
                 onClick={() => setPart(String(p))}
-                className={`rounded-md border px-3 py-1.5 text-sm transition ${
+                className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold transition ${
                   part === String(p)
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 bg-white hover:border-neutral-900"
+                    ? "border-ink bg-ink text-white"
+                    : "border-ink/15 bg-white hover:bg-ink/5"
                 }`}
               >
                 Part {p}
@@ -204,7 +214,7 @@ export default function NewAssignmentForm({
       {isVocab && (
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">目标等级</label>
+            <label className="mb-1 block text-sm font-bold">目标等级</label>
             <div className="flex flex-wrap gap-2">
               {(["ALL", "CORE", "RECOMMENDED", "EXTRA"] as const).map((t) => {
                 const selected =
@@ -216,10 +226,10 @@ export default function NewAssignmentForm({
                     onClick={() =>
                       setTargetTier(t === "ALL" ? null : (t as Tier))
                     }
-                    className={`rounded-md border px-3 py-1.5 text-sm transition ${
+                    className={`rounded-full border-2 px-3 py-1.5 text-sm font-bold transition ${
                       selected
-                        ? "border-neutral-900 bg-neutral-900 text-white"
-                        : "border-neutral-300 bg-white hover:border-neutral-900"
+                        ? "border-ink bg-ink text-white"
+                        : "border-ink/15 bg-white hover:bg-ink/5"
                     }`}
                   >
                     {TIER_LABEL[t]}
@@ -234,7 +244,7 @@ export default function NewAssignmentForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">需掌握词数</label>
+            <label className="mb-1 block text-sm font-bold">需掌握词数</label>
             <input
               name="targetWordCount"
               type="number"
@@ -245,9 +255,9 @@ export default function NewAssignmentForm({
                 const v = Number.parseInt(e.target.value, 10);
                 setTargetWordCount(Number.isFinite(v) ? v : 0);
               }}
-              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
             />
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs font-medium text-ink/60">
               学生需在所选等级中达到熟练度 ≥ 4 的单词数量。
             </p>
           </div>
@@ -257,13 +267,13 @@ export default function NewAssignmentForm({
       {isGrammar && (
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-sm font-medium">目标主题</label>
+            <label className="mb-1 block text-sm font-bold">目标主题</label>
             <select
               value={targetTopicId ?? ""}
               onChange={(e) =>
                 setTargetTopicId(e.target.value === "" ? null : e.target.value)
               }
-              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
             >
               <option value="">全部主题</option>
               {topics.map((t) => (
@@ -279,7 +289,7 @@ export default function NewAssignmentForm({
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">
+            <label className="mb-1 block text-sm font-bold">
               正确率达标线 (%)
             </label>
             <input
@@ -292,9 +302,9 @@ export default function NewAssignmentForm({
                 setTargetMinScore(Number.isFinite(v) ? v : 0);
               }}
               name="minScore"
-              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
             />
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs font-medium text-ink/60">
               学生需在所选主题（或全部主题）至少答 10 题，且正确率达到此线。
             </p>
           </div>
@@ -304,7 +314,7 @@ export default function NewAssignmentForm({
       <div className="grid gap-3 sm:grid-cols-2">
         {isPaperKind && (
           <div>
-            <label className="mb-1 block text-sm font-medium">
+            <label className="mb-1 block text-sm font-bold">
               最低及格分（可选，0-100）
             </label>
             <input
@@ -314,22 +324,22 @@ export default function NewAssignmentForm({
               max={100}
               step={1}
               placeholder="例如：70"
-              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
             />
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs font-medium text-ink/60">
               留空则任何已批改答卷均视为完成
             </p>
           </div>
         )}
 
         <div className={isPaperKind ? "" : "sm:col-span-2"}>
-          <label className="mb-1 block text-sm font-medium">
+          <label className="mb-1 block text-sm font-bold">
             截止时间（可选）
           </label>
           <input
             name="dueAt"
             type="datetime-local"
-            className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+            className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
           />
         </div>
       </div>
@@ -338,7 +348,7 @@ export default function NewAssignmentForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 disabled:opacity-50"
+          className="rounded-full bg-ink px-5 py-2.5 text-sm font-extrabold text-white hover:bg-ink/90 transition disabled:opacity-50"
         >
           {submitting ? "保存中…" : "保存作业"}
         </button>

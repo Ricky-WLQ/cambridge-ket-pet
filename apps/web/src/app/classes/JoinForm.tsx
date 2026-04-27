@@ -45,8 +45,8 @@ export default function JoinForm() {
   }
 
   return (
-    <div className="rounded-md border border-neutral-200 p-4">
-      <div className="mb-3 text-sm font-medium">加入班级</div>
+    <div className="rounded-2xl border-2 border-ink/10 bg-white p-5 stitched-card">
+      <div className="mb-3 text-sm font-extrabold">加入班级</div>
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
@@ -54,23 +54,23 @@ export default function JoinForm() {
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           placeholder="输入 8 位邀请码"
           maxLength={20}
-          className="flex-1 rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm tracking-wider focus:border-neutral-900 focus:outline-none"
+          className="flex-1 rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 font-mono text-sm tracking-wider focus:border-ink outline-none transition"
         />
         <button
           type="submit"
           disabled={loading || code.trim().length === 0}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700 disabled:opacity-50"
+          className="rounded-full bg-ink text-white font-extrabold px-5 py-2.5 text-sm hover:bg-ink/90 transition disabled:opacity-50"
         >
           {loading ? "加入中…" : "加入"}
         </button>
       </form>
       {error && (
-        <div className="mt-3 rounded-md bg-red-50 p-2 text-xs text-red-700">
+        <div className="mt-3 rounded-xl border-2 border-red-200 bg-red-50 p-2 text-xs font-medium text-red-700">
           {error}
         </div>
       )}
       {success && (
-        <div className="mt-3 rounded-md bg-green-50 p-2 text-xs text-green-700">
+        <div className="mt-3 rounded-xl border-2 border-green-200 bg-green-50 p-2 text-xs font-medium text-green-700">
           ✓ {success}
         </div>
       )}

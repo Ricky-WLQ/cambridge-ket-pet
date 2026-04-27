@@ -12,12 +12,12 @@ export function RubricBar({ label, score, max = 5 }: Props) {
   return (
     <div className="w-full">
       <div className="flex items-baseline justify-between">
-        <span className="text-sm text-neutral-700">{label}</span>
-        <span className="tabular-nums text-sm text-neutral-500">
+        <span className="text-sm text-ink/80 font-bold">{label}</span>
+        <span className="tabular-nums text-sm text-ink/60 font-bold">
           {clamped} / {max}
         </span>
       </div>
-      <div className="mt-1 h-2 rounded-full bg-neutral-200">
+      <div className="mt-1 h-2 rounded-full bg-ink/10 overflow-hidden">
         <div
           className="h-full rounded-full bg-emerald-500 transition-all"
           style={{ width: `${pct}%` }}

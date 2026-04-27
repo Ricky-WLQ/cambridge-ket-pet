@@ -1,39 +1,202 @@
 @import "tailwindcss";
 
 :root {
+  /* Backwards-compat */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+
+  /* Variant A pastel/highlighter design tokens */
+  --color-ink: #0f172a;
+  --color-mist: #f4ecff;
+  --color-skywash: #eef2ff;
+
+  --color-lavender: #a78bfa;
+  --color-lavender-soft: #c7b8ff;
+  --color-lavender-tint: #ede7ff;
+  --color-sky: #7db8ff;
+  --color-sky-soft: #bcd8ff;
+  --color-sky-tint: #e4efff;
+  --color-butter: #ffd96b;
+  --color-butter-soft: #ffe38a;
+  --color-butter-tint: #fff6d6;
+  --color-peach: #ffc4d1;
+  --color-peach-soft: #ffd4dd;
+  --color-peach-tint: #ffebf0;
+  --color-mint: #a8e6cf;
+  --color-mint-soft: #c6f0dc;
+  --color-mint-tint: #e6f8ee;
+
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-ink: var(--color-ink);
+  --color-mist: var(--color-mist);
+  --color-skywash: var(--color-skywash);
+  --color-lavender: var(--color-lavender);
+  --color-lavender-soft: var(--color-lavender-soft);
+  --color-lavender-tint: var(--color-lavender-tint);
+  --color-sky: var(--color-sky);
+  --color-sky-soft: var(--color-sky-soft);
+  --color-sky-tint: var(--color-sky-tint);
+  --color-butter: var(--color-butter);
+  --color-butter-soft: var(--color-butter-soft);
+  --color-butter-tint: var(--color-butter-tint);
+  --color-peach: var(--color-peach);
+  --color-peach-soft: var(--color-peach-soft);
+  --color-peach-tint: var(--color-peach-tint);
+  --color-mint: var(--color-mint);
+  --color-mint-soft: var(--color-mint-soft);
+  --color-mint-tint: var(--color-mint-tint);
+
+  --font-sans: var(--font-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  font-size: 17px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(180deg, #eef2ff 0%, #f4ecff 100%);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  min-height: 100vh;
 }
 
+/* Yellow highlighter on headline punchline phrases */
+.marker-yellow {
+  background: linear-gradient(transparent 55%, #ffe066 55% 92%, transparent 92%);
+  padding: 0 0.25em;
+  font-weight: 800;
+  -webkit-box-decoration-break: clone;
+          box-decoration-break: clone;
+}
+.marker-yellow-thick {
+  background: linear-gradient(transparent 35%, #ffe066 35% 95%, transparent 95%);
+  padding: 0 0.3em;
+  font-weight: 800;
+  -webkit-box-decoration-break: clone;
+          box-decoration-break: clone;
+}
+
+/* Card shadows */
+.stitched-card {
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.04),
+    0 8px 24px -10px rgba(15, 23, 42, 0.1);
+}
+
+/* Pill chip */
+.pill-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Universal site header (used on every authenticated page) */
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: #fff;
+  padding: 0.7rem 1.1rem;
+  border-radius: 1rem;
+  box-shadow:
+    0 1px 0 rgba(15, 23, 42, 0.04),
+    0 6px 18px -8px rgba(15, 23, 42, 0.08);
+}
+
+/* Skill tile (KET/PET hub + vocab/grammar overview tiles) */
+.skill-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem 1.4rem;
+  border-radius: 1.25rem;
+  border: 2px solid rgba(15, 23, 42, 0.1);
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+  min-height: 11rem;
+}
+.skill-tile:hover {
+  border-color: var(--color-ink);
+  transform: translateY(-2px);
+}
+
+.arrow-chip {
+  display: inline-grid;
+  place-items: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  border-radius: 9999px;
+  background: var(--color-ink);
+  color: #fff;
+  transition: transform 0.15s;
+}
+.skill-tile:hover .arrow-chip {
+  transform: translateX(3px);
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 2px solid rgba(15, 23, 42, 0.1);
+}
+
+.star-sticker {
+  position: absolute;
+  background: #ffe066;
+  color: var(--color-ink);
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  border: 2px solid var(--color-ink);
+  transform: rotate(-6deg);
+}
+
+/* Pastel tile fills */
+.tile-lavender { background: linear-gradient(135deg, #ede7ff 0%, #d9c9ff 100%); }
+.tile-sky      { background: linear-gradient(135deg, #e4efff 0%, #c8defe 100%); }
+.tile-butter   { background: linear-gradient(135deg, #fff6d6 0%, #ffe38a 100%); }
+.tile-peach    { background: linear-gradient(135deg, #ffebf0 0%, #ffd4dd 100%); }
+.tile-mint     { background: linear-gradient(135deg, #e6f8ee 0%, #b3e8c9 100%); }
+.tile-cream    { background: linear-gradient(135deg, #fff7e8 0%, #ffe9b8 100%); }
+
+/* Page-section: hub-style (default) and runner-style (locked-height) */
+.page-section {
+  min-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.page-section.locked-height {
+  min-height: 0;
+  height: calc(100dvh - 2rem);
+  max-height: calc(100dvh - 2rem);
+}
+.grow-fill {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Existing fade-in (kept verbatim from original globals.css) */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-
 .animate-fade-in {
   animation: fade-in 180ms ease-out both;
 }

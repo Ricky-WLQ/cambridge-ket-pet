@@ -414,35 +414,41 @@ export function SpeakingRunner({ attemptId, level, redirectAfterSubmit }: Props)
 
   if (error) {
     return (
-      <div className="mx-auto max-w-md p-6 text-center">
-        <p className="text-red-500">{error}</p>
-        <a
-          className="mt-4 inline-block underline"
-          href={`/${level.toLowerCase()}/speaking/new`}
-        >
-          返回
-        </a>
+      <div className="page-section">
+        <div className="mx-auto max-w-md w-full px-1 py-12 text-center">
+          <div className="rounded-3xl bg-white border-2 border-ink/10 p-8 stitched-card">
+            <p className="text-base font-bold text-red-600">{error}</p>
+            <a
+              className="mt-4 inline-block rounded-full border-2 border-ink/15 px-4 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
+              href={`/${level.toLowerCase()}/speaking/new`}
+            >
+              返回
+            </a>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 p-4 md:p-6">
-      <div className="flex w-full items-center justify-between gap-2">
-        {testCtx && (
-          <PartProgressBar totalParts={testCtx.parts.length} currentPart={currentPart} />
-        )}
+    <div className="page-section locked-height">
+      <div className="site-header">
+        <div className="flex items-center gap-3 flex-1 max-w-md">
+          {testCtx && (
+            <PartProgressBar totalParts={testCtx.parts.length} currentPart={currentPart} />
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <StatusPill status={status} />
           <EndTestButton onConfirm={submit} disabled={status === "ended"} />
         </div>
       </div>
 
-      <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
-        <div className="flex justify-center">
+      <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-4 grow-fill min-h-0 items-start">
+        <div className="flex justify-center min-h-0">
           <MinaAvatarPanel remoteUserId={remoteUserId} />
         </div>
-        <div className="flex justify-center">
+        <div className="flex justify-center min-h-0">
           <PhotoPanel photoUrl={photoUrl ?? null} caption={currentPartObj?.title} />
         </div>
       </div>

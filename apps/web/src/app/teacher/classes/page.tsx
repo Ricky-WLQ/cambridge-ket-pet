@@ -33,67 +33,80 @@ export default async function TeacherClassesPage() {
   });
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-3xl px-6 py-10">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{t.classes.teacher.title}</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            <span className="marker-yellow-thick">
+              {t.classes.teacher.title}
+            </span>
+          </h1>
           <Link
             href="/teacher/classes/new"
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+            className="rounded-full bg-ink px-4 py-2 text-sm font-extrabold text-white hover:bg-ink/90 transition"
           >
             {t.classes.teacher.createButton}
           </Link>
         </div>
 
         {classes.length === 0 ? (
-          <div className="rounded-md border border-dashed border-neutral-300 p-10 text-center">
-            <p className="text-sm text-neutral-500">
-              {t.classes.teacher.empty}
-            </p>
+          <div className="rounded-2xl border-2 border-dashed border-ink/15 p-10 text-center">
+            <p className="text-sm text-ink/60">{t.classes.teacher.empty}</p>
             <Link
               href="/teacher/classes/new"
-              className="mt-4 inline-block rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+              className="mt-4 inline-block rounded-full bg-ink px-4 py-2 text-sm font-extrabold text-white hover:bg-ink/90 transition"
             >
               {t.classes.teacher.emptyCta}
             </Link>
           </div>
         ) : (
           <ul className="space-y-3">
-            {classes.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/teacher/classes/${c.id}`}
-                  className="flex items-center justify-between gap-4 rounded-md border border-neutral-200 p-4 transition hover:border-neutral-900 hover:shadow-sm"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium">
-                      {c.name}
-                      {c.examFocus && (
-                        <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
-                          {c.examFocus}
-                        </span>
-                      )}
+            {classes.map((c, idx) => {
+              const tints = [
+                "bg-lavender-tint",
+                "bg-sky-tint",
+                "bg-mint-tint",
+                "bg-butter-tint",
+                "bg-peach-tint",
+                "bg-cream-tint",
+              ];
+              const tint = tints[idx % tints.length];
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/teacher/classes/${c.id}`}
+                    className={`flex items-center justify-between gap-4 rounded-2xl border-2 border-ink/10 p-4 stitched-card transition hover:border-ink/30 ${tint}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="font-extrabold">
+                        {c.name}
+                        {c.examFocus && (
+                          <span className="ml-2 rounded-full bg-white/70 px-2 py-0.5 text-xs font-bold text-ink/65">
+                            {c.examFocus}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs font-medium text-ink/60">
+                        {c._count.members} {t.classes.teacher.studentsSuffix} ·{" "}
+                        {t.classes.teacher.createdAt}{" "}
+                        {c.createdAt.toLocaleDateString("zh-CN")}
+                      </div>
                     </div>
-                    <div className="mt-1 text-xs text-neutral-500">
-                      {c._count.members} {t.classes.teacher.studentsSuffix} ·{" "}
-                      {t.classes.teacher.createdAt}{" "}
-                      {c.createdAt.toLocaleDateString("zh-CN")}
+                    <div className="text-right">
+                      <div className="text-xs font-bold text-ink/60">
+                        {t.classes.teacher.inviteCodeLabel}
+                      </div>
+                      <div className="font-mono text-lg font-extrabold tracking-wider">
+                        {c.inviteCode}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-neutral-500">
-                      {t.classes.teacher.inviteCodeLabel}
-                    </div>
-                    <div className="font-mono text-lg font-semibold tracking-wider">
-                      {c.inviteCode}
-                    </div>
-                  </div>
-                  <span className="text-neutral-400">→</span>
-                </Link>
-              </li>
-            ))}
+                    <span className="text-ink/40">→</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>

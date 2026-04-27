@@ -12,9 +12,12 @@ interface Props {
   examType: "KET" | "PET";
   category: string;
   topics: TopicWithStats[];
+  index?: number;
 }
 
-export function CategoryCard({ examType, category, topics }: Props) {
+const PASTEL_ROTATION = ["tile-lavender", "tile-sky", "tile-butter", "tile-peach", "tile-mint", "tile-cream"] as const;
+
+export function CategoryCard({ examType, category, topics, index = 0 }: Props) {
   const label = getCategoryLabel(category);
   const totalAttempted = topics.reduce((s, t) => s + t.attempted, 0);
   const weightedAcc = totalAttempted === 0
@@ -24,14 +27,16 @@ export function CategoryCard({ examType, category, topics }: Props) {
     ? `${topics.length} 主题 · 未练习`
     : `${topics.length} 主题 · 平均正确率 ${Math.round(weightedAcc * 100)}%`;
 
+  const tile = PASTEL_ROTATION[index % PASTEL_ROTATION.length];
+
   return (
-    <div className="rounded-md border border-neutral-200 bg-white p-4">
+    <div className={`rounded-2xl border-2 border-ink/10 ${tile} p-4 stitched-card`}>
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-2">
-          <span className="text-base font-semibold text-neutral-900">{label.zh}</span>
-          <span className="text-xs text-neutral-500">{label.en}</span>
+          <span className="text-base font-extrabold text-ink">{label.zh}</span>
+          <span className="text-xs font-bold text-ink/55">{label.en}</span>
         </div>
-        <span className="text-xs text-neutral-500">{summaryText}</span>
+        <span className="text-xs font-bold text-ink/55">{summaryText}</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {topics.map((t) => (

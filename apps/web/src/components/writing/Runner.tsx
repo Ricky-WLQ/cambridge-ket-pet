@@ -136,154 +136,171 @@ export default function WritingRunner({
 
   if (submitting) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-16 text-center">
-        <div className="rounded-md border border-neutral-200 bg-neutral-50 p-8">
-          <div className="text-lg font-medium">AI 批改中…</div>
-          <p className="mt-2 text-sm text-neutral-500">
-            通常需要 30-90 秒。批改完成后会自动跳转到成绩页面。
-          </p>
+      <div className="page-section">
+        <div className="mx-auto max-w-2xl w-full px-1 py-16 text-center">
+          <div className="rounded-3xl bg-white border-2 border-ink/10 p-8 stitched-card">
+            <div className="text-lg font-extrabold">AI 批改中…</div>
+            <p className="mt-2 text-sm text-ink/65">
+              通常需要 30-90 秒。批改完成后会自动跳转到成绩页面。
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">
-            {examType} 写作 · Part {part}
-          </h1>
-          <p className="text-sm text-neutral-500">
-            {mode === "MOCK" ? "模拟考试" : "练习模式"} · 至少 {minWords} 词
-          </p>
+    <div className="page-section locked-height">
+      <div className="site-header">
+        <div className="flex items-center gap-2.5">
+          <div className="leading-tight">
+            <div className="text-[11px] font-bold text-ink/60">
+              {examType} 写作 · Part {part}
+            </div>
+            <div className="text-base font-extrabold">
+              {mode === "MOCK" ? "模拟考试" : "练习模式"} · 至少 {minWords} 词
+            </div>
+          </div>
         </div>
-        {timerActive && (
+        <div className="flex items-center gap-2.5">
           <div
-            className={`rounded-md border px-3 py-1.5 font-mono text-lg ${
-              remaining <= 60
-                ? "border-red-300 bg-red-50 text-red-700"
-                : "border-neutral-300"
+            className={`rounded-full border-2 px-4 py-2 text-sm font-extrabold ${
+              meetsMin
+                ? "bg-mint-tint border-ink/10 text-emerald-700"
+                : "bg-butter-tint border-ink/10 text-ink/70"
             }`}
-            aria-live="polite"
           >
-            {formatTime(remaining)}
+            已写 <span className="font-mono">{wordCount}</span> 词
+            {meetsMin ? " ✓ 达到最低要求" : `（至少 ${minWords} 词）`}
           </div>
-        )}
-      </div>
-
-      {/* Task prompt */}
-      <div className="mb-4 whitespace-pre-wrap rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm leading-relaxed">
-        {prompt}
-      </div>
-
-      {/* Content points (KET P6, PET P1) */}
-      {contentPoints.length > 0 && (
-        <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 p-4">
-          <div className="mb-2 text-sm font-medium text-blue-900">
-            你的作文必须包含以下要点：
-          </div>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-blue-900">
-            {contentPoints.map((p, i) => (
-              <li key={i}>{p}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Scene descriptions (KET P7) */}
-      {sceneDescriptions.length > 0 && (
-        <div className="mb-4 rounded-md border border-purple-200 bg-purple-50 p-4">
-          <div className="mb-2 text-sm font-medium text-purple-900">
-            三个画面（按顺序）：
-          </div>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-purple-900">
-            {sceneDescriptions.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {/* PET Part 2: option picker */}
-      {taskType === "LETTER_OR_STORY" && (
-        <div className="mb-4 rounded-md border border-neutral-200 p-4">
-          <div className="mb-2 text-sm font-medium">选择一个题目作答：</div>
-          <div className="flex gap-2">
-            {(["A", "B"] as const).map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => setChosenOption(opt)}
-                className={`flex-1 rounded-md border px-4 py-2 text-sm transition ${
-                  chosenOption === opt
-                    ? "border-neutral-900 bg-neutral-900 text-white"
-                    : "border-neutral-300 hover:border-neutral-900"
-                }`}
-              >
-                选择 {opt}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Response textarea */}
-      <div className="mb-2">
-        <label
-          htmlFor="response"
-          className="mb-1 block text-sm font-medium"
-        >
-          你的作文
-        </label>
-        <textarea
-          id="response"
-          value={response}
-          onChange={(e) => setResponse(e.target.value)}
-          rows={12}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm leading-relaxed focus:border-neutral-900 focus:outline-none"
-          placeholder="在这里用英语写下你的作文…"
-        />
-      </div>
-
-      <div className="mb-6 flex items-center justify-between text-xs">
-        <div
-          className={`font-medium ${
-            meetsMin ? "text-green-700" : "text-neutral-500"
-          }`}
-        >
-          已写 <span className="font-mono">{wordCount}</span> 词
-          {meetsMin ? " ✓ 达到最低要求" : `（至少 ${minWords} 词）`}
-        </div>
-        <div className="text-neutral-400">
-          {taskType === "LETTER_OR_STORY" && !chosenOption && "请先选择 A 或 B"}
+          {timerActive && (
+            <div
+              className={`rounded-full border-2 px-4 py-2 ${
+                remaining <= 60
+                  ? "border-red-300 bg-red-50 text-red-700"
+                  : "border-ink/10 bg-butter-tint"
+              }`}
+              aria-live="polite"
+            >
+              <span className="font-mono font-extrabold text-lg tabular-nums">
+                {formatTime(remaining)}
+              </span>
+            </div>
+          )}
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={
+                submitting ||
+                wordCount === 0 ||
+                (taskType === "LETTER_OR_STORY" && !chosenOption)
+              }
+              className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-2.5 hover:bg-ink/90 transition disabled:opacity-50"
+            >
+              {submitting ? "提交中…" : "提交作文"}
+            </button>
+          )}
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      <div
+        className="grid gap-3.5 lg:grid-cols-[1.05fr_1fr] grow-fill min-h-0"
+        style={{ gridTemplateRows: "minmax(0, 1fr)" }}
+      >
+        {/* Left column: prompt + content points + option picker */}
+        <div className="flex flex-col gap-3 min-h-0 overflow-y-auto pr-1">
+          {readOnly && (
+            <div className="rounded-2xl bg-butter-tint border-2 border-ink/10 px-4 py-3 text-sm font-bold">
+              练习模式 — 不计分
+            </div>
+          )}
 
-      {readOnly ? (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          练习模式 — 不计分
+          {/* Task prompt */}
+          <div className="rounded-2xl bg-mist border-2 border-ink/10 p-4 stitched-card whitespace-pre-wrap text-sm leading-relaxed">
+            {prompt}
+          </div>
+
+          {/* Content points (KET P6, PET P1) */}
+          {contentPoints.length > 0 && (
+            <div className="rounded-2xl bg-sky-tint border-2 border-sky-300 p-4 stitched-card">
+              <div className="mb-2 text-sm font-extrabold text-sky-900">
+                你的作文必须包含以下要点：
+              </div>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-sky-900">
+                {contentPoints.map((p, i) => (
+                  <li key={i}>{p}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Scene descriptions (KET P7) */}
+          {sceneDescriptions.length > 0 && (
+            <div className="rounded-2xl bg-lavender-tint border-2 border-ink/10 p-4 stitched-card">
+              <div className="mb-2 text-sm font-extrabold text-ink">
+                三个画面（按顺序）：
+              </div>
+              <ol className="list-decimal space-y-1 pl-5 text-sm text-ink/85">
+                {sceneDescriptions.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {/* PET Part 2: option picker */}
+          {taskType === "LETTER_OR_STORY" && (
+            <div className="rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card">
+              <div className="mb-2 text-sm font-extrabold">选择一个题目作答：</div>
+              <div className="flex gap-2">
+                {(["A", "B"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setChosenOption(opt)}
+                    className={`flex-1 rounded-xl border-2 px-4 py-2 text-sm font-bold transition ${
+                      chosenOption === opt
+                        ? "border-ink bg-ink text-white"
+                        : "border-ink/15 hover:border-ink"
+                    }`}
+                  >
+                    选择 {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="rounded-2xl bg-red-50 border-2 border-red-200 p-3 text-sm font-bold text-red-700">
+              {error}
+            </div>
+          )}
+
+          {taskType === "LETTER_OR_STORY" && !chosenOption && (
+            <div className="text-xs font-bold text-ink/55">请先选择 A 或 B</div>
+          )}
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={
-            submitting ||
-            wordCount === 0 ||
-            (taskType === "LETTER_OR_STORY" && !chosenOption)
-          }
-          className="w-full rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
-        >
-          {submitting ? "提交中…" : "提交作文"}
-        </button>
-      )}
+
+        {/* Right column: full-height textarea */}
+        <div className="flex flex-col gap-2 min-h-0 overflow-hidden">
+          <label
+            htmlFor="response"
+            className="block text-sm font-extrabold shrink-0"
+          >
+            你的作文
+          </label>
+          <textarea
+            id="response"
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            readOnly={readOnly}
+            className="rounded-2xl border-2 border-ink/15 bg-white p-5 text-base font-medium focus:border-ink outline-none resize-none flex-1 min-h-0 leading-relaxed transition"
+            placeholder="在这里用英语写下你的作文…"
+          />
+        </div>
+      </div>
     </div>
   );
 }

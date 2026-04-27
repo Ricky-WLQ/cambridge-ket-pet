@@ -45,8 +45,10 @@ export function SpeakingNewPage({ level }: Props) {
   return (
     <div className="mx-auto max-w-xl space-y-4 p-6">
       <header>
-        <h1 className="text-2xl font-semibold">口语测试 — {level}</h1>
-        <p className="mt-1 text-sm text-neutral-400">
+        <h1 className="text-3xl font-extrabold leading-tight">
+          口语测试 — <span className="marker-yellow-thick">{level}</span>
+        </h1>
+        <p className="mt-2 text-base sm:text-lg text-ink/75 leading-relaxed">
           本次练习由 AI 考官 Mina 全程对话。请在安静环境下佩戴耳机,并允许麦克风权限。
         </p>
       </header>
@@ -55,7 +57,7 @@ export function SpeakingNewPage({ level }: Props) {
       <ConnectionTest onResult={setNetOk} />
 
       {error && (
-        <div className="rounded border border-red-800 bg-red-950/50 p-3 text-sm text-red-300">
+        <div className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 font-bold">
           {error}
         </div>
       )}
@@ -64,12 +66,12 @@ export function SpeakingNewPage({ level }: Props) {
         type="button"
         disabled={!micOk || !netOk || loading}
         onClick={startTest}
-        className="w-full rounded bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-500 disabled:opacity-40"
+        className="w-full rounded-full bg-emerald-600 px-4 py-3 text-white font-extrabold hover:bg-emerald-500 disabled:opacity-40 transition"
       >
         {loading ? "正在准备…" : "开始测试"}
       </button>
 
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-ink/55 leading-relaxed">
         注意:为保护隐私,请勿在回答中提及具体姓名、学校、家庭住址等敏感信息。
       </p>
     </div>

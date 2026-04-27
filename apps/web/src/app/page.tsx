@@ -8,38 +8,54 @@ export default async function Home() {
   const loggedIn = !!session?.user;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
 
-      <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-12">
-        <div className="space-y-4 text-center">
-          <h1 className="text-4xl font-bold">{t.app.title}</h1>
-          <p className="max-w-lg text-neutral-600">{t.app.tagline}</p>
+      <main className="grow-fill flex flex-col items-center justify-center gap-8 px-4">
+        <div className="text-center max-w-2xl">
+          <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight">
+            <span className="marker-yellow-thick">{t.app.title}</span>
+          </h1>
+          <p className="mt-5 text-base sm:text-lg font-medium text-ink/70 leading-relaxed max-w-lg mx-auto">
+            {t.app.tagline}
+          </p>
         </div>
 
         {loggedIn ? (
-          <div className="flex gap-4">
+          <div className="grid gap-5 sm:grid-cols-2 w-full max-w-xl">
             <Link
               href="/ket"
-              className="rounded-lg border border-neutral-300 px-8 py-4 text-center transition hover:border-neutral-900 hover:shadow-sm"
+              className="skill-tile tile-lavender stitched-card group"
             >
-              <div className="text-2xl font-semibold">{t.portal.ket.label}</div>
-              <div className="text-sm text-neutral-500">{t.portal.ket.sub}</div>
+              <div className="flex items-start justify-between">
+                <span className="pill-tag bg-white/70 border-2 border-ink/10">A2</span>
+                <span className="arrow-chip">→</span>
+              </div>
+              <div>
+                <div className="text-3xl font-extrabold leading-tight">{t.portal.ket.label}</div>
+                <div className="mt-1.5 text-sm font-medium text-ink/70">{t.portal.ket.sub}</div>
+              </div>
             </Link>
             <Link
               href="/pet"
-              className="rounded-lg border border-neutral-300 px-8 py-4 text-center transition hover:border-neutral-900 hover:shadow-sm"
+              className="skill-tile tile-sky stitched-card group"
             >
-              <div className="text-2xl font-semibold">{t.portal.pet.label}</div>
-              <div className="text-sm text-neutral-500">{t.portal.pet.sub}</div>
+              <div className="flex items-start justify-between">
+                <span className="pill-tag bg-white/70 border-2 border-ink/10">B1</span>
+                <span className="arrow-chip">→</span>
+              </div>
+              <div>
+                <div className="text-3xl font-extrabold leading-tight">{t.portal.pet.label}</div>
+                <div className="mt-1.5 text-sm font-medium text-ink/70">{t.portal.pet.sub}</div>
+              </div>
             </Link>
           </div>
         ) : (
           <Link
             href="/signup"
-            className="rounded-md bg-neutral-900 px-6 py-3 text-white hover:bg-neutral-700"
+            className="inline-flex items-center gap-2 rounded-full bg-ink text-white text-base font-extrabold px-7 py-3.5 hover:bg-ink/90 transition"
           >
-            {t.portal.getStarted}
+            {t.portal.getStarted} <span aria-hidden>→</span>
           </Link>
         )}
       </main>

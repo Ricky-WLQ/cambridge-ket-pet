@@ -67,7 +67,7 @@ export default function FiltersBar() {
           value={currentValue(key)}
           onChange={(e) => handleChange(key, e.target.value)}
           disabled={isPending}
-          className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-neutral-900 focus:outline-none disabled:opacity-50"
+          className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold cursor-pointer focus:border-ink outline-none transition disabled:opacity-50"
         >
           {OPTIONS[key].map((o) => (
             <option key={o.value} value={o.value}>
@@ -83,7 +83,7 @@ export default function FiltersBar() {
             startTransition(() => router.push("/history"));
           }}
           disabled={isPending}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:bg-neutral-100 disabled:opacity-50"
+          className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold text-ink/70 hover:bg-ink/5 transition disabled:opacity-50"
         >
           清除筛选
         </button>

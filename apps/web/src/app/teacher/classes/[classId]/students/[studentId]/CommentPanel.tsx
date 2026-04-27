@@ -43,8 +43,8 @@ export default function CommentPanel({
   const remaining = 1000 - body.length;
 
   return (
-    <div className="rounded-md border border-neutral-200 p-4">
-      <div className="mb-3 text-sm font-semibold">留言给学生</div>
+    <div className="rounded-2xl border-2 border-ink/10 bg-white p-5 stitched-card">
+      <div className="mb-3 text-sm font-extrabold">留言给学生</div>
 
       <form
         action={async (fd) => {
@@ -71,22 +71,22 @@ export default function CommentPanel({
           maxLength={1000}
           required
           placeholder="写一条只有这位学生能看到的留言（作为老师对学生的反馈、鼓励、提醒等）"
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+          className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
         />
         <div className="flex items-center justify-between">
-          <div className="text-xs text-neutral-400">
+          <div className="text-xs font-medium text-ink/40">
             剩余 {remaining} 字 · 学生将在「历史记录」页面看到
           </div>
           <button
             type="submit"
             disabled={submitting || body.trim().length === 0}
-            className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
+            className="rounded-full bg-ink px-3 py-1.5 text-sm font-extrabold text-white transition hover:bg-ink/90 disabled:opacity-50"
           >
             {submitting ? "发送中…" : "发送留言"}
           </button>
         </div>
         {error && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+          <div className="rounded-xl border-2 border-red-200 bg-red-50 p-2 text-xs font-medium text-red-700">
             {error}
           </div>
         )}
@@ -94,21 +94,21 @@ export default function CommentPanel({
 
       {comments.length > 0 && (
         <div className="mt-5 space-y-2">
-          <div className="text-xs font-medium text-neutral-500">
+          <div className="text-xs font-bold text-ink/55">
             已发送 {comments.length} 条
           </div>
           <ul className="space-y-2">
             {comments.map((c) => (
               <li
                 key={c.id}
-                className="rounded-md border border-neutral-200 bg-neutral-50 p-3"
+                className="rounded-xl border-2 border-ink/10 bg-cream-tint p-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-xs font-medium text-ink/55">
                       {c.authorName} · {formatDateTime(c.createdAt)}
                     </div>
-                    <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">
+                    <p className="mt-1 whitespace-pre-wrap text-sm text-ink/85">
                       {c.body}
                     </p>
                   </div>
@@ -117,7 +117,7 @@ export default function CommentPanel({
                       <input type="hidden" name="commentId" value={c.id} />
                       <button
                         type="submit"
-                        className="shrink-0 rounded-md border border-neutral-300 px-2 py-0.5 text-xs text-neutral-500 hover:bg-red-50 hover:text-red-700"
+                        className="shrink-0 rounded-full border-2 border-ink/15 bg-white px-2 py-0.5 text-xs font-bold text-ink/55 hover:bg-red-50 hover:text-red-700 transition"
                       >
                         删除
                       </button>

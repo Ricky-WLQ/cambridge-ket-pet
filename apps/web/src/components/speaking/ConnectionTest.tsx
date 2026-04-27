@@ -25,11 +25,11 @@ export function ConnectionTest({ onResult }: { onResult: (ok: boolean) => void }
   }, [onResult]);
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-950 p-4 text-sm">
-      {state === "pending" && <p className="text-neutral-400">正在检查浏览器…</p>}
-      {state === "ok" && <p className="text-emerald-400">✓ 浏览器支持实时视频</p>}
+    <div className="rounded-2xl tile-sky border-2 border-ink/10 p-4 stitched-card text-sm">
+      {state === "pending" && <p className="text-ink/65 font-bold">正在检查浏览器…</p>}
+      {state === "ok" && <p className="text-emerald-700 font-extrabold">✓ 浏览器支持实时视频</p>}
       {state === "fail" && (
-        <p className="text-red-500">
+        <p className="text-rose-700 font-bold">
           当前浏览器不支持实时视频。请使用最新版 Chrome 或 Edge 桌面浏览器。
         </p>
       )}

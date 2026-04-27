@@ -49,10 +49,22 @@ const STATUS_ZH: Record<
   AttemptRow["status"],
   { label: string; className: string }
 > = {
-  IN_PROGRESS: { label: "进行中", className: "bg-amber-100 text-amber-800" },
-  SUBMITTED: { label: "已提交", className: "bg-blue-100 text-blue-800" },
-  GRADED: { label: "已批改", className: "bg-green-100 text-green-800" },
-  ABANDONED: { label: "已放弃", className: "bg-neutral-100 text-neutral-600" },
+  IN_PROGRESS: {
+    label: "进行中",
+    className: "pill-tag bg-sky-soft border-2 border-ink/15",
+  },
+  SUBMITTED: {
+    label: "已提交",
+    className: "pill-tag bg-butter-soft border-2 border-ink/15",
+  },
+  GRADED: {
+    label: "已批改",
+    className: "pill-tag bg-mint-soft border-2 border-ink/15",
+  },
+  ABANDONED: {
+    label: "已放弃",
+    className: "pill-tag bg-peach-soft border-2 border-ink/15",
+  },
 };
 
 function kindPathFor(kind: AttemptRow["test"]["kind"]): string {
@@ -171,17 +183,19 @@ export default async function HistoryPage({
   const hasAnyFilter = !!(sp.examType || sp.kind || sp.mode || sp.status);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
       <main className="mx-auto w-full max-w-4xl px-6 py-10">
         {requiredDiagnoseId && (
           <GateBanner requiredDiagnoseId={requiredDiagnoseId} />
         )}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold">历史记录</h1>
+          <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.05] tracking-tight">
+            <span className="marker-yellow-thick">历史记录</span>
+          </h1>
           <Link
             href="/history/mistakes"
-            className="flex items-center gap-2 rounded-md bg-amber-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-amber-600"
+            className="flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-sm font-extrabold text-white stitched-card transition hover:bg-amber-600"
           >
             <span aria-hidden>📒</span>
             <span>错题本</span>
@@ -192,32 +206,32 @@ export default async function HistoryPage({
             )}
           </Link>
         </div>
-        <p className="mb-4 text-sm text-neutral-500">
+        <p className="mb-4 text-base sm:text-lg text-ink/75 leading-relaxed">
           你所有的练习和模拟考试，最多展示 100 条。使用下方筛选缩小范围。
         </p>
 
         <div className="mb-6 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-neutral-500">快速跳转：</span>
+          <span className="text-xs font-bold text-ink/60">快速跳转：</span>
           <Link
             href="/ket"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
           >
             KET 门户
           </Link>
           <Link
             href="/pet"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
           >
             PET 门户
           </Link>
         </div>
 
         {comments.length > 0 && (
-          <div className="mb-6 rounded-md border border-blue-200 bg-blue-50/60 p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-900">
+          <div className="mb-6 rounded-2xl border-2 border-ink/10 bg-sky-tint p-4 stitched-card">
+            <div className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
               <span aria-hidden>💬</span>
               老师的留言
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-blue-700">
+              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-ink">
                 {comments.length}
               </span>
             </div>
@@ -225,9 +239,9 @@ export default async function HistoryPage({
               {comments.slice(0, 5).map((c) => (
                 <li
                   key={c.id}
-                  className="rounded-md border border-blue-100 bg-white p-3"
+                  className="rounded-xl border-2 border-ink/10 bg-white p-3"
                 >
-                  <div className="text-xs text-neutral-500">
+                  <div className="text-xs text-ink/60">
                     {c.author.name ?? c.author.email} · {c.class.name} ·{" "}
                     {c.createdAt.toLocaleString("zh-CN", {
                       year: "numeric",
@@ -237,7 +251,7 @@ export default async function HistoryPage({
                       minute: "2-digit",
                     })}
                   </div>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-ink/85">
                     {c.body}
                   </p>
                 </li>
@@ -245,16 +259,16 @@ export default async function HistoryPage({
             </ul>
             {comments.length > 5 && (
               <details className="mt-2">
-                <summary className="cursor-pointer text-xs text-blue-800/70 hover:text-blue-900">
+                <summary className="cursor-pointer text-xs font-bold text-ink/70 hover:text-ink">
                   查看更多留言（{comments.length - 5} 条）
                 </summary>
                 <ul className="mt-2 space-y-2">
                   {comments.slice(5).map((c) => (
                     <li
                       key={c.id}
-                      className="rounded-md border border-blue-100 bg-white p-3"
+                      className="rounded-xl border-2 border-ink/10 bg-white p-3"
                     >
-                      <div className="text-xs text-neutral-500">
+                      <div className="text-xs text-ink/60">
                         {c.author.name ?? c.author.email} · {c.class.name} ·{" "}
                         {c.createdAt.toLocaleString("zh-CN", {
                           month: "2-digit",
@@ -263,7 +277,7 @@ export default async function HistoryPage({
                           minute: "2-digit",
                         })}
                       </div>
-                      <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-ink/85">
                         {c.body}
                       </p>
                     </li>
@@ -277,14 +291,14 @@ export default async function HistoryPage({
         <FiltersBar />
 
         {hasAnyFilter && (
-          <p className="mb-4 text-xs text-neutral-500">
+          <p className="mb-4 text-xs font-bold text-ink/60">
             当前筛选共 {filteredCount} 条记录
           </p>
         )}
 
         {attempts.length === 0 ? (
-          <div className="rounded-md border border-dashed border-neutral-300 p-10 text-center">
-            <p className="text-sm text-neutral-500">
+          <div className="rounded-2xl border-2 border-dashed border-ink/15 p-10 text-center">
+            <p className="text-sm text-ink/60">
               {hasAnyFilter
                 ? "当前筛选下没有记录。"
                 : "还没有任何答卷。"}
@@ -293,13 +307,13 @@ export default async function HistoryPage({
               <div className="mt-4 flex justify-center gap-2">
                 <Link
                   href="/ket"
-                  className="rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-100"
+                  className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold hover:bg-ink/5 transition"
                 >
                   去 KET
                 </Link>
                 <Link
                   href="/pet"
-                  className="rounded-md border border-neutral-300 px-4 py-2 text-sm hover:bg-neutral-100"
+                  className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold hover:bg-ink/5 transition"
                 >
                   去 PET
                 </Link>
@@ -334,31 +348,29 @@ export default async function HistoryPage({
               return (
                 <li
                   key={a.id}
-                  className="flex flex-col gap-3 rounded-md border border-neutral-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-medium text-white">
+                      <span className="rounded-full bg-ink px-2 py-0.5 text-xs font-bold text-white">
                         {a.test.examType}
                       </span>
-                      <span className="font-medium">
+                      <span className="font-bold">
                         {kind} · {partLabel}
                       </span>
-                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                      <span className="pill-tag bg-cream-soft border-2 border-ink/15 text-ink/70">
                         {MODE_ZH[a.mode]}
                       </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta.className}`}
-                      >
+                      <span className={statusMeta.className}>
                         {statusMeta.label}
                       </span>
                       {scoreText && (
-                        <span className="font-mono text-sm text-neutral-700">
+                        <span className="font-mono text-sm text-ink/70">
                           {scoreText}
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 text-xs text-neutral-500">
+                    <div className="mt-1 text-xs text-ink/50">
                       {formatDate(a.startedAt)}
                       {a.submittedAt && (
                         <> · 提交于 {formatDate(a.submittedAt)}</>
@@ -369,7 +381,7 @@ export default async function HistoryPage({
                     {a.status === "IN_PROGRESS" && (
                       <Link
                         href={runnerUrl(a)}
-                        className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs hover:bg-neutral-100"
+                        className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-xs font-bold hover:bg-ink/5 transition"
                       >
                         继续作答
                       </Link>
@@ -378,7 +390,7 @@ export default async function HistoryPage({
                       <>
                         <Link
                           href={resultUrl(a)}
-                          className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs hover:bg-neutral-100"
+                          className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-xs font-bold hover:bg-ink/5 transition"
                         >
                           查看结果
                         </Link>
@@ -390,7 +402,7 @@ export default async function HistoryPage({
                           />
                           <button
                             type="submit"
-                            className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs text-white hover:bg-neutral-700"
+                            className="rounded-full bg-ink px-3 py-1.5 text-xs font-extrabold text-white hover:bg-ink/90 transition"
                           >
                             再做一次
                           </button>
@@ -402,7 +414,7 @@ export default async function HistoryPage({
                         <input type="hidden" name="attemptId" value={a.id} />
                         <button
                           type="submit"
-                          className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs hover:bg-neutral-100"
+                          className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-xs font-bold hover:bg-ink/5 transition"
                         >
                           重新开始
                         </button>

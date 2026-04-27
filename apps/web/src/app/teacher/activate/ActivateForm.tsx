@@ -45,11 +45,11 @@ export default function ActivateForm() {
   if (success) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
-        <div className="w-full max-w-sm space-y-4 text-center">
-          <div className="rounded-md bg-green-50 p-4 text-sm text-green-700">
+        <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-4 text-center">
+          <div className="rounded-xl bg-mint-tint border-2 border-ink/10 p-4 text-sm font-bold text-ink">
             ✓ 激活成功！你现在是教师身份
           </div>
-          <p className="text-sm text-neutral-500">即将跳转首页…</p>
+          <p className="text-sm font-medium text-ink/65">即将跳转首页…</p>
         </div>
       </div>
     );
@@ -57,17 +57,19 @@ export default function ActivateForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold">教师激活</h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <h1 className="text-3xl font-extrabold leading-[1.05] tracking-tight">
+            <span className="marker-yellow-thick">教师激活</span>
+          </h1>
+          <p className="mt-2.5 text-sm font-medium text-ink/65">
             输入激活码以获得教师权限
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="code" className="block text-sm font-medium">
+          <div className="space-y-1.5">
+            <label htmlFor="code" className="block text-sm font-bold">
               激活码
             </label>
             <input
@@ -77,13 +79,13 @@ export default function ActivateForm() {
               onChange={(e) => setCode(e.target.value)}
               required
               autoFocus
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm tracking-wider focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-xl border-2 border-ink/15 bg-white px-3.5 py-2.5 font-mono text-sm tracking-wider focus:border-ink outline-none transition"
               placeholder="TEACHER-XXXX-XXX"
             />
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+            <div className="rounded-xl bg-red-50 border-2 border-red-200 p-3 text-sm font-bold text-red-700">
               {error}
             </div>
           )}
@@ -91,14 +93,14 @@ export default function ActivateForm() {
           <button
             type="submit"
             disabled={loading || code.trim().length === 0}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+            className="w-full rounded-full bg-ink text-white text-sm font-extrabold py-3 hover:bg-ink/90 transition disabled:opacity-50"
           >
             {loading ? "激活中…" : "激活"}
           </button>
         </form>
 
-        <div className="text-center text-sm text-neutral-500">
-          <Link href="/" className="text-neutral-700 hover:text-neutral-900">
+        <div className="text-center text-sm font-medium text-ink/60">
+          <Link href="/" className="font-bold text-ink hover:underline">
             返回首页
           </Link>
         </div>

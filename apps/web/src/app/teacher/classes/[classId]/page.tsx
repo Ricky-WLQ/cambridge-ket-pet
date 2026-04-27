@@ -170,10 +170,22 @@ const STATUS_META: Record<
   "IN_PROGRESS" | "SUBMITTED" | "GRADED" | "ABANDONED",
   { label: string; className: string }
 > = {
-  IN_PROGRESS: { label: "进行中", className: "bg-amber-100 text-amber-800" },
-  SUBMITTED: { label: "已提交", className: "bg-blue-100 text-blue-800" },
-  GRADED: { label: "已批改", className: "bg-green-100 text-green-800" },
-  ABANDONED: { label: "已放弃", className: "bg-neutral-100 text-neutral-600" },
+  IN_PROGRESS: {
+    label: "进行中",
+    className: "pill-tag bg-sky-soft border-2 border-ink/15",
+  },
+  SUBMITTED: {
+    label: "已提交",
+    className: "pill-tag bg-butter-soft border-2 border-ink/15",
+  },
+  GRADED: {
+    label: "已批改",
+    className: "pill-tag bg-mint-soft border-2 border-ink/15",
+  },
+  ABANDONED: {
+    label: "已放弃",
+    className: "pill-tag bg-peach-soft border-2 border-ink/15",
+  },
 };
 
 function formatDateTime(d: Date): string {
@@ -188,16 +200,18 @@ function formatDateTime(d: Date): string {
 function StatCard({
   label,
   value,
+  tile = "lavender",
 }: {
   label: string;
   value: string | number;
+  tile?: "lavender" | "sky" | "butter" | "peach" | "mint" | "cream";
 }) {
   return (
-    <div className="rounded-md border border-neutral-200 p-4 text-center">
-      <div className="text-xs uppercase tracking-wider text-neutral-500">
+    <div className={`stat-card tile-${tile} text-center`}>
+      <div className="text-xs uppercase tracking-wider font-bold text-ink/60">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold">{value}</div>
+      <div className="mt-1 text-3xl font-extrabold">{value}</div>
     </div>
   );
 }
@@ -370,7 +384,7 @@ export default async function ClassOverviewPage({
   const grammarSummary = await getClassGrammarSummary(cls.members);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
       <main className="mx-auto w-full max-w-5xl px-6 py-10">
         {/* Back link + class header */}
@@ -378,28 +392,28 @@ export default async function ClassOverviewPage({
           <div>
             <Link
               href="/teacher/classes"
-              className="text-sm text-neutral-500 hover:text-neutral-700"
+              className="text-sm font-bold text-ink/60 hover:text-ink transition"
             >
               ← 我的班级
             </Link>
-            <h1 className="mt-1 text-2xl font-semibold">
-              {cls.name}
+            <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight">
+              <span className="marker-yellow-thick">{cls.name}</span>
               {cls.examFocus && (
-                <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 align-middle text-xs text-neutral-600">
+                <span className="ml-2 rounded-full bg-ink/5 px-2 py-0.5 align-middle text-xs font-bold text-ink/65">
                   {cls.examFocus}
                 </span>
               )}
             </h1>
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm font-medium text-ink/60">
               创建于 {cls.createdAt.toLocaleDateString("zh-CN")}
             </p>
           </div>
-          <div className="rounded-md border border-neutral-300 p-3 text-right">
-            <div className="text-xs text-neutral-500">邀请码</div>
-            <div className="font-mono text-lg font-semibold tracking-wider">
+          <div className="rounded-2xl bg-white border-2 border-ink/10 p-3 text-right stitched-card">
+            <div className="text-xs font-bold text-ink/60">邀请码</div>
+            <div className="font-mono text-lg font-extrabold tracking-wider">
               {cls.inviteCode}
             </div>
-            <div className="mt-1 text-xs text-neutral-400">
+            <div className="mt-1 text-xs font-medium text-ink/50">
               分享给学生即可加入
             </div>
           </div>
@@ -407,8 +421,16 @@ export default async function ClassOverviewPage({
 
         {/* Class-wide stats */}
         <div className="mb-8 grid gap-3 sm:grid-cols-4">
-          <StatCard label="学生人数" value={cls.members.length} />
-          <StatCard label="已批改答卷" value={classAggregate._count} />
+          <StatCard
+            label="学生人数"
+            value={cls.members.length}
+            tile="lavender"
+          />
+          <StatCard
+            label="已批改答卷"
+            value={classAggregate._count}
+            tile="sky"
+          />
           <StatCard
             label="班级平均分"
             value={
@@ -416,6 +438,7 @@ export default async function ClassOverviewPage({
                 ? `${Math.round(classAggregate._avg.scaledScore)}%`
                 : "—"
             }
+            tile="mint"
           />
           <StatCard
             label="最高分"
@@ -424,12 +447,15 @@ export default async function ClassOverviewPage({
                 ? `${classAggregate._max.scaledScore}%`
                 : "—"
             }
+            tile="butter"
           />
         </div>
 
         {/* Vocab progress (class-aggregated CORE-tier mastery) */}
-        <div className="mb-8 rounded-md border border-neutral-200 p-4">
-          <h2 className="mb-3 text-lg font-semibold">词汇练习概况</h2>
+        <div className="mb-8 rounded-2xl bg-white border-2 border-ink/10 p-5 stitched-card">
+          <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
+            <span className="marker-yellow">词汇练习概况</span>
+          </h2>
           {(["ket", "pet"] as const).map((k) => {
             const rows = vocabSummary[k];
             const totalMastered = rows.reduce(
@@ -514,8 +540,10 @@ export default async function ClassOverviewPage({
         </div>
 
         {/* Grammar progress (class-aggregated accuracy + weak-topic spotter) */}
-        <div className="mb-8 rounded-md border border-neutral-200 bg-white p-4">
-          <h2 className="mb-3 text-lg font-semibold">语法练习概况</h2>
+        <div className="mb-8 rounded-2xl bg-white border-2 border-ink/10 p-5 stitched-card">
+          <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
+            <span className="marker-yellow">语法练习概况</span>
+          </h2>
           {(["ket", "pet"] as const).map((k) => {
             const { rows, weakTopics } = grammarSummary[k];
             const totalAttempted = rows.reduce((s, r) => s + r.attempted, 0);
@@ -629,16 +657,18 @@ export default async function ClassOverviewPage({
 
         {/* Assignments */}
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">作业</h2>
+          <h2 className="text-xl sm:text-2xl font-extrabold">
+            <span className="marker-yellow">作业</span>
+          </h2>
           <Link
             href={`/teacher/classes/${cls.id}/assignments/new`}
-            className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-700"
+            className="rounded-full bg-ink px-3 py-1.5 text-sm font-extrabold text-white hover:bg-ink/90 transition"
           >
             + 布置新作业
           </Link>
         </div>
         {assignments.length === 0 ? (
-          <div className="mb-8 rounded-md border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500">
+          <div className="mb-8 rounded-2xl border-2 border-dashed border-ink/15 p-6 text-center text-sm font-medium text-ink/60">
             暂无作业。点击右上方「布置新作业」开始。
           </div>
         ) : (
@@ -654,35 +684,35 @@ export default async function ClassOverviewPage({
               return (
                 <li
                   key={a.id}
-                  className="rounded-md border border-neutral-200 p-4"
+                  className="rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{a.title}</span>
-                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                        <span className="font-extrabold">{a.title}</span>
+                        <span className="pill-tag bg-cream-soft border-2 border-ink/15 text-ink/70">
                           {a.examType} {kindZh}
                           {a.part != null && ` Part ${a.part}`}
                         </span>
                         {a.minScore != null && (
-                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+                          <span className="pill-tag bg-sky-soft border-2 border-ink/15">
                             ≥ {a.minScore}%
                           </span>
                         )}
                         {a.dueAt && (
                           <span
-                            className={`rounded-full px-2 py-0.5 text-xs ${
+                            className={
                               overdue
-                                ? "bg-red-100 text-red-800"
-                                : "bg-neutral-100 text-neutral-600"
-                            }`}
+                                ? "pill-tag bg-peach-soft border-2 border-ink/15"
+                                : "pill-tag bg-cream-soft border-2 border-ink/15 text-ink/70"
+                            }
                           >
                             截止 {a.dueAt.toLocaleDateString("zh-CN")}
                           </span>
                         )}
                       </div>
                       {a.description && (
-                        <p className="mt-1 text-xs text-neutral-500">
+                        <p className="mt-1 text-xs font-medium text-ink/60">
                           {a.description}
                         </p>
                       )}
@@ -695,7 +725,7 @@ export default async function ClassOverviewPage({
                       />
                       <button
                         type="submit"
-                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-red-50 hover:text-red-700"
+                        className="rounded-full border-2 border-ink/15 bg-white px-2 py-1 text-xs font-bold text-ink/60 hover:bg-red-50 hover:text-red-700 transition"
                       >
                         删除
                       </button>
@@ -728,11 +758,13 @@ export default async function ClassOverviewPage({
         )}
 
         {/* Student list */}
-        <h2 className="mb-3 text-lg font-semibold">学生名单</h2>
+        <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
+          <span className="marker-yellow">学生名单</span>
+        </h2>
         {cls.members.length === 0 ? (
-          <div className="rounded-md border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+          <div className="rounded-2xl border-2 border-dashed border-ink/15 p-8 text-center text-sm font-medium text-ink/60">
             暂无学生。分享邀请码{" "}
-            <span className="font-mono font-semibold">{cls.inviteCode}</span>{" "}
+            <span className="font-mono font-extrabold">{cls.inviteCode}</span>{" "}
             让学生加入。
           </div>
         ) : (
@@ -759,13 +791,13 @@ export default async function ClassOverviewPage({
               return (
                 <li
                   key={m.userId}
-                  className="flex flex-col gap-2 rounded-md border border-neutral-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">
+                    <div className="font-extrabold">
                       {m.user.name ?? m.user.email}
                     </div>
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-xs font-medium text-ink/55">
                       {m.user.email} · 加入于{" "}
                       {m.joinedAt.toLocaleDateString("zh-CN")}
                     </div>
@@ -775,13 +807,13 @@ export default async function ClassOverviewPage({
                       <>
                         <div className="text-right">
                           <div>
-                            <span className="text-neutral-500">已批改 </span>
-                            <span className="font-semibold">
+                            <span className="text-ink/55">已批改 </span>
+                            <span className="font-extrabold">
                               {stats._count}
                             </span>
-                            <span className="text-neutral-500"> 份</span>
+                            <span className="text-ink/55"> 份</span>
                           </div>
-                          <div className="text-xs text-neutral-500">
+                          <div className="text-xs font-medium text-ink/60">
                             平均 {avg}% · 最高{" "}
                             {stats._max.scaledScore ?? 0}%
                           </div>
@@ -789,11 +821,11 @@ export default async function ClassOverviewPage({
                             听力{" "}
                             {listeningStats ? (
                               <>
-                                <span className="font-semibold">
+                                <span className="font-extrabold">
                                   {listeningStats._count}
                                 </span>
                                 <span className="text-purple-600/70"> 份 · 平均 </span>
-                                <span className="font-semibold">
+                                <span className="font-extrabold">
                                   {listeningAvg !== null ? `${listeningAvg}%` : "—"}
                                 </span>
                               </>
@@ -805,14 +837,14 @@ export default async function ClassOverviewPage({
                             口语{" "}
                             {speakingStats ? (
                               <>
-                                <span className="font-semibold">
+                                <span className="font-extrabold">
                                   {speakingStats._count}
                                 </span>
                                 <span className="text-emerald-600/70">
                                   {" "}
                                   份 · 平均{" "}
                                 </span>
-                                <span className="font-semibold">
+                                <span className="font-extrabold">
                                   {speakingAvg !== null ? `${speakingAvg}%` : "—"}
                                 </span>
                               </>
@@ -823,13 +855,13 @@ export default async function ClassOverviewPage({
                         </div>
                       </>
                     ) : (
-                      <span className="text-xs text-neutral-400">
+                      <span className="text-xs font-medium text-ink/40">
                         还没有完成任何答卷
                       </span>
                     )}
                     <Link
                       href={`/teacher/classes/${cls.id}/students/${m.userId}`}
-                      className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs hover:bg-neutral-100"
+                      className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-xs font-bold hover:bg-ink/5 transition"
                     >
                       详情 →
                     </Link>
@@ -841,7 +873,9 @@ export default async function ClassOverviewPage({
         )}
 
         {/* Recent activity feed */}
-        <h2 className="mb-3 text-lg font-semibold">最近活动</h2>
+        <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
+          <span className="marker-yellow">最近活动</span>
+        </h2>
 
         {cls.members.length > 0 && (
           <ActivityFilter
@@ -854,7 +888,7 @@ export default async function ClassOverviewPage({
         )}
 
         {recentAttempts.length === 0 ? (
-          <div className="rounded-md border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+          <div className="rounded-2xl border-2 border-dashed border-ink/15 p-8 text-center text-sm font-medium text-ink/60">
             {cls.members.length === 0
               ? "班级还没有学生，暂无活动。"
               : statusFilter || studentFilter
@@ -869,32 +903,30 @@ export default async function ClassOverviewPage({
               return (
                 <li
                   key={a.id}
-                  className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 p-3"
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-white border-2 border-ink/10 p-3 stitched-card"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="text-sm">
-                      <span className="font-medium">
+                      <span className="font-extrabold">
                         {a.user.name ?? a.user.email}
                       </span>
-                      <span className="text-neutral-400"> · </span>
+                      <span className="text-ink/40"> · </span>
                       <span>
                         {a.test.examType} {kindZh}
                         {a.test.part != null && ` Part ${a.test.part}`}
                       </span>
                       {a.status === "GRADED" &&
                         a.scaledScore !== null && (
-                          <span className="ml-2 font-mono text-neutral-700">
+                          <span className="ml-2 font-mono text-ink/70">
                             {a.scaledScore}%
                           </span>
                         )}
                     </div>
-                    <div className="text-xs text-neutral-400">
+                    <div className="text-xs font-medium text-ink/40">
                       {formatDateTime(a.startedAt)}
                     </div>
                   </div>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusMeta.className}`}
-                  >
+                  <span className={`shrink-0 ${statusMeta.className}`}>
                     {statusMeta.label}
                   </span>
                 </li>

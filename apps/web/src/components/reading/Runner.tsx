@@ -131,103 +131,121 @@ export default function ReadingRunner({
   }, [timerActive, remaining]);
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">
-            {examType} 阅读 · Part {part}
-          </h1>
-          <p className="text-sm text-neutral-500">
-            {mode === "MOCK" ? "模拟考试" : "练习模式"} · 共 {questions.length} 题
-          </p>
-        </div>
-        {timerActive && (
-          <div
-            className={`rounded-md border px-3 py-1.5 font-mono text-lg ${
-              remaining <= 60
-                ? "border-red-300 bg-red-50 text-red-700"
-                : "border-neutral-300"
-            }`}
-            aria-live="polite"
-          >
-            {formatTime(remaining)}
+    <div className="page-section locked-height">
+      <div className="site-header">
+        <div className="flex items-center gap-2.5">
+          <div className="leading-tight">
+            <div className="text-[11px] font-bold text-ink/60">
+              {examType} 阅读 · Part {part}
+            </div>
+            <div className="text-base font-extrabold">
+              {mode === "MOCK" ? "模拟考试" : "练习模式"} · 共 {questions.length} 题
+            </div>
           </div>
-        )}
+        </div>
+        <div className="flex items-center gap-2.5">
+          {timerActive && (
+            <div
+              className={`rounded-full border-2 px-4 py-2 ${
+                remaining <= 60
+                  ? "border-red-300 bg-red-50 text-red-700"
+                  : "border-ink/10 bg-butter-tint"
+              }`}
+              aria-live="polite"
+            >
+              <span className="font-mono font-extrabold text-lg tabular-nums">
+                {formatTime(remaining)}
+              </span>
+            </div>
+          )}
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-2.5 hover:bg-ink/90 transition disabled:opacity-50"
+            >
+              {submitting ? "提交中…" : "提交答卷"}
+            </button>
+          )}
+        </div>
       </div>
 
-      {passage && (
-        <div className="mb-6 whitespace-pre-wrap rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm leading-relaxed">
-          {passage}
-        </div>
-      )}
-
-      <ol className="space-y-6">
-        {questions.map((q, idx) => {
-          const hasAnswer = (answers[q.id] ?? "").trim().length > 0;
-          return (
-            <li key={q.id} className="rounded-md border border-neutral-200 p-4">
-              <div className="mb-3 flex items-start gap-2">
-                <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 px-1.5 text-xs font-medium text-white">
-                  {idx + 1}
-                </span>
-                <div className="flex-1 whitespace-pre-wrap text-sm">
-                  {q.prompt}
-                </div>
-                {hasAnswer && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAnswers((prev) => {
-                        const next = { ...prev };
-                        delete next[q.id];
-                        return next;
-                      })
-                    }
-                    className="shrink-0 rounded-md border border-neutral-300 px-2 py-0.5 text-xs text-neutral-600 hover:bg-neutral-100"
-                    aria-label={`清除第 ${idx + 1} 题的作答`}
-                  >
-                    清除
-                  </button>
-                )}
-              </div>
-              <QuestionInput
-                question={q}
-                value={answers[q.id] ?? ""}
-                onChange={(v) =>
-                  setAnswers((prev) => ({ ...prev, [q.id]: v }))
-                }
-              />
-            </li>
-          );
-        })}
-      </ol>
-
-      {error && (
-        <div className="mt-6 rounded-md bg-red-50 p-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {readOnly && (
-        <div className="mt-6 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-          练习模式 — 不计分
-        </div>
-      )}
-
-      <div className="mt-8 flex items-center justify-between gap-4">
-        <div className="text-sm text-neutral-500">
-          已作答 {answeredCount} / {questions.length}
-        </div>
-        {!readOnly && (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="rounded-md bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
-          >
-            {submitting ? "提交中…" : "提交答卷"}
-          </button>
+      <div
+        className="grid gap-3.5 lg:grid-cols-[1.05fr_1fr] grow-fill min-h-0"
+        style={{ gridTemplateRows: "minmax(0, 1fr)" }}
+      >
+        {passage && (
+          <article className="self-start min-h-0 max-h-full overflow-y-auto rounded-3xl bg-white border-2 border-ink/10 p-5 sm:p-6 stitched-card">
+            <div className="whitespace-pre-wrap text-base leading-[1.7] text-ink/85">
+              {passage}
+            </div>
+          </article>
         )}
+
+        <div className="flex flex-col gap-3 min-h-0 overflow-hidden">
+          <ol className="space-y-3 overflow-y-auto pr-1 grow-fill min-h-0">
+            {questions.map((q, idx) => {
+              const hasAnswer = (answers[q.id] ?? "").trim().length > 0;
+              return (
+                <li
+                  key={q.id}
+                  className="rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card"
+                >
+                  <div className="mb-2.5 flex items-start gap-2.5">
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-ink text-white font-extrabold text-sm">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 whitespace-pre-wrap text-base font-bold leading-snug text-ink/90">
+                      {q.prompt}
+                    </div>
+                    {hasAnswer && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAnswers((prev) => {
+                            const next = { ...prev };
+                            delete next[q.id];
+                            return next;
+                          })
+                        }
+                        className="shrink-0 rounded-full border-2 border-ink/15 px-3 py-0.5 text-xs font-bold text-ink/70 hover:bg-ink/5 transition"
+                        aria-label={`清除第 ${idx + 1} 题的作答`}
+                      >
+                        清除
+                      </button>
+                    )}
+                  </div>
+                  <QuestionInput
+                    question={q}
+                    value={answers[q.id] ?? ""}
+                    onChange={(v) =>
+                      setAnswers((prev) => ({ ...prev, [q.id]: v }))
+                    }
+                  />
+                </li>
+              );
+            })}
+          </ol>
+
+          {error && (
+            <div className="rounded-2xl bg-red-50 border-2 border-red-200 p-3 text-sm font-bold text-red-700 shrink-0">
+              {error}
+            </div>
+          )}
+
+          {readOnly && (
+            <div className="rounded-2xl bg-butter-tint border-2 border-ink/10 px-4 py-3 text-sm font-bold shrink-0">
+              练习模式 — 不计分
+            </div>
+          )}
+
+          <div className="rounded-2xl bg-mint-tint border-2 border-ink/10 px-4 py-2.5 flex items-center gap-2.5 shrink-0">
+            <span className="text-sm font-extrabold">
+              已作答 {answeredCount} / {questions.length}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -248,17 +266,17 @@ function QuestionInput({
     question.options
   ) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 ml-9">
         {question.options.map((opt, i) => {
           const letter = String.fromCharCode(65 + i); // 'A', 'B', ...
           const checked = value === letter;
           return (
             <label
               key={letter}
-              className={`flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2 text-sm transition ${
+              className={`w-full flex items-start gap-3 rounded-xl px-3.5 py-2.5 transition cursor-pointer ${
                 checked
-                  ? "border-neutral-900 bg-neutral-50"
-                  : "border-neutral-200 hover:border-neutral-400"
+                  ? "bg-butter-tint border-2 border-ink"
+                  : "border-2 border-ink/10 hover:border-ink"
               }`}
             >
               <input
@@ -267,10 +285,10 @@ function QuestionInput({
                 value={letter}
                 checked={checked}
                 onChange={() => onChange(letter)}
-                className="mt-1"
+                className="mt-1.5"
               />
-              <span>
-                <strong className="mr-2">{letter}.</strong>
+              <span className={`text-sm ${checked ? "font-extrabold" : ""}`}>
+                <strong className="mr-1.5">{letter}.</strong>
                 {opt}
               </span>
             </label>
@@ -289,7 +307,7 @@ function QuestionInput({
         onChange={(e) => onChange(e.target.value.toUpperCase())}
         maxLength={2}
         placeholder="字母 (A-H)"
-        className="w-32 rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm focus:border-neutral-900 focus:outline-none"
+        className="ml-9 w-32 rounded-2xl border-2 border-ink/15 bg-white px-4 py-2 font-mono text-sm font-extrabold focus:border-ink outline-none transition"
       />
     );
   }
@@ -302,7 +320,7 @@ function QuestionInput({
       onChange={(e) => onChange(e.target.value)}
       maxLength={40}
       placeholder="填入一个单词"
-      className="w-48 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+      className="ml-9 w-48 rounded-2xl border-2 border-ink/15 bg-white px-4 py-2 text-sm font-medium focus:border-ink outline-none transition"
     />
   );
 }

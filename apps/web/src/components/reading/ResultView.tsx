@@ -83,37 +83,37 @@ export default function ResultView({
     <div className="mx-auto max-w-3xl px-6 py-8">
       {/* Header + summary */}
       <div className="mb-6">
-        <h1 className="text-xl font-semibold">
-          {examType} 阅读 · Part {part} · 成绩
+        <h1 className="text-2xl font-extrabold mb-1">
+          {examType} 阅读 · Part {part} · <span className="marker-yellow">成绩</span>
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-ink/65 font-bold">
           {mode === "MOCK" ? "模拟考试" : "练习模式"}
         </p>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-md border border-neutral-200 p-4 text-center">
-          <div className="text-xs uppercase tracking-wider text-neutral-500">
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <div className="stat-card tile-lavender text-center stitched-card">
+          <div className="text-[11px] font-extrabold uppercase tracking-widest text-ink/60">
             得分
           </div>
-          <div className={`mt-1 text-3xl font-bold ${scoreColor}`}>
+          <div className={`mt-1 text-3xl font-extrabold ${scoreColor}`}>
             {scaledScore}%
           </div>
         </div>
-        <div className="rounded-md border border-neutral-200 p-4 text-center">
-          <div className="text-xs uppercase tracking-wider text-neutral-500">
+        <div className="stat-card tile-sky text-center stitched-card">
+          <div className="text-[11px] font-extrabold uppercase tracking-widest text-ink/60">
             正确题数
           </div>
-          <div className="mt-1 text-3xl font-semibold">
+          <div className="mt-1 text-3xl font-extrabold">
             {rawScore}
-            <span className="text-xl text-neutral-400"> / {totalPossible}</span>
+            <span className="text-xl font-bold text-ink/40"> / {totalPossible}</span>
           </div>
         </div>
-        <div className="rounded-md border border-neutral-200 p-4 text-center">
-          <div className="text-xs uppercase tracking-wider text-neutral-500">
+        <div className="stat-card tile-peach text-center stitched-card">
+          <div className="text-[11px] font-extrabold uppercase tracking-widest text-ink/60">
             错题数
           </div>
-          <div className="mt-1 text-3xl font-semibold">
+          <div className="mt-1 text-3xl font-extrabold">
             {totalPossible - rawScore}
           </div>
         </div>
@@ -122,23 +122,23 @@ export default function ResultView({
       {/* Weak points */}
       {(weakPoints.examPoints.length > 0 ||
         weakPoints.difficultyPoints.length > 0) && (
-        <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 p-4">
-          <div className="mb-3 text-sm font-medium text-amber-900">
+        <div className="mb-6 rounded-2xl bg-mint-tint border-2 border-ink/10 p-4 stitched-card">
+          <div className="mb-3 text-sm font-extrabold text-ink">
             薄弱点分析
           </div>
           {weakPoints.examPoints.length > 0 && (
             <div className="mb-3">
-              <div className="mb-1 text-xs font-medium text-amber-800">
+              <div className="mb-1 text-xs font-extrabold text-ink/75">
                 考点 (Exam Points)
               </div>
               <ul className="space-y-1">
                 {weakPoints.examPoints.map((ep) => (
-                  <li key={ep.id} className="text-sm">
-                    <span className="font-mono text-xs text-amber-700">
+                  <li key={ep.id} className="text-sm text-ink/85">
+                    <span className="font-mono text-xs text-ink/65">
                       {ep.id}
                     </span>{" "}
                     · {ep.descriptionZh || ep.label}{" "}
-                    <span className="text-xs text-amber-700">
+                    <span className="text-xs text-ink/65 font-bold">
                       （{ep.errorCount} 错）
                     </span>
                   </li>
@@ -148,17 +148,17 @@ export default function ResultView({
           )}
           {weakPoints.difficultyPoints.length > 0 && (
             <div>
-              <div className="mb-1 text-xs font-medium text-amber-800">
+              <div className="mb-1 text-xs font-extrabold text-ink/75">
                 难点 (Difficulty Points)
               </div>
               <ul className="space-y-1">
                 {weakPoints.difficultyPoints.map((dp) => (
-                  <li key={dp.id} className="text-sm">
-                    <span className="font-mono text-xs text-amber-700">
+                  <li key={dp.id} className="text-sm text-ink/85">
+                    <span className="font-mono text-xs text-ink/65">
                       {dp.id}
                     </span>{" "}
                     · {dp.descriptionZh || dp.label}{" "}
-                    <span className="text-xs text-amber-700">
+                    <span className="text-xs text-ink/65 font-bold">
                       （{dp.errorCount} 错）
                     </span>
                   </li>
@@ -171,7 +171,7 @@ export default function ResultView({
 
       {/* Passage */}
       {passage && (
-        <div className="mb-6 whitespace-pre-wrap rounded-md border border-neutral-200 bg-neutral-50 p-4 text-sm leading-relaxed">
+        <div className="mb-6 whitespace-pre-wrap rounded-2xl bg-mist border-2 border-ink/10 p-4 text-sm leading-relaxed stitched-card">
           {passage}
         </div>
       )}
@@ -185,34 +185,34 @@ export default function ResultView({
           return (
             <li
               key={q.id}
-              className={`rounded-md border p-4 ${
+              className={`rounded-2xl border-2 p-4 stitched-card ${
                 correct
-                  ? "border-green-200 bg-green-50"
-                  : "border-red-200 bg-red-50"
+                  ? "border-emerald-200 bg-emerald-50"
+                  : "border-rose-200 bg-rose-50"
               }`}
             >
-              <div className="mb-2 flex items-start gap-2">
+              <div className="mb-2 flex items-start gap-2.5">
                 <span
-                  className={`inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-medium text-white ${
-                    correct ? "bg-green-600" : "bg-red-600"
+                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full px-1.5 text-xs font-extrabold text-white ${
+                    correct ? "bg-emerald-600" : "bg-rose-600"
                   }`}
                 >
                   {idx + 1}
                 </span>
-                <div className="flex-1 whitespace-pre-wrap text-sm">
+                <div className="flex-1 whitespace-pre-wrap text-sm font-bold">
                   {q.prompt}
                 </div>
                 {blank && (
                   <span
-                    className="shrink-0 rounded-full bg-orange-200 px-2 py-0.5 text-xs font-medium text-orange-900"
+                    className="shrink-0 pill-tag bg-amber-100 text-amber-900 border-2 border-amber-300 !text-xs"
                     aria-label="本题未作答"
                   >
                     未作答
                   </span>
                 )}
                 <span
-                  className={`text-lg ${
-                    correct ? "text-green-600" : "text-red-600"
+                  className={`text-xl font-extrabold ${
+                    correct ? "text-emerald-600" : "text-rose-600"
                   }`}
                   aria-label={correct ? "正确" : "错误"}
                 >
@@ -230,24 +230,24 @@ export default function ResultView({
                     const isAnswer =
                       q.answer.trim().toUpperCase() === letter;
                     const classes = isAnswer
-                      ? "border-green-500 bg-green-100 text-green-900"
+                      ? "border-emerald-500 bg-emerald-100 text-emerald-900"
                       : isUserChoice
-                        ? "border-red-500 bg-red-100 text-red-900"
-                        : "border-neutral-200 bg-white text-neutral-700";
+                        ? "border-rose-500 bg-rose-100 text-rose-900"
+                        : "border-ink/15 bg-white text-ink/85";
                     return (
                       <div
                         key={letter}
-                        className={`rounded-md border px-3 py-1.5 text-sm ${classes}`}
+                        className={`rounded-xl border-2 px-3 py-1.5 text-sm ${classes}`}
                       >
                         <strong className="mr-2">{letter}.</strong>
                         {opt}
                         {isAnswer && (
-                          <span className="ml-2 text-xs font-medium">
+                          <span className="ml-2 text-xs font-extrabold">
                             （正确答案）
                           </span>
                         )}
                         {isUserChoice && !isAnswer && (
-                          <span className="ml-2 text-xs font-medium">
+                          <span className="ml-2 text-xs font-extrabold">
                             （你的作答）
                           </span>
                         )}
@@ -260,17 +260,17 @@ export default function ResultView({
               {/* Non-MCQ types: show user answer + correct answer side by side */}
               {!((q.type === "MCQ" || q.type === "MCQ_CLOZE") && q.options) && (
                 <div className="mb-3 grid gap-2 sm:grid-cols-2">
-                  <div className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm">
-                    <div className="text-xs text-neutral-500">你的作答</div>
+                  <div className="rounded-xl border-2 border-ink/15 bg-white px-3 py-2 text-sm">
+                    <div className="text-xs text-ink/55 font-bold">你的作答</div>
                     <div
-                      className={`mt-0.5 font-mono ${correct ? "text-green-700" : "text-red-700"}`}
+                      className={`mt-0.5 font-mono font-bold ${correct ? "text-emerald-700" : "text-rose-700"}`}
                     >
-                      {ua || <span className="text-neutral-400">（未作答）</span>}
+                      {ua || <span className="text-ink/40">（未作答）</span>}
                     </div>
                   </div>
-                  <div className="rounded-md border border-green-300 bg-white px-3 py-2 text-sm">
-                    <div className="text-xs text-neutral-500">正确答案</div>
-                    <div className="mt-0.5 font-mono text-green-700">
+                  <div className="rounded-xl border-2 border-emerald-300 bg-white px-3 py-2 text-sm">
+                    <div className="text-xs text-ink/55 font-bold">正确答案</div>
+                    <div className="mt-0.5 font-mono font-bold text-emerald-700">
                       {q.answer}
                     </div>
                   </div>
@@ -278,8 +278,8 @@ export default function ResultView({
               )}
 
               {/* Explanation */}
-              <div className="rounded-md bg-white/60 p-3 text-sm text-neutral-800">
-                <div className="text-xs font-medium text-neutral-500">解析</div>
+              <div className="rounded-xl bg-white/70 p-3 text-sm text-ink/85">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-ink/55">解析</div>
                 <div className="mt-1 whitespace-pre-wrap leading-relaxed">
                   {q.explanation_zh}
                 </div>
@@ -287,11 +287,11 @@ export default function ResultView({
 
               {/* Tags */}
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-mono text-neutral-700">
+                <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-ink/75">
                   {q.exam_point_id}
                 </span>
                 {q.difficulty_point_id && (
-                  <span className="rounded-full bg-neutral-200 px-2 py-0.5 font-mono text-neutral-700">
+                  <span className="rounded-full bg-ink/10 px-2 py-0.5 font-mono text-ink/75">
                     {q.difficulty_point_id}
                   </span>
                 )}

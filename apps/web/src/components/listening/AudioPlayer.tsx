@@ -66,7 +66,7 @@ export function AudioPlayer(props: AudioPlayerProps) {
   };
 
   return (
-    <div className="audio-player">
+    <div className="rounded-2xl bg-white border-2 border-ink/10 p-3 stitched-card">
       <audio
         ref={audioRef}
         src={props.src}
@@ -79,25 +79,41 @@ export function AudioPlayer(props: AudioPlayerProps) {
         onEnded={() => { setIsPlaying(false); props.onEnded?.(); }}
       />
 
-      <div className="flex items-center gap-3 p-3 bg-slate-100 rounded-lg">
+      <div className="flex items-center gap-3 p-3 bg-mist rounded-xl">
         {props.controls.skip10 && (
-          <button className="px-2 py-1 border rounded"
-            onClick={() => skip(-10)} aria-label="-10s">⏪ 10s</button>
+          <button
+            className="rounded-full border-2 border-ink/15 px-3 py-1.5 text-sm font-bold bg-white hover:bg-ink/5 transition"
+            onClick={() => skip(-10)}
+            aria-label="-10s"
+          >
+            ⏪ 10s
+          </button>
         )}
         {props.controls.playPause && (
-          <button className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={togglePlay}>
+          <button
+            className="rounded-full bg-ink text-white text-base font-extrabold px-5 py-2 hover:bg-ink/90 transition"
+            onClick={togglePlay}
+          >
             {isPlaying ? "⏸" : "▶"}
           </button>
         )}
         {props.controls.skip10 && (
-          <button className="px-2 py-1 border rounded"
-            onClick={() => skip(10)} aria-label="+10s">10s ⏩</button>
+          <button
+            className="rounded-full border-2 border-ink/15 px-3 py-1.5 text-sm font-bold bg-white hover:bg-ink/5 transition"
+            onClick={() => skip(10)}
+            aria-label="+10s"
+          >
+            10s ⏩
+          </button>
         )}
 
         <div className="flex-1 mx-3">
           {props.controls.scrub ? (
-            <input type="range" min={0} max={duration || 0} step={0.1}
+            <input
+              type="range"
+              min={0}
+              max={duration || 0}
+              step={0.1}
               value={currentTime}
               onChange={(e) => {
                 const a = audioRef.current;
@@ -106,14 +122,14 @@ export function AudioPlayer(props: AudioPlayerProps) {
               className="w-full"
             />
           ) : (
-            <div className="h-2 bg-slate-300 rounded">
+            <div className="h-2 w-full rounded-full bg-mist border-2 border-ink/10 overflow-hidden">
               <div
-                className="h-2 bg-blue-600 rounded"
+                className="h-full bg-ink"
                 style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
               />
             </div>
           )}
-          <div className="text-xs text-slate-600 mt-1">
+          <div className="text-xs text-ink/60 mt-1 font-mono">
             {formatTime(currentTime)} / {formatTime(duration)}
           </div>
         </div>
@@ -123,8 +139,10 @@ export function AudioPlayer(props: AudioPlayerProps) {
             {[0.75, 1, 1.25].map((r) => (
               <button
                 key={r}
-                className={`px-2 py-1 text-xs rounded border ${
-                  speed === r ? "bg-blue-600 text-white" : ""
+                className={`rounded-full px-3 py-1 text-xs font-bold transition ${
+                  speed === r
+                    ? "bg-ink text-white"
+                    : "border-2 border-ink/15 bg-white hover:bg-ink/5"
                 }`}
                 onClick={() => setPlaybackSpeed(r)}
               >
@@ -143,7 +161,7 @@ export function AudioPlayer(props: AudioPlayerProps) {
             .map((s) => (
               <button
                 key={s.id}
-                className="px-3 py-1 border rounded text-sm hover:bg-slate-200"
+                className="rounded-full border-2 border-ink/15 px-4 py-1.5 text-sm font-bold bg-white hover:bg-ink/5 transition"
                 onClick={() => jumpToSegment(s.id)}
               >
                 重播 {s.questionId}
