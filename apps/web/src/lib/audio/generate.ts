@@ -180,6 +180,7 @@ export function snakeToCamelListening(
           id: o.id as string,
           text: o.text as string | undefined,
           imageDescription: o.image_description as string | undefined,
+          imageUrl: o.image_url as string | undefined,
         }),
       ),
       answer: q.answer as string,

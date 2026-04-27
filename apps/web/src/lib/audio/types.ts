@@ -44,6 +44,11 @@ export interface ListeningOption {
   id: string;
   text?: string;
   imageDescription?: string;
+  // R2 key (e.g., "listening/options/<sha16>.jpg") populated by
+  // `enrichListeningOptionImages` AFTER the AI returns the test. The
+  // Mcq3Picture component renders this via `signR2PublicUrl(imageUrl)`
+  // when present, falling back to imageDescription text when missing.
+  imageUrl?: string;
 }
 
 export interface ListeningQuestion {
