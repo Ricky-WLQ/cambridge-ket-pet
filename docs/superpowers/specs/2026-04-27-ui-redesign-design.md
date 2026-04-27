@@ -2,8 +2,9 @@
 
 > **Project**: cambridge-ket-pet
 > **Status**: APPROVED. Ready for implementation planning.
-> **Scope rule**: visual restyle only — **no layout changes** to any existing route.
-> **Reference mockups**: `design-preview/preview.html` (single self-contained HTML, 41 page sections, 320 KB).
+> **Scope rule**: visual restyle only — **no layout changes, no new features**.
+> **Reference mockups**: `design-preview/preview.html` (single self-contained HTML, 41 page sections).
+> **Audit + remediation**: `docs/superpowers/specs/2026-04-27-mockup-codebase-audit.md` — verifies every label, stat, and feature in the mockups against the real codebase. Path A applied: mockups corrected to match real code. Spec rule "no JSX structural changes" is preserved.
 
 ---
 

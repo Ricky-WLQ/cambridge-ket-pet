@@ -259,16 +259,12 @@
 
         <!-- ════════ Page 1 · LOGIN ════════ -->
         <section id="login" class="page-section active">
-          <!-- Site header -->
+          <!-- Minimal logo-only header (real /login has no SiteHeader) -->
           <div class="site-header">
             <div class="flex items-center gap-2.5">
               <div class="grid h-9 w-9 place-items-center rounded-lg bg-ink text-white font-extrabold text-sm">K</div>
               <div class="font-extrabold text-base">剑桥 KET / PET</div>
             </div>
-            <nav class="flex items-center gap-2 text-sm font-bold text-ink/70">
-              <span class="hidden sm:inline">还没有账号?</span>
-              <button class="rounded-full border-2 border-ink px-4 py-1.5 hover:bg-ink hover:text-white transition">注册</button>
-            </nav>
           </div>
 
           <!-- Hero + form, fills available height -->
@@ -340,6 +336,9 @@
                   <div class="mt-4 text-center text-sm font-medium text-ink/60">
                     忘记密码? <a href="#" class="font-bold text-ink hover:underline">点这里</a>
                   </div>
+                  <div class="mt-2 text-center text-sm font-medium text-ink/60">
+                    还没有账号? <a href="#" class="font-bold text-ink hover:underline">注册</a>
+                  </div>
                 </div>
               </div>
             </div>
@@ -383,7 +382,6 @@
                 <div class="absolute right-2 top-1 h-24 w-24 rounded-2xl bg-sky-soft rotate-6"></div>
                 <div class="absolute right-6 top-4 h-24 w-24 rounded-2xl bg-butter-soft -rotate-3"></div>
                 <div class="absolute right-12 top-8 h-24 w-24 rounded-2xl bg-peach-soft rotate-12 border-2 border-ink/15"></div>
-                <span class="star-sticker" style="top: -6px; right: -6px">✦ 真题</span>
               </div>
             </div>
           </div>
@@ -397,10 +395,7 @@
               </div>
               <div>
                 <div class="text-xl sm:text-2xl font-extrabold leading-tight">阅读 Reading</div>
-                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">7 个题型 · AI 即时生成 · 8 分钟</div>
-                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-                  <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 85%</span>
-                </div>
+                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Reading · AI 即时生成仿真题</div>
               </div>
             </a>
             <a href="#" class="skill-tile tile-sky stitched-card group">
@@ -410,10 +405,7 @@
               </div>
               <div>
                 <div class="text-xl sm:text-2xl font-extrabold leading-tight">听力 Listening</div>
-                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">5 个 Part · TTS 真人音频 · 10 分钟</div>
-                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-                  <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 70%</span>
-                </div>
+                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Listening · AI 即时生成真题听力</div>
               </div>
             </a>
             <a href="#" class="skill-tile tile-butter stitched-card group">
@@ -423,10 +415,7 @@
               </div>
               <div>
                 <div class="text-xl sm:text-2xl font-extrabold leading-tight">写作 Writing</div>
-                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">邮件 / 故事 · 4-criteria · 15 分钟</div>
-                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-                  <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 14/20</span>
-                </div>
+                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Writing · AI 即时生成写作任务</div>
               </div>
             </a>
             <a href="#" class="skill-tile tile-peach stitched-card group">
@@ -436,10 +425,7 @@
               </div>
               <div>
                 <div class="text-xl sm:text-2xl font-extrabold leading-tight">口语 Speaking</div>
-                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">AI 考官 Mina · 实时对话 · 5 分钟</div>
-                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-                  <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 78%</span>
-                </div>
+                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Speaking · 与 AI 考官 Mina 实时对话</div>
               </div>
             </a>
             <a href="#" class="skill-tile tile-mint stitched-card group">
@@ -449,10 +435,7 @@
               </div>
               <div>
                 <div class="text-xl sm:text-2xl font-extrabold leading-tight">词汇 Vocab</div>
-                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">A2 / B1 词表 · 听说拼写 · 间隔记忆</div>
-                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-                  <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">已掌握 142 词</span>
-                </div>
+                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Vocab · A2 / B1 词表 · 听说拼写</div>
               </div>
             </a>
             <a href="#" class="skill-tile tile-cream stitched-card group">
@@ -462,10 +445,7 @@
               </div>
               <div>
                 <div class="text-xl sm:text-2xl font-extrabold leading-tight">语法 Grammar</div>
-                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">按弱项推送 · 错题本 · 5 分钟</div>
-                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-                  <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">弱项 3 个</span>
-                </div>
+                <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Grammar · 错题本沉淀</div>
               </div>
             </a>
           </div>
@@ -534,7 +514,6 @@
                 <div class="flex items-end justify-between mt-2">
                   <div>
                     <div class="text-3xl font-extrabold leading-none">33%</div>
-                    <div class="mt-1 text-xs font-bold text-ink/65">3 题 · 答对 1 题</div>
                   </div>
                   <a href="#" class="text-sm font-extrabold hover:underline">查看 →</a>
                 </div>
@@ -550,7 +529,6 @@
                 <div class="flex items-end justify-between mt-2">
                   <div>
                     <div class="text-3xl font-extrabold leading-none">0%</div>
-                    <div class="mt-1 text-xs font-bold text-ink/65">3 题 · 答对 0 题</div>
                   </div>
                   <a href="#" class="text-sm font-extrabold hover:underline">查看 →</a>
                 </div>
@@ -566,7 +544,6 @@
                 <div class="flex items-end justify-between mt-2">
                   <div>
                     <div class="text-3xl font-extrabold leading-none">0%</div>
-                    <div class="mt-1 text-xs font-bold text-ink/65">未填写正文</div>
                   </div>
                   <a href="#" class="text-sm font-extrabold hover:underline">查看 →</a>
                 </div>
@@ -582,7 +559,6 @@
                 <div class="flex items-end justify-between mt-2">
                   <div>
                     <div class="text-3xl font-extrabold leading-none">60%</div>
-                    <div class="mt-1 text-xs font-bold text-ink/65">Mina · 已对话</div>
                   </div>
                   <a href="#" class="text-sm font-extrabold hover:underline">查看 →</a>
                 </div>
@@ -598,7 +574,6 @@
                 <div class="flex items-end justify-between mt-2">
                   <div>
                     <div class="text-3xl font-extrabold leading-none">67%</div>
-                    <div class="mt-1 text-xs font-bold text-ink/65">3 词 · 答对 2 词</div>
                   </div>
                   <a href="#" class="text-sm font-extrabold hover:underline">查看 →</a>
                 </div>
@@ -614,7 +589,6 @@
                 <div class="flex items-end justify-between mt-2">
                   <div>
                     <div class="text-3xl font-extrabold leading-none">67%</div>
-                    <div class="mt-1 text-xs font-bold text-ink/65">3 题 · 答对 2 题</div>
                   </div>
                   <a href="#" class="text-sm font-extrabold hover:underline">查看 →</a>
                 </div>
@@ -780,16 +754,12 @@
 
 <!-- ════════ signup ════════ -->
 <section id="signup" class="page-section">
-  <!-- Site header -->
+  <!-- Minimal logo-only header (real /signup has no SiteHeader) -->
   <div class="site-header">
     <div class="flex items-center gap-2.5">
       <div class="grid h-9 w-9 place-items-center rounded-lg bg-ink text-white font-extrabold text-sm">K</div>
       <div class="font-extrabold text-base">剑桥 KET / PET</div>
     </div>
-    <nav class="flex items-center gap-2 text-sm font-bold text-ink/70">
-      <span class="hidden sm:inline">已经有账号?</span>
-      <button class="rounded-full border-2 border-ink px-4 py-1.5 hover:bg-ink hover:text-white transition">登录</button>
-    </nav>
   </div>
 
   <!-- Hero + form, fills available height -->
@@ -868,6 +838,10 @@
               创建账号 <span aria-hidden>→</span>
             </button>
           </form>
+
+          <div class="mt-4 text-center text-sm font-medium text-ink/60">
+            已经有账号? <a href="#" class="font-bold text-ink hover:underline">登录</a>
+          </div>
         </div>
       </div>
     </div>
@@ -1159,7 +1133,6 @@
         <div class="absolute right-2 top-1 h-24 w-24 rounded-2xl bg-lavender-soft rotate-6"></div>
         <div class="absolute right-6 top-4 h-24 w-24 rounded-2xl bg-mint-soft -rotate-3"></div>
         <div class="absolute right-12 top-8 h-24 w-24 rounded-2xl bg-peach-soft rotate-12 border-2 border-ink/15"></div>
-        <span class="star-sticker" style="top: -6px; right: -6px">✦ B1</span>
       </div>
     </div>
   </div>
@@ -1173,10 +1146,7 @@
       </div>
       <div>
         <div class="text-xl sm:text-2xl font-extrabold leading-tight">阅读 Reading</div>
-        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">PET Reading 7 个题型 · 阅读理解 · 12 分钟</div>
-        <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-          <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 78%</span>
-        </div>
+        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Reading · AI 即时生成仿真题</div>
       </div>
     </a>
     <a href="#" class="skill-tile tile-sky stitched-card group">
@@ -1186,10 +1156,7 @@
       </div>
       <div>
         <div class="text-xl sm:text-2xl font-extrabold leading-tight">听力 Listening</div>
-        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">4 个 Part · B1 长对话 · 30 分钟</div>
-        <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-          <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 65%</span>
-        </div>
+        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Listening · AI 即时生成真题听力</div>
       </div>
     </a>
     <a href="#" class="skill-tile tile-butter stitched-card group">
@@ -1199,10 +1166,7 @@
       </div>
       <div>
         <div class="text-xl sm:text-2xl font-extrabold leading-tight">写作 Writing</div>
-        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">邮件 / 文章 / 故事 · B1 评分 · 45 分钟</div>
-        <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-          <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 18/30</span>
-        </div>
+        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Writing · AI 即时生成写作任务</div>
       </div>
     </a>
     <a href="#" class="skill-tile tile-peach stitched-card group">
@@ -1212,10 +1176,7 @@
       </div>
       <div>
         <div class="text-xl sm:text-2xl font-extrabold leading-tight">口语 Speaking</div>
-        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">AI 考官 Mina · B1 主题对话 · 12 分钟</div>
-        <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-          <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">上次 72%</span>
-        </div>
+        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Speaking · 与 AI 考官 Mina 实时对话</div>
       </div>
     </a>
     <a href="#" class="skill-tile tile-mint stitched-card group">
@@ -1225,10 +1186,7 @@
       </div>
       <div>
         <div class="text-xl sm:text-2xl font-extrabold leading-tight">词汇 Vocab</div>
-        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">B1 词表 1500 词 · 听说拼写 · 间隔记忆</div>
-        <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-          <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">已掌握 318 词</span>
-        </div>
+        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Vocab · A2 / B1 词表 · 听说拼写</div>
       </div>
     </a>
     <a href="#" class="skill-tile tile-cream stitched-card group">
@@ -1238,10 +1196,7 @@
       </div>
       <div>
         <div class="text-xl sm:text-2xl font-extrabold leading-tight">语法 Grammar</div>
-        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">B1 时态 · 从句 · 错题本 · 8 分钟</div>
-        <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-ink/60">
-          <span class="pill-tag bg-white/70 border border-ink/10 !py-0.5 !px-2 !text-[11px]">弱项 4 个</span>
-        </div>
+        <div class="mt-1.5 text-sm font-medium text-ink/70 leading-snug">Grammar · 错题本沉淀</div>
       </div>
     </a>
   </div>
@@ -1405,22 +1360,18 @@
         <div class="text-sm font-bold text-ink/60 mt-0.5">已归档 2 题到错题本</div>
       </div>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-      <div class="stat-card tile-lavender">
-        <div class="text-2xl font-extrabold leading-none">8:42</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">用时</div>
+    <div class="grid grid-cols-3 gap-2.5">
+      <div class="stat-card tile-butter">
+        <div class="text-2xl font-extrabold leading-none">67%</div>
+        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">得分</div>
       </div>
       <div class="stat-card tile-sky">
         <div class="text-2xl font-extrabold leading-none">4 / 6</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">答对题数</div>
+        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">正确题数</div>
       </div>
       <div class="stat-card tile-peach">
-        <div class="text-2xl font-extrabold leading-none">Part 4</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">题型</div>
-      </div>
-      <div class="stat-card tile-cream">
-        <div class="text-2xl font-extrabold leading-none">04-27</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">日期 2026</div>
+        <div class="text-2xl font-extrabold leading-none">2</div>
+        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">错题数</div>
       </div>
     </div>
   </div>
@@ -1649,7 +1600,7 @@
       <div class="flex items-center gap-2 mb-3">
         <span class="pill-tag bg-sky-tint">🎧 Audio</span>
         <span class="text-xs font-bold text-ink/60">listening · part 3</span>
-        <span class="ml-auto text-xs font-bold text-ink/60">已听 0/2 次</span>
+        <span class="ml-auto text-xs font-bold text-ink/60">音频将播放两次</span>
       </div>
       <div class="flex items-center gap-4">
         <button class="grid h-14 w-14 place-items-center rounded-full bg-ink text-white text-xl font-extrabold hover:bg-ink/90 transition shrink-0" aria-label="play">▶</button>
@@ -1817,22 +1768,18 @@
         <div class="text-sm font-bold text-ink/60 mt-0.5">已归档 2 题到错题本</div>
       </div>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-      <div class="stat-card tile-lavender">
-        <div class="text-2xl font-extrabold leading-none">11:23</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">用时</div>
-      </div>
+    <div class="grid grid-cols-3 gap-2.5">
       <div class="stat-card tile-sky">
+        <div class="text-2xl font-extrabold leading-none">60%</div>
+        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">得分</div>
+      </div>
+      <div class="stat-card tile-mint">
         <div class="text-2xl font-extrabold leading-none">3 / 5</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">答对题数</div>
+        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">正确题数</div>
       </div>
       <div class="stat-card tile-peach">
-        <div class="text-2xl font-extrabold leading-none">Part 2</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">题型</div>
-      </div>
-      <div class="stat-card tile-cream">
-        <div class="text-2xl font-extrabold leading-none">04-27</div>
-        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">日期 2026</div>
+        <div class="text-2xl font-extrabold leading-none">2</div>
+        <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">错题数</div>
       </div>
     </div>
   </div>
@@ -2322,75 +2269,51 @@
       </div>
     </div>
 
-    <!-- RIGHT: Transcript card -->
+    <!-- RIGHT: Status + part progress + transcript toggle -->
     <div class="flex flex-col gap-3 min-h-0 overflow-hidden">
-      <div class="rounded-3xl bg-white border-2 border-ink/10 p-5 stitched-card flex flex-col grow-fill min-h-0">
-        <div class="flex items-center justify-between mb-3 shrink-0">
-          <h3 class="text-base font-extrabold">📜 对话记录</h3>
-          <span class="text-xs font-bold text-ink/60">实时转录</span>
+      <!-- StatusPill: live "正在听" / "正在说" / "录音中" indicator -->
+      <div class="rounded-3xl bg-white border-2 border-ink/10 p-5 stitched-card flex flex-col gap-4 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="grid h-10 w-10 place-items-center rounded-xl tile-peach border-2 border-ink/10 text-xl">🎙️</span>
+          <h3 class="text-base font-extrabold">实时状态</h3>
         </div>
+        <div class="flex items-center gap-3">
+          <span class="h-3 w-3 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+          <div class="text-2xl font-extrabold leading-none">录音中</div>
+        </div>
+        <div class="text-sm font-medium text-ink/65">麦克风正常 · 请清晰回答 Mina 的提问</div>
+      </div>
 
-        <div class="space-y-2.5 overflow-y-auto pr-1 grow-fill min-h-0">
-          <!-- Mina -->
-          <div class="flex justify-start">
-            <div class="max-w-[88%] rounded-2xl tile-lavender border-2 border-ink/10 px-3.5 py-2.5">
-              <div class="text-[11px] font-extrabold text-ink/70 mb-0.5">Mina</div>
-              <p class="text-sm leading-snug">Hi! Nice to meet you. What's your name?</p>
-            </div>
+      <!-- PartProgressBar: 3 parts mini bar -->
+      <div class="rounded-3xl bg-white border-2 border-ink/10 p-5 stitched-card flex flex-col gap-3 shrink-0">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-extrabold uppercase tracking-widest text-ink/65">考试进度</h3>
+          <span class="text-xs font-bold text-ink/60">Part 2 / 3</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="rounded-xl tile-mint border-2 border-ink/10 px-2 py-2 text-center">
+            <div class="text-[11px] font-extrabold text-ink/70">Part 1</div>
+            <div class="text-xs font-bold text-ink/85">已完成</div>
           </div>
-          <!-- User -->
-          <div class="flex justify-end">
-            <div class="max-w-[88%] rounded-2xl bg-white border-2 border-ink/10 px-3.5 py-2.5">
-              <div class="text-[11px] font-extrabold text-ink/70 mb-0.5 text-right">你</div>
-              <p class="text-sm leading-snug">Hello, my name is Lin Wei. I'm twelve years old.</p>
-            </div>
+          <div class="rounded-xl bg-ink text-white border-2 border-ink px-2 py-2 text-center">
+            <div class="text-[11px] font-extrabold opacity-80">Part 2</div>
+            <div class="text-xs font-bold">进行中</div>
           </div>
-          <!-- Mina -->
-          <div class="flex justify-start">
-            <div class="max-w-[88%] rounded-2xl tile-lavender border-2 border-ink/10 px-3.5 py-2.5">
-              <div class="text-[11px] font-extrabold text-ink/70 mb-0.5">Mina</div>
-              <p class="text-sm leading-snug">Great. Now look at this photo. Can you describe what you see at the beach?</p>
-            </div>
-          </div>
-          <!-- User -->
-          <div class="flex justify-end">
-            <div class="max-w-[88%] rounded-2xl bg-white border-2 border-ink/10 px-3.5 py-2.5">
-              <div class="text-[11px] font-extrabold text-ink/70 mb-0.5 text-right">你</div>
-              <p class="text-sm leading-snug">I can see many people on the beach. The sun is shining and there are some children playing in the water.</p>
-            </div>
-          </div>
-          <!-- Mina -->
-          <div class="flex justify-start">
-            <div class="max-w-[88%] rounded-2xl tile-lavender border-2 border-ink/10 px-3.5 py-2.5">
-              <div class="text-[11px] font-extrabold text-ink/70 mb-0.5">Mina</div>
-              <p class="text-sm leading-snug">Nice description. What are the people wearing?</p>
-            </div>
-          </div>
-          <!-- User -->
-          <div class="flex justify-end">
-            <div class="max-w-[88%] rounded-2xl bg-white border-2 border-ink/10 px-3.5 py-2.5">
-              <div class="text-[11px] font-extrabold text-ink/70 mb-0.5 text-right">你</div>
-              <p class="text-sm leading-snug">They are wearing swimsuits and hats. Some people have sunglasses too.</p>
-            </div>
-          </div>
-          <!-- Mina (typing) -->
-          <div class="flex justify-start">
-            <div class="max-w-[88%] rounded-2xl tile-lavender border-2 border-ink/10 px-3.5 py-2.5">
-              <div class="text-[11px] font-extrabold text-ink/70 mb-0.5">Mina</div>
-              <p class="text-sm leading-snug text-ink/50 italic">正在思考…</p>
-            </div>
+          <div class="rounded-xl bg-white border-2 border-ink/10 px-2 py-2 text-center">
+            <div class="text-[11px] font-extrabold text-ink/50">Part 3</div>
+            <div class="text-xs font-bold text-ink/40">待开始</div>
           </div>
         </div>
       </div>
 
-      <!-- Status pill -->
-      <div class="rounded-2xl tile-mint border-2 border-ink/10 px-4 py-2.5 flex items-center gap-2.5 shrink-0">
-        <span class="text-xl">✓</span>
-        <div class="text-sm">
-          <span class="font-extrabold">麦克风正常</span>
-          <span class="text-ink/65"> · 听清答好</span>
-        </div>
-      </div>
+      <!-- Collapsed transcript toggle -->
+      <button class="rounded-2xl bg-white border-2 border-ink/15 px-4 py-3 flex items-center justify-between text-sm font-extrabold hover:border-ink transition shrink-0">
+        <span class="flex items-center gap-2">
+          <span>📜</span>
+          <span>查看对话记录</span>
+        </span>
+        <span class="text-ink/50">▾</span>
+      </button>
     </div>
   </div>
 </section>
@@ -2578,7 +2501,6 @@
       <p class="mt-3 text-base text-ink/75">基于剑桥 A2 Key 词表 · 间隔记忆推送</p>
     </div>
     <div class="flex items-center gap-2">
-      <span class="pill-tag bg-peach-tint border-2 border-ink/10">🔥 连续 7 天</span>
       <span class="pill-tag bg-butter-tint border-2 border-ink/10">✦ 今日 +12</span>
     </div>
   </div>
@@ -2587,24 +2509,28 @@
   <div class="rounded-3xl tile-sky border-2 border-ink/10 p-5 stitched-card">
     <div class="flex items-baseline justify-between mb-3">
       <h3 class="text-lg font-extrabold"><span class="marker-yellow">选择练习模式</span></h3>
-      <span class="text-xs font-bold text-ink/65">基于昨日表现推荐 综合</span>
+      <span class="text-xs font-bold text-ink/65">必修核心 × 听 / 拼</span>
     </div>
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <a href="#" class="rounded-2xl bg-white border-2 border-ink p-4 stitched-card hover:bg-ink/5 transition flex flex-col items-center text-center gap-2">
+        <span class="text-3xl">🔊</span>
+        <div class="text-base font-extrabold">听写 · 必修</div>
+        <div class="text-xs text-ink/65 font-medium leading-tight">CORE 核心词</div>
+      </a>
+      <a href="#" class="rounded-2xl bg-white border-2 border-ink p-4 stitched-card hover:bg-ink/5 transition flex flex-col items-center text-center gap-2">
+        <span class="text-3xl">⌨️</span>
+        <div class="text-base font-extrabold">拼写 · 必修</div>
+        <div class="text-xs text-ink/65 font-medium leading-tight">填字母练习</div>
+      </a>
       <a href="#" class="rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card hover:border-ink transition flex flex-col items-center text-center gap-2">
         <span class="text-3xl">🔊</span>
-        <div class="text-base font-extrabold">听</div>
-        <div class="text-xs text-ink/65 font-medium leading-tight">听音选意</div>
+        <div class="text-base font-extrabold">听写 · 混合</div>
+        <div class="text-xs text-ink/65 font-medium leading-tight">所有词混合</div>
       </a>
       <a href="#" class="rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card hover:border-ink transition flex flex-col items-center text-center gap-2">
         <span class="text-3xl">⌨️</span>
-        <div class="text-base font-extrabold">拼</div>
-        <div class="text-xs text-ink/65 font-medium leading-tight">听音拼写</div>
-      </a>
-      <a href="#" class="rounded-2xl bg-ink text-white border-2 border-ink p-4 stitched-card hover:bg-ink/90 transition flex flex-col items-center text-center gap-2 relative">
-        <span class="absolute top-2 right-2 pill-tag bg-butter !py-0.5 !px-2 !text-[10px] text-ink">推荐</span>
-        <span class="text-3xl">🎯</span>
-        <div class="text-base font-extrabold">综合</div>
-        <div class="text-xs font-medium leading-tight opacity-75">听 + 拼 + 选</div>
+        <div class="text-base font-extrabold">拼写 · 混合</div>
+        <div class="text-xs text-ink/65 font-medium leading-tight">所有词混合</div>
       </a>
     </div>
   </div>
@@ -2862,22 +2788,22 @@
       <span class="marker-yellow-thick">语法主题</span>
     </h1>
     <p class="mt-3 text-base sm:text-lg text-ink/75 max-w-xl leading-relaxed">
-      8 个核心专题 · AI 即时生成题目 · 错题自动归档
+      A2 Key 官方语法清单 · 共 19 个主题 · 错题自动归档
     </p>
   </div>
 
   <!-- Recommended strip -->
   <div class="rounded-3xl tile-butter border-2 border-ink/10 p-5 sm:p-6 stitched-card flex flex-wrap items-center justify-between gap-4">
     <div class="flex items-center gap-4">
-      <span class="grid h-14 w-14 place-items-center rounded-2xl bg-white text-3xl border-2 border-ink/10">🎯</span>
+      <span class="grid h-14 w-14 place-items-center rounded-2xl bg-white text-3xl border-2 border-ink/10">⚠</span>
       <div>
-        <div class="text-xs font-extrabold uppercase tracking-widest text-ink/65 mb-1">推荐继续</div>
+        <div class="text-xs font-extrabold uppercase tracking-widest text-ink/65 mb-1">⚠ 薄弱点专练</div>
         <div class="text-xl sm:text-2xl font-extrabold leading-tight">现在完成时</div>
-        <div class="mt-1 text-sm font-medium text-ink/70">上次准确率 60% · 还有 8 题待练</div>
+        <div class="mt-1 text-sm font-medium text-ink/70">上次准确率 60% · 低于 60% 阈值</div>
       </div>
     </div>
     <a href="#" class="rounded-full bg-ink text-white text-base font-extrabold px-6 py-3 hover:bg-ink/90 transition flex items-center gap-1.5">
-      继续 →
+      继续练习 →
     </a>
   </div>
 
@@ -2889,7 +2815,7 @@
         <span class="arrow-chip">→</span>
       </div>
       <div>
-        <div class="text-lg sm:text-xl font-extrabold leading-tight">第三人称单数</div>
+        <div class="text-lg sm:text-xl font-extrabold leading-tight">一般现在时</div>
         <div class="mt-2 h-2 w-full rounded-full bg-white/60 overflow-hidden">
           <div class="h-full bg-ink rounded-full" style="width: 88%"></div>
         </div>
@@ -2915,7 +2841,7 @@
         <span class="arrow-chip">→</span>
       </div>
       <div>
-        <div class="text-lg sm:text-xl font-extrabold leading-tight">比较级</div>
+        <div class="text-lg sm:text-xl font-extrabold leading-tight">现在进行时</div>
         <div class="mt-2 h-2 w-full rounded-full bg-white/60 overflow-hidden">
           <div class="h-full bg-ink rounded-full" style="width: 75%"></div>
         </div>
@@ -2941,7 +2867,7 @@
         <span class="arrow-chip">→</span>
       </div>
       <div>
-        <div class="text-lg sm:text-xl font-extrabold leading-tight">名词复数</div>
+        <div class="text-lg sm:text-xl font-extrabold leading-tight">名词基础</div>
         <div class="mt-2 h-2 w-full rounded-full bg-white/60 overflow-hidden">
           <div class="h-full bg-ink rounded-full" style="width: 80%"></div>
         </div>
@@ -2954,7 +2880,7 @@
         <span class="arrow-chip">→</span>
       </div>
       <div>
-        <div class="text-lg sm:text-xl font-extrabold leading-tight">代词</div>
+        <div class="text-lg sm:text-xl font-extrabold leading-tight">代词基础</div>
         <div class="mt-2 h-2 w-full rounded-full bg-white/60 overflow-hidden">
           <div class="h-full bg-ink rounded-full" style="width: 67%"></div>
         </div>
@@ -2967,7 +2893,7 @@
         <span class="arrow-chip">→</span>
       </div>
       <div>
-        <div class="text-lg sm:text-xl font-extrabold leading-tight">介词</div>
+        <div class="text-lg sm:text-xl font-extrabold leading-tight">时间地点方位介词</div>
         <div class="mt-2 h-2 w-full rounded-full bg-white/60 overflow-hidden">
           <div class="h-full bg-ink rounded-full" style="width: 50%"></div>
         </div>
@@ -2980,7 +2906,7 @@
         <span class="arrow-chip">→</span>
       </div>
       <div>
-        <div class="text-lg sm:text-xl font-extrabold leading-tight">情态动词</div>
+        <div class="text-lg sm:text-xl font-extrabold leading-tight">情态动词基础</div>
         <div class="mt-2 h-2 w-full rounded-full bg-white/60 overflow-hidden">
           <div class="h-full bg-ink rounded-full" style="width: 70%"></div>
         </div>
@@ -3098,13 +3024,12 @@
     </p>
   </div>
 
-  <!-- Filter pills -->
+  <!-- Status tabs -->
   <div class="flex flex-wrap items-center gap-2">
     <button class="pill-tag bg-ink text-white">全部 · 17</button>
-    <button class="pill-tag bg-white border-2 border-ink/15 hover:border-ink transition">现在完成时 · 8</button>
-    <button class="pill-tag bg-white border-2 border-ink/15 hover:border-ink transition">第三人称单数 · 4</button>
-    <button class="pill-tag bg-white border-2 border-ink/15 hover:border-ink transition">介词 · 3</button>
-    <button class="pill-tag bg-white border-2 border-ink/15 hover:border-ink transition">情态动词 · 2</button>
+    <button class="pill-tag bg-white border-2 border-ink/15 hover:border-ink transition">待复习 · 9</button>
+    <button class="pill-tag bg-white border-2 border-ink/15 hover:border-ink transition">已复习 · 5</button>
+    <button class="pill-tag bg-white border-2 border-ink/15 hover:border-ink transition">已掌握 · 3</button>
   </div>
 
   <!-- Mistake list -->
@@ -3492,7 +3417,7 @@
       <div class="rounded-2xl tile-peach border-2 border-ink/10 p-4">
         <div class="flex items-center gap-2 mb-2">
           <span class="text-lg" aria-hidden>⚠️</span>
-          <span class="text-base font-extrabold">短板</span>
+          <span class="text-base font-extrabold">薄弱点</span>
         </div>
         <ul class="text-sm leading-relaxed text-ink/85 space-y-1.5 list-disc list-inside">
           <li>听力数字与时间细节捕捉率偏低</li>
@@ -3503,7 +3428,7 @@
       <div class="rounded-2xl tile-butter border-2 border-ink/10 p-4">
         <div class="flex items-center gap-2 mb-2">
           <span class="text-lg" aria-hidden>📌</span>
-          <span class="text-base font-extrabold">行动建议</span>
+          <span class="text-base font-extrabold">重点练习方向</span>
         </div>
         <ul class="text-sm leading-relaxed text-ink/85 space-y-1.5 list-disc list-inside">
           <li>每日 10 分钟听力数字精听训练</li>
@@ -3514,7 +3439,7 @@
       <div class="rounded-2xl tile-lavender border-2 border-ink/10 p-4">
         <div class="flex items-center gap-2 mb-2">
           <span class="text-lg" aria-hidden>🎯</span>
-          <span class="text-base font-extrabold">总评</span>
+          <span class="text-base font-extrabold">综合评语</span>
         </div>
         <ul class="text-sm leading-relaxed text-ink/85 space-y-1.5 list-disc list-inside">
           <li>当前水平接近 KET 中段,基础较扎实</li>
@@ -3525,10 +3450,10 @@
     </div>
   </div>
 
-  <!-- 8 大类知识点分析 -->
+  <!-- 知识点分析 -->
   <div class="rounded-3xl bg-white border-2 border-ink/10 p-5 sm:p-6 stitched-card">
     <div class="flex items-baseline justify-between mb-4">
-      <h2 class="text-xl sm:text-2xl font-extrabold"><span class="marker-yellow">8 大类知识点分析</span></h2>
+      <h2 class="text-xl sm:text-2xl font-extrabold"><span class="marker-yellow">知识点分析</span></h2>
       <span class="text-xs font-bold text-ink/60">本周共发现 6 个待加强知识点</span>
     </div>
 
@@ -3873,21 +3798,21 @@
         </ul>
       </div>
       <div class="rounded-2xl tile-peach border-2 border-ink/10 p-4">
-        <div class="flex items-center gap-2 mb-2"><span class="text-lg">⚠️</span><span class="text-base font-extrabold">短板</span></div>
+        <div class="flex items-center gap-2 mb-2"><span class="text-lg">⚠️</span><span class="text-base font-extrabold">薄弱点</span></div>
         <ul class="text-sm leading-relaxed text-ink/85 space-y-1.5 list-disc list-inside">
           <li>听力听写细节,数字易出错</li>
           <li>语法虚拟与条件句混淆</li>
         </ul>
       </div>
       <div class="rounded-2xl tile-butter border-2 border-ink/10 p-4">
-        <div class="flex items-center gap-2 mb-2"><span class="text-lg">📌</span><span class="text-base font-extrabold">行动建议</span></div>
+        <div class="flex items-center gap-2 mb-2"><span class="text-lg">📌</span><span class="text-base font-extrabold">重点练习方向</span></div>
         <ul class="text-sm leading-relaxed text-ink/85 space-y-1.5 list-disc list-inside">
           <li>每日 5 分钟数字精听</li>
           <li>本周完成 if 条件句专项练习</li>
         </ul>
       </div>
       <div class="rounded-2xl tile-lavender border-2 border-ink/10 p-4">
-        <div class="flex items-center gap-2 mb-2"><span class="text-lg">🎯</span><span class="text-base font-extrabold">总评</span></div>
+        <div class="flex items-center gap-2 mb-2"><span class="text-lg">🎯</span><span class="text-base font-extrabold">综合评语</span></div>
         <ul class="text-sm leading-relaxed text-ink/85 space-y-1.5 list-disc list-inside">
           <li>整体接近 KET 通过线</li>
           <li>建议下周保持节奏</li>
@@ -4115,17 +4040,24 @@
     </p>
   </div>
 
-  <!-- Filter pills -->
+  <!-- Filter dropdowns: examType / kind / mode / status -->
   <div class="flex flex-wrap items-center gap-2">
-    <span class="pill-tag bg-ink text-white">全部</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">KET</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">PET</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">阅读</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">听力</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">写作</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">口语</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">词汇</span>
-    <span class="pill-tag bg-white border-2 border-ink/10 hover:border-ink cursor-pointer">语法</span>
+    <span class="pill-tag bg-white border-2 border-ink/15 hover:border-ink cursor-pointer flex items-center gap-1.5">
+      <span class="font-extrabold">全部考试</span>
+      <span class="text-ink/50">▾</span>
+    </span>
+    <span class="pill-tag bg-white border-2 border-ink/15 hover:border-ink cursor-pointer flex items-center gap-1.5">
+      <span class="font-extrabold">全部题型</span>
+      <span class="text-ink/50">▾</span>
+    </span>
+    <span class="pill-tag bg-white border-2 border-ink/15 hover:border-ink cursor-pointer flex items-center gap-1.5">
+      <span class="font-extrabold">全部模式</span>
+      <span class="text-ink/50">▾</span>
+    </span>
+    <span class="pill-tag bg-white border-2 border-ink/15 hover:border-ink cursor-pointer flex items-center gap-1.5">
+      <span class="font-extrabold">全部状态</span>
+      <span class="text-ink/50">▾</span>
+    </span>
   </div>
 
   <!-- Attempt list -->
@@ -4519,7 +4451,7 @@
   <!-- Toolbar -->
   <div class="flex flex-wrap items-center gap-2 justify-between">
     <input type="text" placeholder="🔍 搜索班级名称或学校" class="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-medium focus:border-ink outline-none w-72 max-w-full" />
-    <button class="rounded-full bg-ink text-white text-sm font-extrabold px-5 py-2.5 hover:bg-ink/90 transition">+ 新建班级</button>
+    <button class="rounded-full bg-ink text-white text-sm font-extrabold px-5 py-2.5 hover:bg-ink/90 transition">+ 创建班级</button>
   </div>
 
   <!-- Class grid -->
@@ -4746,41 +4678,45 @@
         <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight"><span class="marker-yellow">KET 三班</span></h1>
         <div class="mt-3 text-sm font-bold text-ink/70">📊 32 学生 · 入班码 K3X9P7</div>
       </div>
-      <div class="grid grid-cols-3 gap-2.5 lg:w-[28rem]">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 lg:w-[36rem]">
         <div class="stat-card tile-lavender">
-          <div class="text-2xl font-extrabold leading-none">94%</div>
-          <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">参与率</div>
-        </div>
-        <div class="stat-card tile-sky">
-          <div class="text-2xl font-extrabold leading-none">78</div>
-          <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">平均分</div>
+          <div class="text-2xl font-extrabold leading-none">32</div>
+          <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">学生人数</div>
         </div>
         <div class="stat-card tile-mint">
-          <div class="text-2xl font-extrabold leading-none">28/32</div>
-          <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">本周诊断</div>
+          <div class="text-2xl font-extrabold leading-none">96</div>
+          <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">已批改答卷</div>
+        </div>
+        <div class="stat-card tile-sky">
+          <div class="text-2xl font-extrabold leading-none">78%</div>
+          <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">班级平均分</div>
+        </div>
+        <div class="stat-card tile-butter">
+          <div class="text-2xl font-extrabold leading-none">95%</div>
+          <div class="mt-1 text-xs font-bold text-ink/70 leading-tight">最高分</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Tabs -->
-  <div class="flex flex-wrap items-center gap-2">
-    <button class="rounded-full bg-ink text-white text-sm font-extrabold px-5 py-2">学生名册</button>
-    <button class="rounded-full border-2 border-ink/15 text-sm font-bold px-5 py-2 hover:border-ink transition">作业</button>
-    <button class="rounded-full border-2 border-ink/15 text-sm font-bold px-5 py-2 hover:border-ink transition">诊断</button>
+  <!-- Tabs + diagnose link -->
+  <div class="flex flex-wrap items-center gap-2 justify-between">
+    <div class="flex flex-wrap items-center gap-2">
+      <button class="rounded-full bg-ink text-white text-sm font-extrabold px-5 py-2">学生名册</button>
+      <button class="rounded-full border-2 border-ink/15 text-sm font-bold px-5 py-2 hover:border-ink transition">作业</button>
+    </div>
+    <a href="#" class="text-sm font-extrabold hover:underline text-ink/80">→ 查看本周诊断</a>
   </div>
 
   <!-- Roster -->
   <div class="rounded-2xl bg-white border-2 border-ink/10 stitched-card p-4 grow-fill">
-    <div class="grid grid-cols-[2fr_1.2fr_0.8fr_1fr_0.8fr] gap-2 px-3 py-2 text-xs font-extrabold text-ink/60 uppercase tracking-widest">
-      <div>姓名</div>
-      <div>最近活跃</div>
-      <div>平均分</div>
-      <div>本周诊断</div>
+    <div class="grid grid-cols-[2fr_3fr_0.8fr] gap-2 px-3 py-2 text-xs font-extrabold text-ink/60 uppercase tracking-widest">
+      <div>学生</div>
+      <div>已批改 / 平均 / 最高</div>
       <div class="text-right">操作</div>
     </div>
 
-    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_1.2fr_0.8fr_1fr_0.8fr] gap-2 items-center transition">
+    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_3fr_0.8fr] gap-2 items-center transition">
       <div class="flex items-center gap-3">
         <span class="grid h-9 w-9 place-items-center rounded-full bg-lavender-tint border-2 border-ink/10 font-extrabold text-sm">陈</span>
         <div>
@@ -4788,13 +4724,14 @@
           <div class="text-xs text-ink/60">chen.xt@example.com</div>
         </div>
       </div>
-      <span class="pill-tag bg-mint-tint border border-ink/10 !py-1 !px-2.5 !text-xs self-start">2 小时前</span>
-      <div class="font-extrabold text-base">88</div>
-      <span class="pill-tag bg-mint-soft border border-ink/15 !py-1 !px-2.5 !text-xs self-start">完成</span>
-      <a href="#" class="text-right text-sm font-extrabold hover:underline">查看 →</a>
+      <div class="text-xs leading-relaxed">
+        <div class="font-bold text-sm text-ink/85">已批改 6 份 · 平均 88% · 最高 95%</div>
+        <div class="text-ink/60">听力 2 份 · 平均 84% · 口语 1 份 · 平均 90%</div>
+      </div>
+      <a href="#" class="text-right text-sm font-extrabold hover:underline">详情 →</a>
     </div>
 
-    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_1.2fr_0.8fr_1fr_0.8fr] gap-2 items-center transition">
+    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_3fr_0.8fr] gap-2 items-center transition">
       <div class="flex items-center gap-3">
         <span class="grid h-9 w-9 place-items-center rounded-full bg-sky-tint border-2 border-ink/10 font-extrabold text-sm">王</span>
         <div>
@@ -4802,13 +4739,14 @@
           <div class="text-xs text-ink/60">wang.sy@example.com</div>
         </div>
       </div>
-      <span class="pill-tag bg-mint-tint border border-ink/10 !py-1 !px-2.5 !text-xs self-start">今天</span>
-      <div class="font-extrabold text-base">82</div>
-      <span class="pill-tag bg-butter-soft border border-ink/15 !py-1 !px-2.5 !text-xs self-start">进行中</span>
-      <a href="#" class="text-right text-sm font-extrabold hover:underline">查看 →</a>
+      <div class="text-xs leading-relaxed">
+        <div class="font-bold text-sm text-ink/85">已批改 4 份 · 平均 82% · 最高 88%</div>
+        <div class="text-ink/60">听力 1 份 · 平均 80% · 口语 暂无</div>
+      </div>
+      <a href="#" class="text-right text-sm font-extrabold hover:underline">详情 →</a>
     </div>
 
-    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_1.2fr_0.8fr_1fr_0.8fr] gap-2 items-center transition">
+    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_3fr_0.8fr] gap-2 items-center transition">
       <div class="flex items-center gap-3">
         <span class="grid h-9 w-9 place-items-center rounded-full bg-butter-tint border-2 border-ink/10 font-extrabold text-sm">李</span>
         <div>
@@ -4816,13 +4754,14 @@
           <div class="text-xs text-ink/60">li.yt@example.com</div>
         </div>
       </div>
-      <span class="pill-tag bg-mint-tint border border-ink/10 !py-1 !px-2.5 !text-xs self-start">昨天</span>
-      <div class="font-extrabold text-base">76</div>
-      <span class="pill-tag bg-mint-soft border border-ink/15 !py-1 !px-2.5 !text-xs self-start">完成</span>
-      <a href="#" class="text-right text-sm font-extrabold hover:underline">查看 →</a>
+      <div class="text-xs leading-relaxed">
+        <div class="font-bold text-sm text-ink/85">已批改 5 份 · 平均 76% · 最高 82%</div>
+        <div class="text-ink/60">听力 2 份 · 平均 72% · 口语 1 份 · 平均 75%</div>
+      </div>
+      <a href="#" class="text-right text-sm font-extrabold hover:underline">详情 →</a>
     </div>
 
-    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_1.2fr_0.8fr_1fr_0.8fr] gap-2 items-center transition">
+    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_3fr_0.8fr] gap-2 items-center transition">
       <div class="flex items-center gap-3">
         <span class="grid h-9 w-9 place-items-center rounded-full bg-peach-tint border-2 border-ink/10 font-extrabold text-sm">刘</span>
         <div>
@@ -4830,13 +4769,14 @@
           <div class="text-xs text-ink/60">liu.yh@example.com</div>
         </div>
       </div>
-      <span class="pill-tag bg-peach-tint border border-ink/10 !py-1 !px-2.5 !text-xs self-start">3 天前</span>
-      <div class="font-extrabold text-base">65</div>
-      <span class="pill-tag bg-peach-soft border border-ink/15 !py-1 !px-2.5 !text-xs self-start">未完成</span>
-      <a href="#" class="text-right text-sm font-extrabold hover:underline">查看 →</a>
+      <div class="text-xs leading-relaxed">
+        <div class="font-bold text-sm text-ink/85">已批改 3 份 · 平均 65% · 最高 72%</div>
+        <div class="text-ink/60">听力 暂无 · 口语 暂无</div>
+      </div>
+      <a href="#" class="text-right text-sm font-extrabold hover:underline">详情 →</a>
     </div>
 
-    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_1.2fr_0.8fr_1fr_0.8fr] gap-2 items-center transition">
+    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_3fr_0.8fr] gap-2 items-center transition">
       <div class="flex items-center gap-3">
         <span class="grid h-9 w-9 place-items-center rounded-full bg-mint-tint border-2 border-ink/10 font-extrabold text-sm">张</span>
         <div>
@@ -4844,13 +4784,14 @@
           <div class="text-xs text-ink/60">zhang.zx@example.com</div>
         </div>
       </div>
-      <span class="pill-tag bg-mint-tint border border-ink/10 !py-1 !px-2.5 !text-xs self-start">今天</span>
-      <div class="font-extrabold text-base">91</div>
-      <span class="pill-tag bg-mint-soft border border-ink/15 !py-1 !px-2.5 !text-xs self-start">完成</span>
-      <a href="#" class="text-right text-sm font-extrabold hover:underline">查看 →</a>
+      <div class="text-xs leading-relaxed">
+        <div class="font-bold text-sm text-ink/85">已批改 7 份 · 平均 91% · 最高 95%</div>
+        <div class="text-ink/60">听力 3 份 · 平均 90% · 口语 2 份 · 平均 92%</div>
+      </div>
+      <a href="#" class="text-right text-sm font-extrabold hover:underline">详情 →</a>
     </div>
 
-    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_1.2fr_0.8fr_1fr_0.8fr] gap-2 items-center transition">
+    <div class="rounded-xl border border-ink/10 hover:border-ink p-3 mb-2 grid grid-cols-[2fr_3fr_0.8fr] gap-2 items-center transition">
       <div class="flex items-center gap-3">
         <span class="grid h-9 w-9 place-items-center rounded-full bg-cream border-2 border-ink/10 font-extrabold text-sm" style="background:#fff7e8">赵</span>
         <div>
@@ -4858,10 +4799,11 @@
           <div class="text-xs text-ink/60">zhao.sq@example.com</div>
         </div>
       </div>
-      <span class="pill-tag bg-mist border border-ink/10 !py-1 !px-2.5 !text-xs self-start">5 天前</span>
-      <div class="font-extrabold text-base">72</div>
-      <span class="pill-tag bg-peach-soft border border-ink/15 !py-1 !px-2.5 !text-xs self-start">未完成</span>
-      <a href="#" class="text-right text-sm font-extrabold hover:underline">查看 →</a>
+      <div class="text-xs leading-relaxed">
+        <div class="font-bold text-sm text-ink/85">已批改 4 份 · 平均 72% · 最高 80%</div>
+        <div class="text-ink/60">听力 1 份 · 平均 68% · 口语 暂无</div>
+      </div>
+      <a href="#" class="text-right text-sm font-extrabold hover:underline">详情 →</a>
     </div>
   </div>
 </section>
