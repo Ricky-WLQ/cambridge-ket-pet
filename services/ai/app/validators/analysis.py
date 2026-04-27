@@ -5,6 +5,10 @@ educational writing. Even with an explicit prompt, deepseek-chat
 sometimes converts '25%' in the input to '25 分（满分 25）' in the
 output — a dangerous misreading that confuses teachers. These
 validators detect common misreadings and let the agent retry.
+
+Score-misreading checks (PCT_AS_POINTS_*, BAD_FULL_MARKS_DENOMINATOR)
+are shared with the diagnose summary validator via the
+``_score_misreading`` helper module.
 """
 
 from __future__ import annotations
@@ -13,6 +17,7 @@ import re
 from dataclasses import dataclass
 
 from app.schemas.analysis import StudentAnalysisRequest, StudentAnalysisResponse
+from app.validators._score_misreading import check_score_misreading
 
 
 @dataclass(frozen=True)
@@ -25,14 +30,6 @@ class AnalysisValidationError:
 _TEACHER_NAME_PATTERN = re.compile(
     r"(王|李|张|刘|陈|杨|赵|吴|周|徐|孙|胡|朱|高|林|郭|何|马|罗|黄)老师"
 )
-
-# '25 分' / '25分' / '25 点' — any bare number followed by 分/点 without a '/N 分'
-# denominator. We still allow '3/5 分' or 'X 分（满分 5 分）' in rubric contexts
-# by excluding patterns that have '/' or '5 分' nearby.
-_POINTS_PATTERN = re.compile(r"(\d{1,3})\s*分(?!\s*（?\s*满分\s*5)")
-
-# '满分 X' where X != 5 is suspicious — only the rubric uses 满分 5 分 meaningfully.
-_BAD_FULL_MARKS_PATTERN = re.compile(r"满分\s*([0-9]+)")
 
 
 def _collect_percentage_scores(req: StudentAnalysisRequest) -> set[int]:
@@ -79,40 +76,16 @@ def validate_student_analysis(
             )
         )
 
-    # (2) Percentage scores mis-written as '分'
+    # (2) + (3) Score-misreading checks (delegated to shared helper).
+    # The helper returns plain strings prefixed with the error code; we
+    # split that prefix back into AnalysisValidationError fields so existing
+    # callers see the same dataclass shape.
     percent_scores = _collect_percentage_scores(req)
-    for score in percent_scores:
-        # Skip 5, which collides with legitimate rubric band scores.
-        if score == 5:
-            continue
-        # Match '25 分' / '25分' / '25 点' but NOT inside '25/5 分' rubric contexts.
-        pattern = re.compile(rf"(?<![0-9/]){score}\s*[分点](?!\s*（?\s*满分\s*5)")
-        if pattern.search(text):
-            errors.append(
-                AnalysisValidationError(
-                    code=f"PCT_AS_POINTS_{score}",
-                    message=(
-                        f"Output writes the percentage score {score}% as "
-                        f"'{score} 分' — must be '{score}%' (it is a 0-100 "
-                        f"scaled percentage, not a raw point total)."
-                    ),
-                )
-            )
-
-    # (3) '满分 X' where X is 25, 40, 50, 100 etc. — no attempt score is out
-    # of those values. Only '满分 5 分' is legal (rubric band).
-    for m in _BAD_FULL_MARKS_PATTERN.finditer(text):
-        denom = int(m.group(1))
-        if denom != 5:
-            errors.append(
-                AnalysisValidationError(
-                    code="BAD_FULL_MARKS_DENOMINATOR",
-                    message=(
-                        f"Output claims '满分 {denom}' — no score in this "
-                        f"system is out of {denom}. Attempt scores are 0-100 "
-                        f"percentages; only rubric bands are out of 5."
-                    ),
-                )
-            )
+    for raw in check_score_misreading(text, percent_scores):
+        # Format produced by the helper is "CODE: message".
+        code, _, msg = raw.partition(": ")
+        errors.append(
+            AnalysisValidationError(code=code, message=msg or raw)
+        )
 
     return errors

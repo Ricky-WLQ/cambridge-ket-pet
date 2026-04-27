@@ -19,6 +19,12 @@ from fastapi import Depends, FastAPI, Header, HTTPException, status
 from pydantic import BaseModel
 
 from app.agents.analysis import analyze_student
+from app.agents.diagnose_analysis import analyze_diagnose
+from app.agents.diagnose_generator import (
+    DiagnoseGenerationError,
+    generate_diagnose_test,
+)
+from app.agents.diagnose_summary import summarize_diagnose
 from app.agents.grammar_generator import run_grammar_generate
 from app.agents.listening_generator import generate_listening_test
 from app.agents.reading import generate_reading_test
@@ -32,6 +38,14 @@ from app.prompts.writing import UnsupportedWritingPart
 from app.schemas.analysis import (
     StudentAnalysisRequest,
     StudentAnalysisResponse,
+)
+from app.schemas.diagnose import (
+    DiagnoseAIGenerateResponse,
+    DiagnoseAnalysisRequest,
+    DiagnoseAnalysisResponse,
+    DiagnoseGenerateRequest,
+    DiagnoseSummaryRequest,
+    DiagnoseSummaryResponse,
 )
 from app.schemas.grammar import (
     GrammarGenerateRequest,
@@ -254,6 +268,54 @@ async def student_analysis(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal error producing student analysis",
         ) from e
+
+
+# ===== Diagnose v2 endpoints =====
+# T11/T12/T13 agents wired up here. /v1/diagnose/generate returns 502 with a
+# {failed_section, message} payload on DiagnoseGenerationError so the
+# apps/web caller can decide whether to retry just the failed section. The
+# analysis and summary endpoints return 500 on any agent failure.
+
+
+@app.post(
+    "/v1/diagnose/generate",
+    response_model=DiagnoseAIGenerateResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def diagnose_generate(req: DiagnoseGenerateRequest) -> DiagnoseAIGenerateResponse:
+    try:
+        return await generate_diagnose_test(req)
+    except DiagnoseGenerationError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail={"failed_section": exc.failed_section, "message": str(exc)[:500]},
+        ) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)[:500]) from exc
+
+
+@app.post(
+    "/v1/diagnose/analysis",
+    response_model=DiagnoseAnalysisResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def diagnose_analysis(req: DiagnoseAnalysisRequest) -> DiagnoseAnalysisResponse:
+    try:
+        return await analyze_diagnose(req)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)[:500]) from exc
+
+
+@app.post(
+    "/v1/diagnose/summary",
+    response_model=DiagnoseSummaryResponse,
+    dependencies=[Depends(verify_internal_auth)],
+)
+async def diagnose_summary(req: DiagnoseSummaryRequest) -> DiagnoseSummaryResponse:
+    try:
+        return await summarize_diagnose(req)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)[:500]) from exc
 
 
 @app.post(

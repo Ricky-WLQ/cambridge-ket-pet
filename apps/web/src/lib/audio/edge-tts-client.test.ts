@@ -77,7 +77,7 @@ describe("synthesizeSegmentWithRetry", () => {
     expect(ttsPromiseMock).toHaveBeenCalledTimes(3);
   }, 10000);
 
-  it("gives up after 3 consecutive failures", async () => {
+  it("gives up after MAX_ATTEMPTS consecutive failures", async () => {
     const econn = new Error("ECONNRESET");
     (econn as NodeJS.ErrnoException).code = "ECONNRESET";
 
@@ -92,6 +92,26 @@ describe("synthesizeSegmentWithRetry", () => {
       })
     ).rejects.toThrow(/ECONNRESET/);
 
+    // We bumped MAX_ATTEMPTS from 3 → 5 to handle longer transient outages
+    // (e.g. Edge-TTS endpoint slowness from China). The exact count here is
+    // an implementation detail; the contract is "retries on transient errors".
+    expect(ttsPromiseMock).toHaveBeenCalledTimes(5);
+  }, 30000);
+
+  it("retries on 'Timed out' error message", async () => {
+    const timed = new Error("Timed out");
+    ttsPromiseMock
+      .mockRejectedValueOnce(timed)
+      .mockRejectedValueOnce(timed)
+      .mockResolvedValueOnce(undefined);
+
+    await synthesizeSegmentWithRetry({
+      text: "Hello.",
+      voiceTag: "proctor",
+      ratePercent: 0,
+      outPath: path.join(tmp, "r3.mp3"),
+    });
+
     expect(ttsPromiseMock).toHaveBeenCalledTimes(3);
-  }, 10000);
+  }, 30000);
 });

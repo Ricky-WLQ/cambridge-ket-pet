@@ -24,6 +24,12 @@ function RunnerLoading() {
 interface Props {
   attemptId: string;
   level: "KET" | "PET";
+  /**
+   * Forwarded to SpeakingRunner — diagnose page passes "/diagnose" so the
+   * post-submit redirect lands on the diagnose hub instead of the regular
+   * practice result page (which 404s on kind=DIAGNOSE attempts).
+   */
+  redirectAfterSubmit?: string;
 }
 
 export function ClientSpeakingRunner(props: Props) {

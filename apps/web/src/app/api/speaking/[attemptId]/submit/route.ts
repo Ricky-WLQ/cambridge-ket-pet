@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { maybeMarkDiagnoseComplete } from "@/lib/diagnose/markComplete";
 import { closeAkoolSession } from "@/lib/speaking/akool-client";
 import { clearTurns, readTurns } from "@/lib/speaking/turn-buffer";
 import {
@@ -78,6 +79,10 @@ export async function POST(req: Request, ctx: RouteCtx) {
       },
     });
     clearTurns(attemptId);
+    // Diagnose mirror — even an empty-transcript attempt counts as
+    // "section finished" for gate-release, otherwise the user is stuck
+    // forever. Mirror as AUTO_SUBMITTED to flag the abnormal exit.
+    await mirrorOntoDiagnose(attempt.testId, "AUTO_SUBMITTED");
     return NextResponse.json({ ok: true });
   }
 
@@ -96,11 +101,56 @@ export async function POST(req: Request, ctx: RouteCtx) {
   });
   clearTurns(attemptId);
 
+  // Diagnose mirror — for diagnose attempts, flip
+  // ``WeeklyDiagnose.speakingStatus`` to SUBMITTED and re-evaluate the
+  // overall complete-state. This is what releases the gate when speaking
+  // is the last section to finish. Async scoring will later flip the
+  // mirror to GRADED via ``runScoringInBackground``.
+  await mirrorOntoDiagnose(attempt.testId, "SUBMITTED");
+
   // Fire scoring asynchronously. We return to the client now; the
   // /status endpoint will surface SCORING -> SCORED / FAILED.
   void runScoringInBackground(attempt.id, attempt.testId, transcript);
 
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * If the speaking attempt's parent Test is ``kind=DIAGNOSE`` and has a
+ * linked WeeklyDiagnose row, write the new section status onto the row's
+ * ``speakingStatus`` mirror and call ``maybeMarkDiagnoseComplete`` to
+ * recompute the overall ``status`` (potentially flipping it to COMPLETE
+ * if all 6 sections are now terminal).
+ *
+ * No-op for non-diagnose tests — those have no ``weeklyDiagnose``
+ * back-relation, so the lookup returns ``null`` and we skip cleanly.
+ *
+ * Errors are swallowed: we never want a Prisma blip during the diagnose
+ * mirror to break the speaking pipeline. Worst case the gate stays
+ * locked one extra request cycle until the next mirror call (e.g., from
+ * the async scoring path).
+ */
+async function mirrorOntoDiagnose(
+  testId: string,
+  newSpeakingStatus: "SUBMITTED" | "GRADED" | "AUTO_SUBMITTED",
+): Promise<void> {
+  try {
+    const test = await prisma.test.findUnique({
+      where: { id: testId },
+      select: {
+        kind: true,
+        weeklyDiagnose: { select: { id: true } },
+      },
+    });
+    if (test?.kind !== "DIAGNOSE" || !test.weeklyDiagnose) return;
+    await prisma.weeklyDiagnose.update({
+      where: { id: test.weeklyDiagnose.id },
+      data: { speakingStatus: newSpeakingStatus },
+    });
+    await maybeMarkDiagnoseComplete(test.weeklyDiagnose.id);
+  } catch (err) {
+    console.warn("speaking → diagnose mirror failed (ignored):", err);
+  }
 }
 
 async function runScoringInBackground(
@@ -141,6 +191,10 @@ async function runScoringInBackground(
         weakPoints: scored.weakPoints as unknown as Prisma.InputJsonValue,
       },
     });
+    // Diagnose mirror — flip from SUBMITTED to GRADED. The maybeMarkComplete
+    // recompute is idempotent so this is safe even if the gate already
+    // released (it short-circuits when status is already COMPLETE).
+    await mirrorOntoDiagnose(testId, "GRADED");
   } catch (err) {
     console.error("scoring failed", err);
     await prisma.testAttempt.update({

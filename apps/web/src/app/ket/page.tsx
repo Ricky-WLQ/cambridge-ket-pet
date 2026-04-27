@@ -4,11 +4,21 @@ import { SiteHeader } from "@/components/SiteHeader";
 import AssignmentList from "@/components/student/AssignmentList";
 import { auth } from "@/lib/auth";
 import { getStudentAssignments } from "@/lib/assignments";
+import { requireUngated } from "@/lib/diagnose/eligibility";
 
 export default async function KetPortalPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
+
+  // Belt-and-suspenders against stale JWT cache: the middleware should have
+  // already redirected gated STUDENTs to /diagnose, but the JWT cache may
+  // be stale (e.g., a teacher tool reset the user's diagnose mid-session,
+  // or this is the first request after generate before update() ran).
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (role === "STUDENT") {
+    await requireUngated(userId); // throws redirect to /diagnose if gated
+  }
 
   const assignments = await getStudentAssignments(userId, { examType: "KET" });
 

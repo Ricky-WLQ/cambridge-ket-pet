@@ -58,6 +58,9 @@ async def generate_writing_test(req: WritingTestRequest) -> WritingTestResponse:
         output_type=WritingTestResponse,
         system_prompt=build_system_prompt(req.exam_type, req.part),
     )
+    # IMPORTANT: pydantic-ai applies model_settings only at agent.run(...)
+    # call time. max_tokens=8000 (under DeepSeek-chat's 8192 ceiling)
+    # is needed for the structured WritingTestResponse.
 
     pinning: list[str] = []
     if req.seed_exam_points:
@@ -74,7 +77,9 @@ async def generate_writing_test(req: WritingTestRequest) -> WritingTestResponse:
         f"Generate a {req.exam_type} Writing Part {req.part} practice task.{pinning_block}"
     )
 
-    result = await agent.run(user_message)
+    result = await agent.run(
+        user_message, model_settings={"max_tokens": 8000}
+    )
     return result.output
 
 
@@ -93,11 +98,14 @@ async def grade_writing_response(req: WritingGradeRequest) -> WritingGradeRespon
             chosen_option=req.chosen_option,
         ),
     )
+    # IMPORTANT: model_settings only applies at agent.run(...) — see below.
     user_message = (
         "Grade the student's response below using the 4 criteria in the system prompt. "
         "Return JSON matching the output schema.\n\n"
         "STUDENT RESPONSE:\n"
         f"{req.student_response}"
     )
-    result = await agent.run(user_message)
+    result = await agent.run(
+        user_message, model_settings={"max_tokens": 8000}
+    )
     return result.output

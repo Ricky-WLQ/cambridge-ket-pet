@@ -43,13 +43,22 @@ interface SessionInit {
 interface Props {
   attemptId: string;
   level: "KET" | "PET";
+  /**
+   * Optional override for the post-submit redirect path. Defaults to
+   * `/${base}/speaking/result/${attemptId}` (the regular practice flow's
+   * result page). The diagnose runner page passes `/diagnose` so a student
+   * lands back on the hub after submitting the speaking section — the
+   * regular result page checks `test.kind === "SPEAKING"` and 404s on
+   * diagnose attempts (kind=DIAGNOSE).
+   */
+  redirectAfterSubmit?: string;
 }
 
 function targetTotalMinutes(parts: SpeakingPart[]) {
   return parts.reduce((a, p) => a + p.targetMinutes, 0);
 }
 
-export function SpeakingRunner({ attemptId, level }: Props) {
+export function SpeakingRunner({ attemptId, level, redirectAfterSubmit }: Props) {
   const [status, setStatus] = useState<SpeakingStatusLabel>("connecting");
   const [remoteUserId, setRemoteUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -111,9 +120,11 @@ export function SpeakingRunner({ attemptId, level }: Props) {
     } finally {
       await sessionRef.current?.close();
       const base = level === "KET" ? "/ket" : "/pet";
-      window.location.href = `${base}/speaking/result/${attemptId}`;
+      const target =
+        redirectAfterSubmit ?? `${base}/speaking/result/${attemptId}`;
+      window.location.href = target;
     }
-  }, [attemptId, level]);
+  }, [attemptId, level, redirectAfterSubmit]);
 
   // One /reply round-trip — snapshot history, call API, push reply to
   // Akool, advance/end as flagged. Only the loop in handleMessage may

@@ -19,6 +19,34 @@ export interface ListeningRunnerProps {
   testId: string;
   mode: "MOCK" | "PRACTICE";
   portal: "ket" | "pet";
+  /**
+   * Optional override for the submit endpoint. Defaults to the existing
+   * `/api/tests/${attemptId}/submit` to preserve current behavior.
+   *
+   * Used by the diagnose runner wrapper to route submissions to
+   * `/api/diagnose/me/section/LISTENING/submit`.
+   */
+  submitUrl?: string;
+  /**
+   * Optional override for the post-submit redirect path. Defaults to the
+   * existing `/${portal}/listening/result/${attemptId}`. The diagnose
+   * runner wrapper passes `/diagnose` so a student lands back on the hub
+   * after a section submit (I3).
+   */
+  redirectAfterSubmit?: string;
+  /**
+   * When true, the runner is rendered in view-only mode — no submit button,
+   * a "练习模式 — 不计分" banner is shown. Used by the diagnose replay page
+   * (I1).
+   */
+  readOnly?: boolean;
+  /**
+   * Optional override for the redirect when audio generation fails. Defaults
+   * to `/${portal}/listening/new` (the regular practice flow). Diagnose
+   * wrapper sets this to `/diagnose` so a student lands back on the hub
+   * instead of the practice-listening start page.
+   */
+  audioFailedRedirect?: string;
 }
 
 type RunnerState = "LOADING" | "READY" | "LISTENING" | "REVIEW" | "SUBMITTING";
@@ -48,7 +76,9 @@ export function ListeningRunner(props: ListeningRunnerProps) {
         setState("READY");
       } else if (data.audioStatus === "FAILED") {
         alert("生成听力测试失败，请重试");
-        router.push(`/${props.portal}/listening/new`);
+        router.push(
+          props.audioFailedRedirect ?? `/${props.portal}/listening/new`,
+        );
       }
     };
     poll();
@@ -58,23 +88,39 @@ export function ListeningRunner(props: ListeningRunnerProps) {
 
   const audioSrc = `/api/listening/${props.attemptId}/audio`;
 
+  // Default preserves existing call-site behavior; diagnose wrapper overrides.
+  const submitUrl =
+    props.submitUrl ?? `/api/tests/${props.attemptId}/submit`;
+  const redirectAfterSubmit = props.redirectAfterSubmit;
+  const readOnly = props.readOnly ?? false;
+
   const submit = useCallback(
     async (forceSubmit = false) => {
       setState("SUBMITTING");
-      const res = await fetch(`/api/tests/${props.attemptId}/submit`, {
+      const res = await fetch(submitUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ answers, forceSubmit }),
       });
       if (res.ok) {
-        router.push(`/${props.portal}/listening/result/${props.attemptId}`);
+        const target =
+          redirectAfterSubmit ??
+          `/${props.portal}/listening/result/${props.attemptId}`;
+        router.push(target);
       } else {
         const data = await res.json();
         alert(data.message ?? "提交失败");
         setState(forceSubmit ? "REVIEW" : "LISTENING");
       }
     },
-    [answers, props.attemptId, props.portal, router],
+    [
+      answers,
+      props.attemptId,
+      props.portal,
+      router,
+      submitUrl,
+      redirectAfterSubmit,
+    ],
   );
 
   if (state === "LOADING" || !payload) {
@@ -164,13 +210,19 @@ export function ListeningRunner(props: ListeningRunnerProps) {
         ))}
       </div>
 
-      <button
-        onClick={() => submit(false)}
-        className="px-6 py-3 bg-blue-600 text-white rounded-lg"
-        disabled={state === "SUBMITTING"}
-      >
-        {isMock && state === "LISTENING" ? "提交" : "立即提交"}
-      </button>
+      {readOnly ? (
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          练习模式 — 不计分
+        </div>
+      ) : (
+        <button
+          onClick={() => submit(false)}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+          disabled={state === "SUBMITTING"}
+        >
+          {isMock && state === "LISTENING" ? "提交" : "立即提交"}
+        </button>
+      )}
     </div>
   );
 }
