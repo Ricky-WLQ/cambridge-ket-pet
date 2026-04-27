@@ -14,6 +14,10 @@ const credentialsSchema = z.object({
 export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  // Required when deployed behind a proxy (Zeabur/Vercel/etc.) — without this,
+  // sign-in throws "UntrustedHost" on the production URL. AUTH_TRUST_HOST=true
+  // env var also works; setting both is belt-and-braces.
+  trustHost: true,
   pages: {
     signIn: "/login",
   },

@@ -172,13 +172,16 @@ export async function createMinaTrtcSession(args: {
     client.on(TRTC.EVENT.KICKED_OUT, args.onDisconnected);
   }
 
+  // TRTC's enterRoom param type omits `role` (it's only valid in live mode),
+  // so we widen the type rather than assert `any`. Akool's pipeline expects
+  // anchor role for the user side; the avatar joins as the other anchor.
   await client.enterRoom({
     sdkAppId: args.credentials.sdkAppId,
     userId: args.credentials.userId,
     userSig: args.credentials.userSig,
     strRoomId: args.credentials.roomId,
     role: "anchor",
-  } as any);
+  } as Parameters<typeof client.enterRoom>[0] & { role: "anchor" });
 
   await client.startLocalAudio();
 
