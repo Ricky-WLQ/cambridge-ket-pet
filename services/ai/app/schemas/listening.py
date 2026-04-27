@@ -55,6 +55,11 @@ class ListeningOption(BaseModel):
     id: str
     text: str | None = None
     image_description: str | None = None
+    # R2 key (e.g., "listening/options/<sha16>.jpg") set by the Node side
+    # AFTER the AI returns the test, NOT by the AI. Listed here only so
+    # JSON round-trips through Pydantic don't drop the field when payloads
+    # are re-validated server-side.
+    image_url: str | None = None
 
 
 class ListeningQuestion(BaseModel):
