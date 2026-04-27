@@ -67,65 +67,70 @@ export default function ReadingNewForm({ examType, initialPart }: Props) {
   const parts = PARTS[examType];
   const cefr = examType === "KET" ? "A2" : "B1";
   const portal = examType === "KET" ? "ket" : "pet";
+  const TILES = ["tile-lavender", "tile-sky", "tile-butter", "tile-peach", "tile-mint", "tile-cream"];
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <Link
         href={`/${portal}`}
-        className="mb-4 inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-900 hover:bg-neutral-100"
+        className="mb-4 inline-flex items-center gap-2 rounded-full bg-ink/5 hover:bg-ink/10 px-3.5 py-1.5 text-sm font-bold text-ink"
       >
         <span aria-hidden>←</span> 返回 {examType} 门户
       </Link>
-      <h1 className="mb-2 text-2xl font-semibold">
-        新建 {examType} 阅读练习
+      <h1 className="mb-1.5 text-3xl font-extrabold">
+        新建 <span className="marker-yellow-thick">{examType} 阅读练习</span>
       </h1>
-      <p className="mb-6 text-sm text-neutral-500">
+      <p className="mb-6 text-base sm:text-lg text-ink/75 leading-relaxed">
         CEFR {cefr} · 选择题目部分与模式，由 AI 即时生成符合真题格式的练习题
       </p>
 
       <div className="mb-6 space-y-2">
-        <div className="text-sm font-medium">选择题目部分</div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {parts.map((p) => (
-            <button
-              key={p.part}
-              type="button"
-              onClick={() => setPart(p.part)}
-              className={`rounded-md border px-4 py-3 text-left transition ${
-                part === p.part
-                  ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-300 hover:border-neutral-900"
-              }`}
-            >
-              <div className="font-medium">{p.label}</div>
-              <div
-                className={`mt-0.5 text-xs ${
-                  part === p.part ? "text-neutral-300" : "text-neutral-500"
+        <div className="text-sm font-extrabold">选择题目部分</div>
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {parts.map((p, idx) => {
+            const tile = TILES[idx % TILES.length];
+            const selected = part === p.part;
+            return (
+              <button
+                key={p.part}
+                type="button"
+                onClick={() => setPart(p.part)}
+                className={`rounded-2xl border-2 px-4 py-3 text-left stitched-card transition ${
+                  selected
+                    ? "bg-ink text-white border-ink"
+                    : `${tile} border-ink/10 hover:border-ink`
                 }`}
               >
-                {p.subtitle}
-              </div>
-            </button>
-          ))}
+                <div className="font-extrabold text-base">{p.label}</div>
+                <div
+                  className={`mt-0.5 text-xs ${
+                    selected ? "text-white/70" : "text-ink/65"
+                  }`}
+                >
+                  {p.subtitle}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="mb-6 space-y-2">
-        <div className="text-sm font-medium">选择模式</div>
-        <div className="flex gap-2">
+        <div className="text-sm font-extrabold">选择模式</div>
+        <div className="flex gap-2.5">
           <button
             type="button"
             onClick={() => setMode("PRACTICE")}
-            className={`flex-1 rounded-md border px-4 py-3 text-left transition ${
+            className={`flex-1 rounded-full border-2 px-4 py-3 text-left transition ${
               mode === "PRACTICE"
-                ? "border-neutral-900 bg-neutral-900 text-white"
-                : "border-neutral-300 hover:border-neutral-900"
+                ? "bg-ink text-white border-ink font-extrabold"
+                : "bg-white text-ink border-ink/15 font-bold hover:bg-ink/5"
             }`}
           >
-            <div className="font-medium">练习模式</div>
+            <div className="font-extrabold text-base">练习模式</div>
             <div
               className={`mt-0.5 text-xs ${
-                mode === "PRACTICE" ? "text-neutral-300" : "text-neutral-500"
+                mode === "PRACTICE" ? "text-white/70" : "text-ink/65"
               }`}
             >
               不计时，提交后即时反馈
@@ -134,16 +139,16 @@ export default function ReadingNewForm({ examType, initialPart }: Props) {
           <button
             type="button"
             onClick={() => setMode("MOCK")}
-            className={`flex-1 rounded-md border px-4 py-3 text-left transition ${
+            className={`flex-1 rounded-full border-2 px-4 py-3 text-left transition ${
               mode === "MOCK"
-                ? "border-neutral-900 bg-neutral-900 text-white"
-                : "border-neutral-300 hover:border-neutral-900"
+                ? "bg-ink text-white border-ink font-extrabold"
+                : "bg-white text-ink border-ink/15 font-bold hover:bg-ink/5"
             }`}
           >
-            <div className="font-medium">模拟考试</div>
+            <div className="font-extrabold text-base">模拟考试</div>
             <div
               className={`mt-0.5 text-xs ${
-                mode === "MOCK" ? "text-neutral-300" : "text-neutral-500"
+                mode === "MOCK" ? "text-white/70" : "text-ink/65"
               }`}
             >
               严格计时，结束后统一批改
@@ -153,7 +158,7 @@ export default function ReadingNewForm({ examType, initialPart }: Props) {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div className="mb-4 rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 font-bold">
           {error}
         </div>
       )}
@@ -162,7 +167,7 @@ export default function ReadingNewForm({ examType, initialPart }: Props) {
         type="button"
         onClick={handleStart}
         disabled={loading || part === null}
-        className="w-full rounded-md bg-neutral-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+        className="w-full rounded-full bg-ink px-5 py-3.5 text-base font-extrabold text-white hover:bg-ink/90 transition disabled:opacity-50"
       >
         {loading ? "生成中…（通常 20-40 秒）" : "开始生成"}
       </button>

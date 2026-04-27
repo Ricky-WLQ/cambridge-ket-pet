@@ -52,73 +52,79 @@ export function NewListeningPicker(props: NewListeningPickerProps) {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">
-        {props.portal.toUpperCase()} · 听力练习
+      <h1 className="text-3xl font-extrabold mb-6">
+        {props.portal.toUpperCase()} · <span className="marker-yellow-thick">听力练习</span>
       </h1>
 
-      <fieldset className="mb-4">
-        <legend className="font-semibold">模式</legend>
-        {(["PRACTICE", "MOCK"] as const).map((m) => (
-          <label key={m} className="mr-4">
-            <input
-              type="radio"
-              name="mode"
-              checked={mode === m}
-              onChange={() => setMode(m)}
-            />{" "}
-            {m === "MOCK" ? "模考" : "练习"}
-          </label>
-        ))}
+      <fieldset className="rounded-2xl bg-white border-2 border-ink/10 p-5 mb-4 stitched-card">
+        <legend className="px-2 text-sm font-extrabold">模式</legend>
+        <div className="flex flex-wrap gap-5 mt-1">
+          {(["PRACTICE", "MOCK"] as const).map((m) => (
+            <label key={m} className="inline-flex items-center gap-2 cursor-pointer text-base">
+              <input
+                type="radio"
+                name="mode"
+                checked={mode === m}
+                onChange={() => setMode(m)}
+              />{" "}
+              <span className={mode === m ? "font-bold" : ""}>{m === "MOCK" ? "模考" : "练习"}</span>
+            </label>
+          ))}
+        </div>
       </fieldset>
 
-      <fieldset className="mb-4">
-        <legend className="font-semibold">范围</legend>
-        <label className="mr-4">
-          <input
-            type="radio"
-            name="scope"
-            checked={scope === "FULL"}
-            onChange={() => setScope("FULL")}
-          />{" "}
-          完整试卷
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="scope"
-            checked={scope === "PART"}
-            onChange={() => setScope("PART")}
-          />{" "}
-          单个部分
-        </label>
+      <fieldset className="rounded-2xl bg-white border-2 border-ink/10 p-5 mb-4 stitched-card">
+        <legend className="px-2 text-sm font-extrabold">范围</legend>
+        <div className="flex flex-wrap gap-5 mt-1">
+          <label className="inline-flex items-center gap-2 cursor-pointer text-base">
+            <input
+              type="radio"
+              name="scope"
+              checked={scope === "FULL"}
+              onChange={() => setScope("FULL")}
+            />{" "}
+            <span className={scope === "FULL" ? "font-bold" : ""}>完整试卷</span>
+          </label>
+          <label className="inline-flex items-center gap-2 cursor-pointer text-base">
+            <input
+              type="radio"
+              name="scope"
+              checked={scope === "PART"}
+              onChange={() => setScope("PART")}
+            />{" "}
+            <span className={scope === "PART" ? "font-bold" : ""}>单个部分</span>
+          </label>
+        </div>
       </fieldset>
 
       {scope === "PART" && (
-        <fieldset className="mb-4">
-          <legend className="font-semibold">部分</legend>
-          {props.parts.map((p) => (
-            <label key={p} className="mr-4">
-              <input
-                type="radio"
-                name="part"
-                checked={part === p}
-                onChange={() => setPart(p)}
-              />{" "}
-              第 {p} 部分
-            </label>
-          ))}
+        <fieldset className="rounded-2xl bg-white border-2 border-ink/10 p-5 mb-6 stitched-card">
+          <legend className="px-2 text-sm font-extrabold">部分</legend>
+          <div className="flex flex-wrap gap-4 mt-1">
+            {props.parts.map((p) => (
+              <label key={p} className="inline-flex items-center gap-2 cursor-pointer text-base">
+                <input
+                  type="radio"
+                  name="part"
+                  checked={part === p}
+                  onChange={() => setPart(p)}
+                />{" "}
+                <span className={part === p ? "font-bold" : ""}>第 {p} 部分</span>
+              </label>
+            ))}
+          </div>
         </fieldset>
       )}
 
       <button
         onClick={start}
         disabled={busy}
-        className="px-6 py-3 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+        className="rounded-full bg-ink text-white text-base font-extrabold px-7 py-3 hover:bg-ink/90 transition disabled:opacity-50"
       >
         {busy ? "生成中..." : "开始"}
       </button>
 
-      {err && <p className="text-red-600 mt-4">{err}</p>}
+      {err && <p className="mt-4 rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 font-bold">{err}</p>}
     </div>
   );
 }
