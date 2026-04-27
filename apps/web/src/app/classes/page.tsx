@@ -28,31 +28,31 @@ export default async function MyClassesPage() {
   });
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
 
       <main className="mx-auto w-full max-w-3xl px-6 py-10">
-        <h1 className="mb-4 text-2xl font-semibold">
-          {t.classes.student.title}
+        <h1 className="mb-4 text-3xl sm:text-4xl font-extrabold leading-[1.1] tracking-tight">
+          <span className="marker-yellow-thick">{t.classes.student.title}</span>
         </h1>
 
         <div className="mb-6 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-neutral-500">快速跳转：</span>
+          <span className="text-xs font-bold text-ink/55">快速跳转：</span>
           <Link
             href="/ket"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full border-2 border-ink/15 bg-white px-3.5 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
           >
             KET 门户
           </Link>
           <Link
             href="/pet"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full border-2 border-ink/15 bg-white px-3.5 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
           >
             PET 门户
           </Link>
           <Link
             href="/history"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full border-2 border-ink/15 bg-white px-3.5 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
           >
             历史记录
           </Link>
@@ -62,7 +62,7 @@ export default async function MyClassesPage() {
 
         <div className="mt-8">
           {memberships.length === 0 ? (
-            <div className="rounded-md border border-dashed border-neutral-300 p-10 text-center text-sm text-neutral-500">
+            <div className="rounded-2xl border-2 border-dashed border-ink/15 bg-white/40 p-10 text-center text-sm font-medium text-ink/55">
               {t.classes.student.empty}
             </div>
           ) : (
@@ -70,17 +70,17 @@ export default async function MyClassesPage() {
               {memberships.map((m) => (
                 <li
                   key={m.class.id}
-                  className="rounded-md border border-neutral-200 p-4"
+                  className="rounded-2xl bg-white border-2 border-ink/10 p-4 stitched-card"
                 >
-                  <div className="font-medium">
+                  <div className="flex items-center gap-2 font-extrabold">
                     {m.class.name}
                     {m.class.examFocus && (
-                      <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                      <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs font-bold text-ink/65">
                         {m.class.examFocus}
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-xs text-neutral-500">
+                  <div className="mt-1 text-xs font-medium text-ink/55">
                     {t.classes.student.teacherLabel}
                     {m.class.teacher.name ?? m.class.teacher.email} ·{" "}
                     {t.classes.student.joinedAt}{" "}
