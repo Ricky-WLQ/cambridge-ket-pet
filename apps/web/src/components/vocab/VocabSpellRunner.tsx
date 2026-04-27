@@ -35,11 +35,13 @@ export default function VocabSpellRunner({ examType }: Props) {
     setBatch(questions); setLoading(false);
   }, [examType, tierFilter, batchSize]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- standard data-fetch effect
   useEffect(() => { loadBatch(); }, [loadBatch]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
     const t = url.searchParams.get("tier");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot URL→state hydration on mount
     if (t === "CORE" || t === "RECOMMENDED" || t === "EXTRA") setTierFilter(t);
   }, []);
 
@@ -49,6 +51,7 @@ export default function VocabSpellRunner({ examType }: Props) {
   // Reset inputs when card changes.
   useEffect(() => {
     if (!cur) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- card-change reset is the synchronization, not a cascade
     setInputs(Array(cur.fb.answers.length).fill(""));
     setSubmitted(false); setRevealedAnswer(false);
     inputRefs.current = Array(cur.fb.answers.length).fill(null);
@@ -119,37 +122,43 @@ export default function VocabSpellRunner({ examType }: Props) {
     audioRef.current.play().catch(() => { /* ignore */ });
   };
 
-  if (loading) return <div className="mx-auto max-w-2xl px-6 py-12 text-center text-neutral-400">加载中...</div>;
-  if (!cur) return <div className="mx-auto max-w-2xl px-6 py-12 text-center text-neutral-400">暂无单词。</div>;
+  if (loading) return <div className="mx-auto max-w-2xl px-6 py-12 text-center text-ink/40 font-bold">加载中...</div>;
+  if (!cur) return <div className="mx-auto max-w-2xl px-6 py-12 text-center text-ink/40 font-bold">暂无单词。</div>;
 
   let blankCounter = -1;
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-8">
-      <div className="mb-4 flex items-center justify-between text-sm text-neutral-500">
-        <Link href={`/${examType.toLowerCase()}/vocab`} className="hover:text-neutral-900">← 词汇主页</Link>
+    <div className="mx-auto w-full max-w-3xl flex flex-col gap-4">
+      <div className="flex items-center justify-between text-sm text-ink/65">
+        <Link href={`/${examType.toLowerCase()}/vocab`} className="font-bold hover:text-ink transition">← 词汇主页</Link>
         <div className="flex items-center gap-3 text-xs">
-          <label>等级: <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value as WordTier | "ALL")} className="rounded border border-neutral-300 px-1">
+          <label className="font-bold">等级: <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value as WordTier | "ALL")} className="ml-1 rounded border-2 border-ink/15 px-1 py-0.5 font-bold">
             <option value="ALL">全部</option><option value="CORE">必修</option><option value="RECOMMENDED">推荐</option><option value="EXTRA">拓展</option>
           </select></label>
-          <label>批量: <select value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} className="rounded border border-neutral-300 px-1">
+          <label className="font-bold">批量: <select value={batchSize} onChange={(e) => setBatchSize(Number(e.target.value))} className="ml-1 rounded border-2 border-ink/15 px-1 py-0.5 font-bold">
             <option value={10}>10</option><option value={20}>20</option><option value={30}>30</option><option value={50}>50</option>
           </select></label>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-neutral-300 bg-white p-8 text-center">
-        <div className="mb-2 text-xs text-neutral-400">第 {idx + 1} / {batch.length}</div>
-        <button onClick={playAudio} className="mb-3 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700">🔊 播放发音</button>
-        <div className="mb-2 text-base text-neutral-700"><span className="mr-1 italic text-neutral-500">{cur.word.pos}</span>{cur.word.glossZh}</div>
+      <div className="rounded-3xl bg-white border-2 border-ink/10 p-8 text-center stitched-card">
+        <div className="mb-3 text-xs font-bold text-ink/40">第 {idx + 1} / {batch.length}</div>
+        <button
+          onClick={playAudio}
+          className="mb-4 grid h-20 w-20 mx-auto place-items-center rounded-full bg-lavender-soft border-2 border-ink/15 hover:bg-lavender transition text-2xl"
+          aria-label="播放发音"
+        >
+          🔊
+        </button>
+        <div className="mb-3 text-base font-medium text-ink/85"><span className="mr-1 italic text-ink/55">{cur.word.pos}</span>{cur.word.glossZh}</div>
         {cur.word.example && (
-          <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm italic text-neutral-600">
+          <div className="mb-3 rounded-xl border-2 border-ink/10 bg-ink/[0.02] px-3 py-2 text-sm italic text-ink/65">
             {cur.word.example.replace(new RegExp(`\\b${cur.word.word}\\w*\\b`, "gi"), "____")}
           </div>
         )}
-        <div className="my-4 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+        <div className="my-4 rounded-xl border-2 border-ink/10 tile-cream p-4">
           {cur.fb.segments.map((seg, i) => {
             if (seg.kind === "letter") {
-              return <span key={i} className="px-0.5 font-mono text-xl text-neutral-600">{seg.letter}</span>;
+              return <span key={i} className="px-0.5 font-mono text-2xl font-extrabold text-ink/85">{seg.letter}</span>;
             }
             // it's a blank — render seg.length inputs
             return Array.from({ length: seg.length }, (_, k) => {
@@ -166,34 +175,34 @@ export default function VocabSpellRunner({ examType }: Props) {
                     onChange={(e) => handleInputChange(myIdx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(myIdx, e)}
                     disabled={submitted}
-                    className={`mx-px h-9 w-7 rounded border bg-white text-center font-mono text-xl ${
+                    className={`mx-px h-10 w-8 rounded border-2 bg-white text-center font-mono text-2xl font-extrabold focus:outline-none transition ${
                       submitted
-                        ? showCorrect ? "border-red-500 text-red-700" : "border-green-600 text-green-700"
-                        : "border-neutral-400"
+                        ? showCorrect ? "border-red-500 text-red-700" : "border-emerald-600 text-emerald-700"
+                        : "border-ink/40 focus:border-ink"
                     }`}
                   />
-                  {showCorrect && <span className="mt-0.5 block text-xs text-red-600">{cur.fb.answers[myIdx]}</span>}
+                  {showCorrect && <span className="mt-0.5 block text-xs font-bold text-red-600">{cur.fb.answers[myIdx]}</span>}
                 </span>
               );
             });
           })}
         </div>
         {submitted && (
-          <div className={`mt-2 text-sm ${isCorrect ? "text-green-700" : "text-red-700"}`}>
+          <div className={`mt-2 text-sm font-extrabold ${isCorrect ? "text-emerald-700" : "text-red-700"}`}>
             {isCorrect ? "✓ 正确" : `× 正确答案：${cur.word.word}`}
           </div>
         )}
       </div>
 
-      <div className="mt-5 flex flex-wrap justify-center gap-2">
-        <button onClick={playAudio} className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm hover:border-neutral-900">🔊 再听</button>
+      <div className="flex flex-wrap justify-center gap-2">
+        <button onClick={playAudio} className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold hover:bg-ink/5 transition">🔊 再听</button>
         {!submitted ? (
           <>
-            <button onClick={submit} className="rounded-md border border-green-600 bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700">✓ 提交 (Enter)</button>
-            <button onClick={reveal} className="rounded-md border border-amber-600 bg-white px-4 py-2 text-sm text-amber-700 hover:bg-amber-50">显示答案</button>
+            <button onClick={submit} className="rounded-full border-2 border-emerald-600 bg-emerald-600 px-5 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 transition">✓ 提交 (Enter)</button>
+            <button onClick={reveal} className="rounded-full border-2 border-amber-600 bg-white px-4 py-2 text-sm font-bold text-amber-700 hover:bg-amber-50 transition">显示答案</button>
           </>
         ) : (
-          <button onClick={advance} className="rounded-md border border-neutral-900 bg-neutral-900 px-4 py-2 text-sm text-white">下一个 →</button>
+          <button onClick={advance} className="rounded-full bg-ink text-white px-5 py-2 text-sm font-extrabold hover:bg-ink/90 transition">下一个 →</button>
         )}
       </div>
 

@@ -7,18 +7,18 @@ interface Props {
 }
 
 export function MCQOption({ letter, text, state, disabled, onClick }: Props) {
-  const baseClass = "flex w-full items-center gap-3 rounded-md border px-4 py-3 text-left text-sm transition";
+  const baseClass = "w-full text-left rounded-xl border-2 px-3.5 py-2.5 transition flex items-center gap-3";
   const stateClass = {
-    default: "border-neutral-300 bg-white hover:border-neutral-900 hover:shadow-sm",
-    selected: "border-blue-600 bg-blue-50 text-blue-900",
-    correct: "border-green-600 bg-green-50 text-green-900",
-    wrong: "border-red-600 bg-red-50 text-red-900",
+    default: "border-ink/10 hover:border-ink",
+    selected: "bg-butter-tint border-ink",
+    correct: "bg-mint-tint border-emerald-600 text-emerald-900",
+    wrong: "bg-peach-tint border-red-600 text-red-900",
   }[state];
   const letterClass = {
-    default: "border-neutral-300 bg-neutral-50 text-neutral-700",
-    selected: "border-blue-600 bg-blue-100 text-blue-900",
-    correct: "border-green-600 bg-green-100 text-green-900",
-    wrong: "border-red-600 bg-red-100 text-red-900",
+    default: "bg-ink/5",
+    selected: "bg-ink text-white",
+    correct: "bg-emerald-600 text-white",
+    wrong: "bg-red-600 text-white",
   }[state];
 
   return (
@@ -28,10 +28,10 @@ export function MCQOption({ letter, text, state, disabled, onClick }: Props) {
       onClick={onClick}
       className={`${baseClass} ${stateClass} ${disabled ? "cursor-not-allowed opacity-90" : "cursor-pointer"}`}
     >
-      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-semibold ${letterClass}`}>
+      <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-md font-extrabold text-xs ${letterClass}`}>
         {letter}
       </span>
-      <span className="flex-1">{text}</span>
+      <span className={`flex-1 text-base ${state === "selected" ? "font-extrabold" : "font-bold"}`}>{text}</span>
     </button>
   );
 }

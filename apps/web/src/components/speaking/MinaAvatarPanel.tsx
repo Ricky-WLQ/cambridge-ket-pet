@@ -16,10 +16,10 @@ export function MinaAvatarPanel({ remoteUserId }: Props) {
     <div
       ref={viewRef}
       id="mina-video"
-      className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-neutral-950 md:aspect-[4/5]"
+      className="relative aspect-[3/4] w-full max-w-[480px] overflow-hidden rounded-3xl bg-ink stitched-card border-2 border-ink/10 md:aspect-[4/5]"
     >
       {!remoteUserId && (
-        <div className="absolute inset-0 grid place-items-center text-neutral-500 text-sm">
+        <div className="absolute inset-0 grid place-items-center text-neutral-400 text-sm font-bold">
           正在加载 Mina…
         </div>
       )}

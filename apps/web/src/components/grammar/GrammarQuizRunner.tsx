@@ -103,13 +103,13 @@ export default function GrammarQuizRunner({ examType }: Props) {
   };
 
   if (loading) {
-    return <div className="mx-auto max-w-2xl px-6 py-12 text-center text-neutral-400">加载中...</div>;
+    return <div className="mx-auto max-w-2xl px-6 py-12 text-center text-ink/40 font-bold">加载中...</div>;
   }
   if (!cur) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-12 text-center">
-        <p className="text-neutral-500">该主题暂无题目。</p>
-        <Link href={`/${examType.toLowerCase()}/grammar`} className="mt-4 inline-block text-sm text-blue-600 hover:underline">
+        <p className="text-ink/65 font-bold">该主题暂无题目。</p>
+        <Link href={`/${examType.toLowerCase()}/grammar`} className="mt-4 inline-block text-sm font-bold text-ink hover:underline">
           返回语法主页
         </Link>
       </div>
@@ -120,79 +120,99 @@ export default function GrammarQuizRunner({ examType }: Props) {
   const userIsCorrect = selectedAnswer === cur.correctIndex;
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-6 py-8">
-      <div className="mb-4 flex items-center justify-between text-sm text-neutral-500">
-        <Link href={`/${examType.toLowerCase()}/grammar`} className="hover:text-neutral-900">← 语法主页</Link>
-        <span>第 {idx + 1} / {questions.length} 题</span>
-      </div>
-
-      <div className="rounded-2xl border border-neutral-300 bg-white p-6">
-        <div className="mb-3 flex items-center gap-2 text-xs">
-          <span className="rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 font-medium text-blue-700">
-            {topicLabel}
-          </span>
-        </div>
-
-        <div className="mb-5 h-1 overflow-hidden rounded-full bg-neutral-200">
-          <div className="h-full bg-blue-600 transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
-        </div>
-
-        <p className="mb-5 text-base text-neutral-900 leading-relaxed">{cur.question}</p>
-
-        <div className="space-y-2">
-          {cur.options.map((text, i) => {
-            let state: "default" | "selected" | "correct" | "wrong" = "default";
-            if (submitted) {
-              if (i === cur.correctIndex) state = "correct";
-              else if (i === selectedAnswer) state = "wrong";
-            } else if (i === selectedAnswer) {
-              state = "selected";
-            }
-            return (
-              <MCQOption
-                key={i}
-                letter={LETTERS[i]}
-                text={text}
-                state={state}
-                disabled={submitted}
-                onClick={() => handleOptionClick(i)}
-              />
-            );
-          })}
-        </div>
-
-        {submitted && (
-          <div className={`mt-5 rounded-md border p-3 text-sm ${userIsCorrect ? "border-green-300 bg-green-50 text-green-900" : "border-amber-300 bg-amber-50 text-amber-900"}`}>
-            <div className="mb-1 font-semibold">{userIsCorrect ? "✓ 正确" : "× 答错了"}</div>
-            <div>{cur.explanationZh}</div>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-5 flex justify-between">
-        <button
-          onClick={prev}
-          disabled={idx === 0}
-          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm hover:border-neutral-900 disabled:opacity-30"
-        >
-          ← 上一题
-        </button>
-        {isLast && submitted ? (
+    <div className="page-section locked-height">
+      <div className="site-header">
+        <div className="flex items-center gap-2.5">
           <Link
             href={`/${examType.toLowerCase()}/grammar`}
-            className="rounded-md border border-neutral-900 bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-800"
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
-            完成 ✓
+            ← 语法主页
           </Link>
-        ) : (
-          <button
-            onClick={advance}
-            disabled={!submitted}
-            className="rounded-md border border-blue-600 bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-30"
-          >
-            下一题 →
-          </button>
-        )}
+        </div>
+        <div className="flex items-center gap-2.5">
+          <div className="rounded-full bg-mint-tint border-2 border-ink/10 px-4 py-2 text-sm font-extrabold">
+            第 <span className="font-mono">{idx + 1}</span> / <span className="font-mono">{questions.length}</span> 题
+          </div>
+        </div>
+      </div>
+
+      <div className="grow-fill flex items-center justify-center min-h-0 overflow-y-auto py-4">
+        <div className="w-full max-w-2xl flex flex-col gap-4">
+          <div className="relative w-full">
+            <div aria-hidden className="absolute inset-0 translate-x-3 translate-y-3 rounded-[28px] bg-butter-soft -z-10"></div>
+            <div className="rounded-[28px] bg-white border-2 border-ink/10 p-6 sm:p-8 stitched-card flex flex-col gap-5">
+              <div className="flex items-center gap-2">
+                <span className="pill-tag bg-sky-tint border-2 border-ink/10">
+                  {topicLabel}
+                </span>
+              </div>
+
+              <div className="h-1.5 w-full rounded-full bg-mist border border-ink/10 overflow-hidden">
+                <div className="h-full bg-ink rounded-full transition-all" style={{ width: `${((idx + 1) / questions.length) * 100}%` }} />
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-extrabold leading-snug text-ink/90">
+                {cur.question}
+              </h2>
+
+              <div className="space-y-2.5">
+                {cur.options.map((text, i) => {
+                  let state: "default" | "selected" | "correct" | "wrong" = "default";
+                  if (submitted) {
+                    if (i === cur.correctIndex) state = "correct";
+                    else if (i === selectedAnswer) state = "wrong";
+                  } else if (i === selectedAnswer) {
+                    state = "selected";
+                  }
+                  return (
+                    <MCQOption
+                      key={i}
+                      letter={LETTERS[i]}
+                      text={text}
+                      state={state}
+                      disabled={submitted}
+                      onClick={() => handleOptionClick(i)}
+                    />
+                  );
+                })}
+              </div>
+
+              {submitted && (
+                <div className={`rounded-2xl border-2 p-3 text-sm ${userIsCorrect ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-amber-300 bg-amber-50 text-amber-900"}`}>
+                  <div className="mb-1 font-extrabold">{userIsCorrect ? "✓ 正确" : "× 答错了"}</div>
+                  <div className="font-medium">{cur.explanationZh}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <button
+              onClick={prev}
+              disabled={idx === 0}
+              className="rounded-full bg-white border-2 border-ink/15 text-base font-extrabold px-6 py-3 hover:border-ink transition disabled:opacity-30 flex items-center gap-2"
+            >
+              <span aria-hidden>←</span> 上一题
+            </button>
+            {isLast && submitted ? (
+              <Link
+                href={`/${examType.toLowerCase()}/grammar`}
+                className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-3 hover:bg-ink/90 transition"
+              >
+                完成 ✓
+              </Link>
+            ) : (
+              <button
+                onClick={advance}
+                disabled={!submitted}
+                className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-3 hover:bg-ink/90 transition disabled:opacity-30 flex items-center gap-2"
+              >
+                下一题 <span aria-hidden>→</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -83,19 +83,23 @@ export function ListeningRunner(props: ListeningRunnerProps) {
 
   if (state === "READY") {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold mb-4">准备开始</h2>
-        <p className="mb-2">
-          {props.mode === "MOCK"
-            ? "点击开始后，30 分钟倒计时开始。音频将播放两次，不可暂停、不可倒放。最后 6 分钟为检查和提交时间。"
-            : "练习模式 — 无时间限制，音频可自由重播。"}
-        </p>
-        <button
-          className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg"
-          onClick={() => setState("LISTENING")}
-        >
-          开始
-        </button>
+      <div className="page-section">
+        <div className="mx-auto max-w-3xl w-full px-1 py-8">
+          <div className="rounded-3xl bg-white border-2 border-ink/10 p-8 stitched-card">
+            <h2 className="text-2xl font-extrabold mb-4">准备开始</h2>
+            <p className="mb-4 text-base leading-relaxed text-ink/80">
+              {props.mode === "MOCK"
+                ? "点击开始后，30 分钟倒计时开始。音频将播放两次，不可暂停、不可倒放。最后 6 分钟为检查和提交时间。"
+                : "练习模式 — 无时间限制，音频可自由重播。"}
+            </p>
+            <button
+              className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-3 hover:bg-ink/90 transition"
+              onClick={() => setState("LISTENING")}
+            >
+              开始
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -103,74 +107,85 @@ export function ListeningRunner(props: ListeningRunnerProps) {
   const isMock = props.mode === "MOCK";
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      {isMock && (
-        <div className="flex items-center justify-between mb-4">
-          <span className="font-semibold">
-            {state === "REVIEW" ? "检查并提交" : "听力进行中"}
-          </span>
-          <TimerBadge
-            attemptId={props.attemptId}
-            onAutoSubmit={() => submit(true)}
-            phase={state === "REVIEW" ? "REVIEW" : "LISTENING"}
-          />
+    <div className="page-section locked-height">
+      <div className="site-header">
+        <div className="flex items-center gap-2.5">
+          <div className="leading-tight">
+            <div className="text-base font-extrabold">
+              {state === "REVIEW" ? "检查并提交" : "听力进行中"}
+            </div>
+          </div>
         </div>
-      )}
-      <PhaseBanner phase={state === "REVIEW" ? "REVIEW" : "LISTENING"} />
-
-      <AudioPlayer
-        src={audioSrc}
-        segments={segments}
-        autoPlay={isMock}
-        controls={{
-          playPause: !isMock,
-          scrub: !isMock,
-          skip10: !isMock,
-          speed: !isMock,
-          perSegmentReplay: !isMock,
-        }}
-        onSegmentChange={setCurrentSegmentId}
-        onEnded={() => {
-          if (isMock) setState("REVIEW");
-        }}
-      />
-
-      {!isMock && (
-        <TapescriptPanel
-          parts={payload.parts}
-          segments={segments}
-          currentSegmentId={currentSegmentId}
-          canToggle={true}
-          defaultOpen={false}
-        />
-      )}
-
-      <div className="mt-6">
-        {payload.parts.map((part) => (
-          <section key={part.partNumber} className="mb-8">
-            <h3 className="text-xl font-semibold mb-2">
-              第 {part.partNumber} 部分 · {part.instructionZh}
-            </h3>
-            {part.questions.map((q) => (
-              <QuestionRenderer
-                key={q.id}
-                question={q}
-                value={answers[q.id]}
-                onChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))}
-                disabled={false}
-              />
-            ))}
-          </section>
-        ))}
+        <div className="flex items-center gap-2.5">
+          {isMock && (
+            <TimerBadge
+              attemptId={props.attemptId}
+              onAutoSubmit={() => submit(true)}
+              phase={state === "REVIEW" ? "REVIEW" : "LISTENING"}
+            />
+          )}
+          <button
+            onClick={() => submit(false)}
+            className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-2.5 hover:bg-ink/90 transition disabled:opacity-50"
+            disabled={state === "SUBMITTING"}
+          >
+            {isMock && state === "LISTENING" ? "提交" : "立即提交"}
+          </button>
+        </div>
       </div>
 
-      <button
-        onClick={() => submit(false)}
-        className="px-6 py-3 bg-blue-600 text-white rounded-lg"
-        disabled={state === "SUBMITTING"}
-      >
-        {isMock && state === "LISTENING" ? "提交" : "立即提交"}
-      </button>
+      <div className="grow-fill min-h-0 overflow-y-auto pr-1">
+        <div className="mx-auto max-w-3xl space-y-4">
+          <PhaseBanner phase={state === "REVIEW" ? "REVIEW" : "LISTENING"} />
+
+          <AudioPlayer
+            src={audioSrc}
+            segments={segments}
+            autoPlay={isMock}
+            controls={{
+              playPause: !isMock,
+              scrub: !isMock,
+              skip10: !isMock,
+              speed: !isMock,
+              perSegmentReplay: !isMock,
+            }}
+            onSegmentChange={setCurrentSegmentId}
+            onEnded={() => {
+              if (isMock) setState("REVIEW");
+            }}
+          />
+
+          {!isMock && (
+            <TapescriptPanel
+              parts={payload.parts}
+              segments={segments}
+              currentSegmentId={currentSegmentId}
+              canToggle={true}
+              defaultOpen={false}
+            />
+          )}
+
+          {payload.parts.map((part) => (
+            <section
+              key={part.partNumber}
+              className="rounded-2xl bg-white border-2 border-ink/10 p-5 stitched-card"
+            >
+              <h3 className="text-xl font-extrabold mb-3">
+                第 {part.partNumber} 部分 · {part.instructionZh}
+              </h3>
+              {part.questions.map((q) => (
+                <QuestionRenderer
+                  key={q.id}
+                  question={q}
+                  value={answers[q.id]}
+                  onChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))}
+                  disabled={false}
+                />
+              ))}
+            </section>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
