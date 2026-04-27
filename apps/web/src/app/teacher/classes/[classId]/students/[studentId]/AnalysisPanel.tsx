@@ -59,35 +59,40 @@ export default function AnalysisPanel({
   }
 
   return (
-    <div className="rounded-md border border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-purple-50/50 p-5">
+    <div
+      className="rounded-3xl border-2 border-ink/10 p-6 stitched-card"
+      style={{
+        background: "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
+      }}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="flex items-center gap-2 text-base font-semibold text-indigo-900">
+          <h3 className="flex items-center gap-2 text-base font-extrabold text-ink">
             <span
-              className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white"
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs font-extrabold text-white"
               aria-hidden
             >
               AI
             </span>
             AI 教研分析
           </h3>
-          <p className="mt-0.5 text-xs text-indigo-700/80">
+          <p className="mt-0.5 text-xs font-medium text-ink/70">
             基于学生 {studentName} 的近期作答，综合考点分布与错题，由 AI 老师给出诊断建议
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-md border border-indigo-300">
+          <div className="flex overflow-hidden rounded-full border-2 border-ink/15">
             {(["ALL", "KET", "PET"] as const).map((f) => (
               <button
                 key={f}
                 type="button"
                 onClick={() => setFocus(f)}
                 disabled={loading}
-                className={`px-2.5 py-1 text-xs font-medium transition ${
+                className={`px-2.5 py-1 text-xs font-bold transition ${
                   focus === f
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-indigo-700 hover:bg-indigo-50"
-                } ${f !== "ALL" ? "border-l border-indigo-300" : ""}`}
+                    ? "bg-ink text-white"
+                    : "bg-white text-ink hover:bg-ink/5"
+                } ${f !== "ALL" ? "border-l-2 border-ink/15" : ""}`}
               >
                 {f === "ALL" ? "全部" : f}
               </button>
@@ -97,7 +102,7 @@ export default function AnalysisPanel({
             type="button"
             onClick={run}
             disabled={loading}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
+            className="rounded-full bg-ink px-3 py-1.5 text-sm font-extrabold text-white transition hover:bg-ink/90 disabled:opacity-60"
           >
             {loading
               ? "分析中…（通常 15-30 秒）"
@@ -109,21 +114,21 @@ export default function AnalysisPanel({
       </div>
 
       {error && (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-4 rounded-xl border-2 border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
           {error}
         </div>
       )}
 
       {loading && !analysis && (
         <div className="mt-4 space-y-2">
-          <div className="h-4 w-2/5 animate-pulse rounded bg-indigo-100" />
-          <div className="h-3 w-4/5 animate-pulse rounded bg-indigo-100" />
-          <div className="h-3 w-3/5 animate-pulse rounded bg-indigo-100" />
+          <div className="h-4 w-2/5 animate-pulse rounded bg-ink/10" />
+          <div className="h-3 w-4/5 animate-pulse rounded bg-ink/10" />
+          <div className="h-3 w-3/5 animate-pulse rounded bg-ink/10" />
         </div>
       )}
 
       {!loading && !analysis && !error && (
-        <div className="mt-4 text-sm text-indigo-800/70">
+        <div className="mt-4 text-sm font-medium text-ink/75">
           点击右上方按钮开始生成。AI 会结合学生的成绩走势、写作四项能力平均、高频错误考点，给出四部分诊断：优势、薄弱点、重点练习方向、综合评语。
         </div>
       )}
@@ -133,31 +138,29 @@ export default function AnalysisPanel({
           <Section
             title="优势"
             items={analysis.strengths}
-            accent="bg-green-100 text-green-900 border-green-200"
+            accent="bg-mint-tint border-2 border-ink/10"
             badgeColor="bg-green-600"
           />
           <Section
             title="薄弱点"
             items={analysis.weaknesses}
-            accent="bg-amber-100 text-amber-900 border-amber-200"
+            accent="bg-butter-tint border-2 border-ink/10"
             badgeColor="bg-amber-600"
           />
           <Section
             title="重点练习方向"
             items={analysis.priority_actions}
-            accent="bg-blue-100 text-blue-900 border-blue-200"
+            accent="bg-sky-tint border-2 border-ink/10"
             badgeColor="bg-blue-600"
           />
-          <div className="rounded-md border border-indigo-200 bg-white p-4">
-            <div className="mb-2 text-sm font-semibold text-indigo-900">
-              综合评语
-            </div>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
+          <div className="rounded-2xl border-2 border-ink/10 bg-white p-4 stitched-card">
+            <div className="mb-2 text-sm font-extrabold text-ink">综合评语</div>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
               {analysis.narrative_zh}
             </p>
           </div>
           {generatedAt && (
-            <div className="text-right text-[11px] text-indigo-700/60">
+            <div className="text-right text-[11px] font-medium text-ink/55">
               生成于 {generatedAt.toLocaleString("zh-CN")} · 分析仅供参考，请结合你对学生的判断使用
             </div>
           )}
@@ -180,8 +183,8 @@ function Section({
 }) {
   if (items.length === 0) return null;
   return (
-    <div className={`rounded-md border p-4 ${accent}`}>
-      <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+    <div className={`rounded-2xl p-4 ${accent}`}>
+      <div className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
         <span
           className={`inline-block h-2 w-2 rounded-full ${badgeColor}`}
           aria-hidden
@@ -191,7 +194,7 @@ function Section({
       <ul className="space-y-1.5 text-sm leading-relaxed">
         {items.map((s, i) => (
           <li key={i} className="flex gap-2">
-            <span className="shrink-0 text-neutral-400">{i + 1}.</span>
+            <span className="shrink-0 text-ink/40">{i + 1}.</span>
             <span>{s}</span>
           </li>
         ))}

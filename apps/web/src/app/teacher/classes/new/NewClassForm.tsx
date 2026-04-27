@@ -45,22 +45,22 @@ export default function NewClassForm() {
 
   if (created) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="page-section flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm space-y-6">
-          <div className="rounded-md bg-green-50 p-4 text-center text-sm text-green-700">
+          <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-4 text-center text-sm font-bold text-green-700">
             ✓ 班级 <strong>{created.name}</strong> 创建成功
           </div>
-          <div className="space-y-2 rounded-md border border-neutral-300 p-4 text-center">
-            <div className="text-sm text-neutral-500">邀请码</div>
-            <div className="font-mono text-2xl font-bold tracking-widest">
+          <div className="space-y-2 rounded-2xl bg-white border-2 border-ink/10 p-4 text-center stitched-card">
+            <div className="text-sm font-bold text-ink/60">邀请码</div>
+            <div className="font-mono text-2xl font-extrabold tracking-widest">
               {created.inviteCode}
             </div>
-            <div className="text-xs text-neutral-400">分享此邀请码给你的学生</div>
+            <div className="text-xs text-ink/50">分享此邀请码给你的学生</div>
           </div>
           <div className="flex gap-2">
             <Link
               href="/teacher/classes"
-              className="flex-1 rounded-md border border-neutral-300 px-4 py-2 text-center text-sm hover:bg-neutral-100"
+              className="flex-1 rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-center text-sm font-bold hover:bg-ink/5 transition"
             >
               查看全部班级
             </Link>
@@ -71,7 +71,7 @@ export default function NewClassForm() {
                 setName("");
                 setExamFocus("");
               }}
-              className="flex-1 rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-700"
+              className="flex-1 rounded-full bg-ink px-4 py-2 text-sm font-extrabold text-white hover:bg-ink/90 transition"
             >
               再创建一个
             </button>
@@ -82,18 +82,20 @@ export default function NewClassForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="page-section flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold">创建班级</h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            <span className="marker-yellow-thick">创建班级</span>
+          </h1>
+          <p className="mt-2 text-base sm:text-lg text-ink/75 leading-relaxed">
             创建后，邀请码可用于学生加入
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label htmlFor="name" className="block text-sm font-medium">
+            <label htmlFor="name" className="block text-sm font-bold">
               班级名称
             </label>
             <input
@@ -104,13 +106,13 @@ export default function NewClassForm() {
               required
               maxLength={100}
               autoFocus
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
               placeholder="例如：2026 春季 KET"
             />
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="examFocus" className="block text-sm font-medium">
+            <label htmlFor="examFocus" className="block text-sm font-bold">
               考试重点（可选）
             </label>
             <select
@@ -119,7 +121,7 @@ export default function NewClassForm() {
               onChange={(e) =>
                 setExamFocus(e.target.value as "" | "KET" | "PET")
               }
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-2xl border-2 border-ink/15 bg-white px-4 py-3 text-base font-medium focus:border-ink outline-none transition"
             >
               <option value="">不限（KET / PET 均可）</option>
               <option value="KET">KET</option>
@@ -128,7 +130,7 @@ export default function NewClassForm() {
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+            <div className="rounded-xl border-2 border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
               {error}
             </div>
           )}
@@ -136,7 +138,7 @@ export default function NewClassForm() {
           <button
             type="submit"
             disabled={loading || name.trim().length === 0}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+            className="w-full rounded-full bg-ink px-4 py-3 text-base font-extrabold text-white hover:bg-ink/90 transition disabled:opacity-50"
           >
             {loading ? "创建中…" : "创建班级"}
           </button>
@@ -145,7 +147,7 @@ export default function NewClassForm() {
         <div className="text-center text-sm">
           <Link
             href="/teacher/classes"
-            className="text-neutral-500 hover:text-neutral-700"
+            className="font-bold text-ink/60 hover:text-ink transition"
           >
             ← 返回班级列表
           </Link>

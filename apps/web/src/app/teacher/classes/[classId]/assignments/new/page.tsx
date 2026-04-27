@@ -31,17 +31,19 @@ export default async function NewAssignmentPage({
   if (!cls || cls.teacherId !== userId) notFound();
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
       <main className="mx-auto w-full max-w-2xl px-6 py-10">
         <Link
           href={`/teacher/classes/${cls.id}`}
-          className="inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-900 hover:bg-neutral-100"
+          className="inline-flex items-center gap-1 rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold text-ink hover:bg-ink/5 transition"
         >
           <span aria-hidden>←</span> 返回 {cls.name}
         </Link>
-        <h1 className="mt-4 text-2xl font-semibold">布置新作业</h1>
-        <p className="mt-1 text-sm text-neutral-500">
+        <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">
+          <span className="marker-yellow-thick">布置新作业</span>
+        </h1>
+        <p className="mt-1 text-base sm:text-lg text-ink/75 leading-relaxed">
           作业由学生在对应门户完成，系统根据答卷自动标记完成状态
         </p>
         <div className="mt-6">

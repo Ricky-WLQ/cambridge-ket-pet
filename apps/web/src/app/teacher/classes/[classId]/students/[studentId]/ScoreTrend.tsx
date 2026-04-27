@@ -121,32 +121,30 @@ export default function ScoreTrend({ attempts, classId, studentId }: Props) {
             const isListening = kind === "LISTENING";
             const isActive = filter === b.key;
             const className = isActive
-              ? isListening
-                ? "border-purple-700 bg-purple-700 text-white"
-                : "border-neutral-900 bg-neutral-900 text-white"
+              ? "border-ink bg-ink text-white"
               : isListening
-                ? "border-purple-300 bg-purple-50 text-purple-800 hover:border-purple-700"
-                : "border-neutral-300 bg-white text-neutral-700 hover:border-neutral-900";
+                ? "border-ink/15 bg-lavender-tint text-ink hover:border-ink/30"
+                : "border-ink/15 bg-white text-ink hover:bg-ink/5";
             return (
               <button
                 key={b.key}
                 type="button"
                 onClick={() => setFilter(b.key)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${className}`}
+                className={`rounded-full border-2 px-3 py-1 text-xs font-bold transition ${className}`}
               >
                 {label} ({b.count})
               </button>
             );
           })}
         </div>
-        <div className="flex overflow-hidden rounded-md border border-neutral-300">
+        <div className="flex overflow-hidden rounded-full border-2 border-ink/15">
           <button
             type="button"
             onClick={() => setView("chart")}
-            className={`px-3 py-1 text-xs font-medium transition ${
+            className={`px-3 py-1 text-xs font-bold transition ${
               view === "chart"
-                ? "bg-neutral-900 text-white"
-                : "bg-white text-neutral-700 hover:bg-neutral-100"
+                ? "bg-ink text-white"
+                : "bg-white text-ink hover:bg-ink/5"
             }`}
           >
             图表
@@ -154,10 +152,10 @@ export default function ScoreTrend({ attempts, classId, studentId }: Props) {
           <button
             type="button"
             onClick={() => setView("table")}
-            className={`border-l border-neutral-300 px-3 py-1 text-xs font-medium transition ${
+            className={`border-l-2 border-ink/15 px-3 py-1 text-xs font-bold transition ${
               view === "table"
-                ? "bg-neutral-900 text-white"
-                : "bg-white text-neutral-700 hover:bg-neutral-100"
+                ? "bg-ink text-white"
+                : "bg-white text-ink hover:bg-ink/5"
             }`}
           >
             表格
@@ -166,8 +164,8 @@ export default function ScoreTrend({ attempts, classId, studentId }: Props) {
       </div>
 
       <div
-        className={`rounded-md border p-4 ${
-          isListeningFilter ? "border-purple-300 bg-purple-50/30" : "border-neutral-200"
+        className={`rounded-2xl border-2 border-ink/10 p-4 stitched-card ${
+          isListeningFilter ? "bg-lavender-tint" : "bg-white"
         }`}
       >
         {filteredChrono.length === 0 ? (

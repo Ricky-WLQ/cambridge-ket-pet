@@ -137,19 +137,19 @@ export default async function TeacherAttemptDetailPage({
     <div className="mx-auto w-full max-w-3xl px-6 pt-8">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:border-neutral-900 hover:bg-neutral-100"
+        className="inline-flex items-center gap-1 rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold text-ink hover:bg-ink/5 transition"
       >
         <span aria-hidden>←</span> 返回学生详情
       </Link>
-      <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-        <div className="font-medium">
+      <div className="mt-4 rounded-2xl border-2 border-ink/10 bg-sky-tint p-4 text-sm text-ink stitched-card">
+        <div className="font-extrabold">
           查看学生：{membership.user.name ?? membership.user.email}
         </div>
-        <div className="mt-0.5 text-xs text-blue-800">
+        <div className="mt-0.5 text-xs font-medium text-ink/70">
           {membership.user.email} · {cls.name} · 作答时间：
           {formatDateTime(attempt.startedAt)}
           {attempt.submittedAt && ` → ${formatDateTime(attempt.submittedAt)}`}
-          <span className="ml-2 rounded-full bg-white/60 px-2 py-0.5 text-[11px]">
+          <span className="ml-2 rounded-full bg-white/70 px-2 py-0.5 text-[11px] font-bold">
             {STATUS_LABEL[attempt.status] ?? attempt.status}
           </span>
         </div>
@@ -160,12 +160,12 @@ export default async function TeacherAttemptDetailPage({
   // Ungraded attempt: no ResultView to show — render a minimal card.
   if (attempt.status !== "GRADED") {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="page-section">
         <SiteHeader />
         <main className="flex-1">
           {headerBlock}
           <div className="mx-auto mt-6 max-w-3xl px-6 pb-10">
-            <div className="rounded-md border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+            <div className="rounded-2xl border-2 border-dashed border-ink/15 p-8 text-center text-sm font-medium text-ink/60">
               该答卷尚未批改完成，暂无详细成绩可查看。
             </div>
           </div>
@@ -216,7 +216,7 @@ export default async function TeacherAttemptDetailPage({
     const userAnswers = (attempt.answers ?? {}) as Record<string, string>;
 
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="page-section">
         <SiteHeader />
         <main className="flex-1">
           {headerBlock}
@@ -243,7 +243,7 @@ export default async function TeacherAttemptDetailPage({
     const userAnswers = (attempt.answers ?? {}) as Record<string, string>;
 
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="page-section">
         <SiteHeader />
         <main className="flex-1">
           {headerBlock}
@@ -267,38 +267,40 @@ export default async function TeacherAttemptDetailPage({
     const rubric = (attempt.rubricScores as SpeakingRubric | null) ?? null;
 
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="page-section">
         <SiteHeader />
         <main className="flex-1">
           {headerBlock}
           <div className="mx-auto mt-6 max-w-3xl space-y-6 px-6 pb-10">
             {rubric ? (
               <>
-                <section className="rounded-md bg-slate-100 p-4">
+                <section className="rounded-2xl border-2 border-ink/10 bg-mint-tint p-4 stitched-card">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-xl font-semibold">
+                    <p className="text-xl font-extrabold">
                       得分：{attempt.rawScore ?? 0} /{" "}
                       {attempt.totalPossible ?? 20}
                     </p>
                     {typeof attempt.scaledScore === "number" && (
-                      <p className="text-base text-neutral-600">
+                      <p className="text-base font-medium text-ink/70">
                         折算 {attempt.scaledScore}%
                       </p>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-neutral-500">
+                  <p className="mt-1 text-xs font-medium text-ink/55">
                     Cambridge Speaking 四项评分（0–5）
                   </p>
                 </section>
 
-                <section className="rounded-md border border-neutral-300 bg-white p-4">
+                <section className="rounded-2xl border-2 border-ink/10 bg-white p-4 stitched-card">
                   <div className="mb-4 flex items-baseline justify-between">
-                    <h2 className="text-base font-semibold text-neutral-900">
+                    <h2 className="text-base font-extrabold text-ink">
                       评分细项
                     </h2>
-                    <span className="tabular-nums text-2xl font-semibold text-emerald-600">
+                    <span className="tabular-nums text-2xl font-extrabold text-emerald-600">
                       {rubric.overall.toFixed(1)}
-                      <span className="ml-1 text-sm text-neutral-500">/ 5</span>
+                      <span className="ml-1 text-sm font-medium text-ink/55">
+                        / 5
+                      </span>
                     </span>
                   </div>
                   <div className="space-y-3">
@@ -320,30 +322,28 @@ export default async function TeacherAttemptDetailPage({
                     />
                   </div>
                   {rubric.justification && (
-                    <p className="mt-4 border-t border-neutral-200 pt-3 text-sm leading-relaxed text-neutral-700">
+                    <p className="mt-4 border-t-2 border-ink/10 pt-3 text-sm leading-relaxed text-ink/85">
                       {rubric.justification}
                     </p>
                   )}
                 </section>
 
                 {rubric.weakPoints?.length > 0 && (
-                  <section className="rounded-md border border-neutral-300 bg-white p-4">
-                    <h2 className="text-base font-semibold text-neutral-900">
-                      易错点
-                    </h2>
+                  <section className="rounded-2xl border-2 border-ink/10 bg-white p-4 stitched-card">
+                    <h2 className="text-base font-extrabold text-ink">易错点</h2>
                     <ul className="mt-3 space-y-3">
                       {rubric.weakPoints.map((wp, i) => (
                         <li
                           key={i}
-                          className="rounded border border-neutral-200 bg-slate-50 p-3 text-sm"
+                          className="rounded-xl border-2 border-ink/10 bg-cream-tint p-3 text-sm"
                         >
-                          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                          <span className="text-xs font-extrabold uppercase tracking-wide text-ink/55">
                             {wp.tag}
                           </span>
-                          <p className="mt-1 italic text-neutral-700">
+                          <p className="mt-1 italic text-ink/85">
                             “{wp.quote}”
                           </p>
-                          <p className="mt-1 text-neutral-900">
+                          <p className="mt-1 text-ink">
                             建议：{wp.suggestion}
                           </p>
                         </li>
@@ -353,7 +353,7 @@ export default async function TeacherAttemptDetailPage({
                 )}
               </>
             ) : (
-              <div className="rounded-md border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-500">
+              <div className="rounded-2xl border-2 border-dashed border-ink/15 p-6 text-center text-sm font-medium text-ink/60">
                 未生成评分（学生可能未完成或评分异常）。
                 {attempt.speakingError && (
                   <p className="mt-2 text-xs text-red-600">
@@ -372,12 +372,12 @@ export default async function TeacherAttemptDetailPage({
 
   // Future phases (listening/mock). For now, show a polite placeholder.
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
       <main className="flex-1">
         {headerBlock}
         <div className="mx-auto mt-6 max-w-3xl px-6 pb-10">
-          <div className="rounded-md border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-500">
+          <div className="rounded-2xl border-2 border-dashed border-ink/15 p-8 text-center text-sm font-medium text-ink/60">
             该题型（{attempt.test.kind}）的详细视图尚未上线。
           </div>
         </div>
