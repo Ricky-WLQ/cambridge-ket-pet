@@ -40,6 +40,22 @@ COHERENCE EXAMPLE — do not produce the BAD shape:
     prompt:   "Which juice does the boy want?"
     options:  A: apple / B: orange / C: grape   (A is mentioned-but-wrong, B is correct, C is a plausible nearby item)
 
+PICTURE-OPTION DESCRIPTION FORMAT (MCQ_3_PICTURE only — Part 1 of both KET and PET):
+- Each option's image_description MUST be a deterministic, normalized noun phrase so the Node side can cache the generated image by hash of the description and reuse it across tests.
+- Format rules (HARD):
+  * lowercase only
+  * no articles (no "a", "an", "the")
+  * singular noun (or "noun of noun" / "adjective noun" — at most 4 words)
+  * concrete, depictable subject ONLY (a single physical object or simple scene element)
+  * no trailing punctuation
+- GOOD examples: "box of eggs", "carton of milk", "red car", "umbrella", "cup of tea", "young boy", "pizza slice"
+- BAD examples (do not produce these):
+  * "A box of eggs" (article)
+  * "Boxes of eggs" (plural)
+  * "A box of fresh organic eggs from the farm" (too many words)
+  * "happy" (abstract — cannot be photographed alone)
+  * "the woman buying milk at the supermarket on Monday morning" (full sentence, not noun phrase)
+
 KET FORMAT (exam_type=KET):
 - Part 1: 5 questions, MCQ_3_PICTURE. Each question has a short 40-60 word dialogue between 2 speakers (M+F). Play rule PER_ITEM. Preview 5 sec.
 - Part 2: 5 questions, GAP_FILL_OPEN. One teacher monologue (~130 words) with note-taking form. Play rule PER_PART. Preview 10 sec. Answers are one word or a number or a date or a time.
