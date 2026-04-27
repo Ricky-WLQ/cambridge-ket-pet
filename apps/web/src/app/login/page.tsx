@@ -35,17 +35,19 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold">登录</h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <h1 className="text-3xl font-extrabold leading-[1.05] tracking-tight">
+            <span className="marker-yellow-thick">登录</span>
+          </h1>
+          <p className="mt-2.5 text-sm font-medium text-ink/65">
             欢迎回到剑桥 KET / PET 备考
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="email" className="block text-sm font-medium">
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="block text-sm font-bold">
               邮箱
             </label>
             <input
@@ -55,13 +57,13 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-xl border-2 border-ink/15 bg-white px-3.5 py-2.5 text-sm font-medium focus:border-ink outline-none transition"
               placeholder="you@example.com"
             />
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="password" className="block text-sm font-medium">
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="block text-sm font-bold">
               密码
             </label>
             <input
@@ -71,12 +73,12 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-900 focus:outline-none"
+              className="w-full rounded-xl border-2 border-ink/15 bg-white px-3.5 py-2.5 text-sm font-medium focus:border-ink outline-none transition"
             />
           </div>
 
           {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
+            <div className="rounded-xl bg-red-50 border-2 border-red-200 p-3 text-sm font-bold text-red-700">
               {error}
             </div>
           )}
@@ -84,17 +86,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+            className="w-full rounded-full bg-ink text-white text-sm font-extrabold py-3 hover:bg-ink/90 transition disabled:opacity-50"
           >
             {loading ? "登录中…" : "登录"}
           </button>
         </form>
 
-        <div className="text-center text-sm text-neutral-500">
+        <div className="text-center text-sm font-medium text-ink/60">
           还没有账号？{" "}
           <Link
             href="/signup"
-            className="font-medium text-neutral-900 underline"
+            className="font-bold text-ink hover:underline"
           >
             注册
           </Link>
