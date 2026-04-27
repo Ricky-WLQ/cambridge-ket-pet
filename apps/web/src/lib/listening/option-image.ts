@@ -15,7 +15,11 @@
  * back to the existing description-as-text behavior.
  */
 
-import "server-only";
+// Intentionally NOT importing "server-only" — this module must be reachable
+// from both Next.js server runtime AND standalone CLI scripts (the backfill
+// script at apps/web/scripts/backfill-listening-images.ts loads it via tsx).
+// The function uses node:crypto + AWS SDK + sharp, which would fail in any
+// browser bundle anyway, providing implicit protection without server-only.
 import { createHash } from "node:crypto";
 import {
   S3Client,
