@@ -117,18 +117,25 @@ export default function DiagnoseRunnerGrammar({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div
+        className="mb-6 rounded-2xl border-2 border-ink/10 stitched-card flex flex-wrap items-center justify-between gap-2 py-3 px-4"
+        style={{
+          background: "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
+        }}
+      >
         <div>
-          <h1 className="text-xl font-semibold">本周诊断 · 语法</h1>
-          <p className="text-sm text-neutral-500">
+          <h1 className="text-xl font-extrabold">
+            本周诊断 · <span className="marker-yellow">语法</span>
+          </h1>
+          <p className="text-sm font-bold text-ink/70">
             选择正确选项 · 共 {questions.length} 题
           </p>
         </div>
         <div
-          className={`rounded-md border px-3 py-1.5 font-mono text-lg ${
+          className={`rounded-full border-2 px-3 py-1.5 font-mono text-lg font-extrabold ${
             remaining <= 30
-              ? "border-red-300 bg-red-50 text-red-700"
-              : "border-neutral-300"
+              ? "border-rose-300 bg-rose-50 text-rose-700"
+              : "border-ink/15 bg-white"
           }`}
           aria-live="polite"
         >
@@ -140,13 +147,13 @@ export default function DiagnoseRunnerGrammar({
         {questions.map((q, idx) => (
           <li
             key={q.questionId}
-            className="rounded-2xl border border-neutral-300 bg-white p-5"
+            className="rounded-2xl border-2 border-ink/10 bg-white p-5 stitched-card"
           >
             <div className="mb-3 flex items-start gap-2">
-              <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-neutral-900 px-1.5 text-xs font-medium text-white">
+              <span className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-ink px-1.5 text-xs font-extrabold text-white">
                 {idx + 1}
               </span>
-              <p className="flex-1 whitespace-pre-wrap text-sm leading-relaxed text-neutral-900">
+              <p className="flex-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/90 font-bold">
                 {q.questionText}
               </p>
             </div>
@@ -178,19 +185,19 @@ export default function DiagnoseRunnerGrammar({
       </ol>
 
       {error && (
-        <div className="mt-6 rounded-md bg-red-50 p-3 text-sm text-red-700">
+        <div className="mt-6 rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">
           {error}
         </div>
       )}
 
       {readOnly && (
-        <div className="mt-6 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <div className="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-xs font-extrabold text-amber-900">
           练习模式 — 不计分
         </div>
       )}
 
       <div className="mt-8 flex items-center justify-between gap-4">
-        <div className="text-sm text-neutral-500">
+        <div className="text-sm font-bold text-ink/55">
           已答 {answeredCount} / {questions.length}
         </div>
         {!readOnly && (
@@ -199,7 +206,7 @@ export default function DiagnoseRunnerGrammar({
             onClick={submit}
             disabled={submitting}
             data-attempt-id={attemptId}
-            className="rounded-md bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
+            className="rounded-full bg-ink px-6 py-2.5 text-sm font-extrabold text-white transition-colors hover:bg-ink/90 disabled:opacity-50"
           >
             {submitting ? "提交中…" : "提交"}
           </button>

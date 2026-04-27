@@ -69,25 +69,32 @@ export default function DiagnoseHub({
   return (
     <div className="space-y-6">
       {/* Week + exam header banner. */}
-      <div className="rounded-md border border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-purple-50/50 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="flex items-center gap-2 text-lg font-semibold text-indigo-900">
+      <div
+        className="rounded-3xl border-2 border-ink/10 p-6 sm:p-7 stitched-card relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
+        }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex-1 min-w-[260px]">
+            <div className="flex items-center gap-2.5 mb-3">
               <span
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white"
+                className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white text-[11px] font-extrabold tracking-wider"
                 aria-hidden
               >
                 AI
               </span>
-              {t.diagnose.pageTitle}
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-indigo-700">
+              <h1 className="text-2xl sm:text-3xl font-extrabold">
+                <span className="marker-yellow">{t.diagnose.pageTitle}</span>
+              </h1>
+              <span className="pill-tag bg-white border-2 border-ink/10">
                 {examType}
               </span>
-            </h1>
-            <p className="mt-0.5 text-xs text-indigo-700/80">
+            </div>
+            <p className="text-sm font-medium text-ink/70 leading-relaxed">
               {t.diagnose.pageSubtitle}
             </p>
-            <p className="mt-1 text-xs text-indigo-700/70">
+            <p className="mt-1 text-xs font-bold text-ink/60">
               {t.diagnose.weekRange(weekStart, weekEnd)}
             </p>
           </div>
@@ -95,7 +102,7 @@ export default function DiagnoseHub({
           {reportReady && testId && (
             <Link
               href={`/diagnose/report/${testId}`}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+              className="rounded-full bg-ink text-white text-sm font-extrabold px-5 py-2.5 hover:bg-ink/90 transition"
             >
               查看本周诊断报告 →
             </Link>
@@ -103,7 +110,7 @@ export default function DiagnoseHub({
         </div>
 
         {reportFailed && (
-          <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="mt-3 rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">
             {t.diagnose.reportFailedHint}
           </div>
         )}
@@ -111,21 +118,22 @@ export default function DiagnoseHub({
 
       {/* Progress + sections grid. */}
       <div>
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="text-base font-semibold text-neutral-900">
-            {t.diagnose.sectionsTitle}
+        <div className="mb-3.5 flex items-baseline justify-between">
+          <h2 className="text-xl sm:text-2xl font-extrabold">
+            <span className="marker-yellow">{t.diagnose.sectionsTitle}</span>
           </h2>
-          <div className="text-xs text-neutral-500">
-            <span className="font-medium text-neutral-900">
-              已完成 {completedCount} / {total}
+          <div className="text-sm font-bold text-ink/70">
+            已完成{" "}
+            <span className="text-ink text-base font-extrabold">
+              {completedCount} / {total}
             </span>
           </div>
         </div>
 
         {/* Hand-rolled progress bar. */}
-        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-neutral-200">
+        <div className="mb-5 h-3 w-full overflow-hidden rounded-full bg-mist border-2 border-ink/10">
           <div
-            className="h-full bg-indigo-600 transition-all"
+            className="h-full bg-ink rounded-full transition-all"
             style={{ width: `${(completedCount / total) * 100}%` }}
           />
         </div>

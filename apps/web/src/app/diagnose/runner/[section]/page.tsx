@@ -8,6 +8,7 @@ import DiagnoseRunnerListening from "@/components/diagnose/DiagnoseRunnerListeni
 import DiagnoseRunnerWriting from "@/components/diagnose/DiagnoseRunnerWriting";
 import DiagnoseRunnerVocab from "@/components/diagnose/DiagnoseRunnerVocab";
 import DiagnoseRunnerGrammar from "@/components/diagnose/DiagnoseRunnerGrammar";
+import { SECTION_TITLE_ZH } from "@/components/diagnose/SectionStatusCard";
 import { ClientSpeakingRunner } from "@/components/speaking/ClientSpeakingRunner";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -135,13 +136,21 @@ export default async function DiagnoseRunnerSectionPage({
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-4xl px-6 py-10">
-        <div className="mb-4">
+        <div
+          className="mb-4 rounded-2xl border-2 border-ink/10 stitched-card flex flex-wrap items-center justify-between gap-2 py-2.5 px-4"
+          style={{
+            background: "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
+          }}
+        >
           <Link
             href="/diagnose"
-            className="text-sm text-neutral-500 hover:text-neutral-900"
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
             ← 返回本周诊断
           </Link>
+          <span className="pill-tag !py-0.5 !px-2 !text-[11px] bg-white border border-ink/10">
+            本周诊断 · {SECTION_TITLE_ZH[sectionKind]}
+          </span>
         </div>
 
         {sectionKind === "READING" && (

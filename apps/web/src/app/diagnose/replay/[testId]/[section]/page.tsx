@@ -121,14 +121,14 @@ export default async function DiagnoseReplayPage({
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-4xl px-6 py-10">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 rounded-2xl bg-butter-tint border-2 border-ink/10 stitched-card flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm font-bold">
           <Link
             href={`/diagnose/history/${testId}`}
-            className="text-sm text-neutral-500 hover:text-neutral-900"
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
             ← 返回历史报告
           </Link>
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-extrabold text-amber-800">
             重做练习 · 不计分
           </span>
         </div>

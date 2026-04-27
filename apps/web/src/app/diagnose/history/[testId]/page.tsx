@@ -64,16 +64,17 @@ export default async function DiagnoseHistoryDetailPage({
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-5xl px-6 py-10">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 rounded-2xl bg-mist border-2 border-ink/10 p-3 text-sm font-bold text-ink/70 flex items-center justify-between">
           <Link
             href="/diagnose/history"
-            className="text-sm text-neutral-500 hover:text-neutral-900"
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
             ← 返回历史列表
           </Link>
+          <span className="font-extrabold text-ink/70">📚 历史报告</span>
           <Link
             href="/diagnose"
-            className="text-sm text-neutral-500 hover:text-neutral-900"
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
             本周诊断 →
           </Link>
@@ -81,11 +82,11 @@ export default async function DiagnoseHistoryDetailPage({
 
         <DiagnoseReport report={report} />
 
-        <section className="mt-8 rounded-md border border-neutral-200 bg-white p-5">
-          <h2 className="mb-3 text-base font-semibold text-neutral-900">
+        <section className="mt-8 rounded-3xl border-2 border-ink/10 bg-white p-5 sm:p-6 stitched-card">
+          <h2 className="mb-3 text-base font-extrabold text-ink/90">
             重做练习（不计分）
           </h2>
-          <p className="mb-4 text-xs text-neutral-500">
+          <p className="mb-4 text-xs font-bold text-ink/60">
             重做仅作复习用途，不会更新本周诊断状态，也不计入历史评分。
           </p>
           <div className="grid gap-2 sm:grid-cols-3">
@@ -93,7 +94,7 @@ export default async function DiagnoseHistoryDetailPage({
               <Link
                 key={kind}
                 href={`/diagnose/replay/${testId}/${kind.toLowerCase()}`}
-                className="rounded-md border border-neutral-300 bg-white p-3 text-center text-sm font-medium text-neutral-700 transition hover:border-neutral-900 hover:bg-neutral-50"
+                className="rounded-2xl border-2 border-ink/15 bg-white p-3 text-center text-sm font-extrabold text-ink/80 transition hover:border-ink hover:bg-mist"
               >
                 {SECTION_TITLE_ZH[kind]}
               </Link>

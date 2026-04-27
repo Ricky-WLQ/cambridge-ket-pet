@@ -29,9 +29,9 @@ const SEVERITY_STYLE: Record<
   { border: string; bg: string; pill: string; label: string }
 > = {
   critical: {
-    border: "border-red-300",
-    bg: "bg-red-50/40",
-    pill: "bg-red-600 text-white",
+    border: "border-rose-300",
+    bg: "bg-rose-50/40",
+    pill: "bg-rose-600 text-white",
     label: "严重",
   },
   moderate: {
@@ -41,9 +41,9 @@ const SEVERITY_STYLE: Record<
     label: "中等",
   },
   minor: {
-    border: "border-neutral-300",
+    border: "border-ink/20",
     bg: "bg-white",
-    pill: "bg-neutral-600 text-white",
+    pill: "bg-ink/65 text-white",
     label: "轻微",
   },
 };
@@ -78,44 +78,44 @@ export default function KnowledgePointCluster({ group }: Props) {
 
   return (
     <article
-      className={`rounded-md border p-4 ${sev.border} ${sev.bg}`}
+      className={`rounded-2xl border-2 p-4 stitched-card ${sev.border} ${sev.bg}`}
     >
       <header className="mb-2 flex flex-wrap items-center gap-2">
         <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${sev.pill}`}
+          className={`rounded-full px-2 py-0.5 text-xs font-extrabold ${sev.pill}`}
         >
           {sev.label}
         </span>
-        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-neutral-700 ring-1 ring-inset ring-neutral-300">
+        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-ink/75 ring-1 ring-inset ring-ink/15">
           {categoryLabel}
         </span>
-        <h3 className="text-sm font-semibold text-neutral-900">
+        <h3 className="text-xl font-extrabold text-ink/90">
           {group.knowledgePoint}
         </h3>
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs font-bold text-ink/55">
           ({group.questions.length} 题)
         </span>
       </header>
 
       {group.miniLesson && (
-        <p className="mb-3 text-sm leading-relaxed text-neutral-800">
+        <p className="mb-3 text-sm leading-relaxed text-ink/85">
           {group.miniLesson}
         </p>
       )}
 
       {group.rule && (
-        <div className="mb-3 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-          <span className="mr-1 font-semibold">规则：</span>
+        <div className="mb-3 rounded-xl border-2 border-sky-soft bg-sky-tint p-3 text-sm italic text-sky-900">
+          <span className="mr-1 font-extrabold not-italic">规则：</span>
           {group.rule}
         </div>
       )}
 
       {group.exampleSentences.length > 0 && (
-        <details className="mb-2 rounded-md border border-neutral-200 bg-white p-3 text-sm">
-          <summary className="cursor-pointer text-xs font-medium text-neutral-700 hover:text-neutral-900">
+        <details className="mb-2 rounded-xl border-2 border-ink/10 bg-white p-3 text-sm">
+          <summary className="cursor-pointer text-xs font-extrabold text-ink/70 hover:text-ink">
             例句 ({group.exampleSentences.length})
           </summary>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-neutral-800">
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-ink/80">
             {group.exampleSentences.map((s, i) => (
               <li key={i}>{s}</li>
             ))}
@@ -124,30 +124,30 @@ export default function KnowledgePointCluster({ group }: Props) {
       )}
 
       {group.questions.length > 0 && (
-        <details className="rounded-md border border-neutral-200 bg-white p-3 text-sm">
-          <summary className="cursor-pointer text-xs font-medium text-neutral-700 hover:text-neutral-900">
+        <details className="rounded-xl border-2 border-ink/10 bg-white p-3 text-sm">
+          <summary className="cursor-pointer text-xs font-extrabold text-ink/70 hover:text-ink">
             为什么错 ({group.questions.length})
           </summary>
           <ol className="mt-2 space-y-3">
             {group.questions.map((q, i) => (
-              <li key={i} className="border-l-2 border-neutral-200 pl-3">
-                <div className="mb-1 flex items-center gap-2 text-[11px] text-neutral-500">
-                  <span className="rounded bg-neutral-100 px-1.5 py-0.5 font-medium text-neutral-700">
+              <li key={i} className="border-l-2 border-ink/15 pl-3">
+                <div className="mb-1 flex items-center gap-2 text-[11px] text-ink/55">
+                  <span className="rounded bg-ink/5 px-1.5 py-0.5 font-bold text-ink/75">
                     {SECTION_ZH[q.section] ?? q.section}
                   </span>
                 </div>
-                <p className="mb-1 text-neutral-800">
-                  <span className="text-neutral-500">题目：</span>
+                <p className="mb-1 text-ink/85">
+                  <span className="text-ink/55">题目：</span>
                   {q.questionText}
                 </p>
-                <p className="mb-1 text-xs text-neutral-700">
-                  <span className="text-red-600">你选：</span>
+                <p className="mb-1 text-xs text-ink/75">
+                  <span className="text-rose-600">你选：</span>
                   {q.userAnswer || "(未作答)"}
-                  <span className="ml-3 text-green-700">正确：</span>
+                  <span className="ml-3 text-emerald-700">正确：</span>
                   {q.correctAnswer}
                 </p>
-                <p className="text-xs leading-relaxed text-neutral-700">
-                  <span className="font-medium text-neutral-900">解析：</span>
+                <p className="text-xs leading-relaxed text-ink/75">
+                  <span className="font-extrabold text-ink/90">解析：</span>
                   {q.whyWrong}
                 </p>
               </li>

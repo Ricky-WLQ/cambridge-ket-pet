@@ -55,24 +55,26 @@ export default function GenerateButton() {
   }
 
   return (
-    <div className="rounded-md border border-dashed border-neutral-300 bg-white p-8 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100 text-2xl">
+    <div className="rounded-3xl border-2 border-dashed border-ink/15 bg-white p-8 text-center stitched-card">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-lavender-tint text-2xl">
         ✨
       </div>
-      <h2 className="mb-2 text-lg font-semibold text-neutral-900">
+      <h2 className="mb-2 text-xl font-extrabold text-ink">
         {t.diagnose.emptyTitle}
       </h2>
-      <p className="mb-6 text-sm text-neutral-600">{t.diagnose.emptyHint}</p>
+      <p className="mb-6 text-sm font-medium text-ink/70">
+        {t.diagnose.emptyHint}
+      </p>
       <button
         type="button"
         onClick={generate}
         disabled={busy}
-        className="rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-full bg-ink px-6 py-3 text-base font-extrabold text-white transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {busy ? t.diagnose.generating : t.diagnose.generateBtn}
       </button>
       {error && (
-        <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-4 rounded-2xl border-2 border-rose-200 bg-rose-50 px-3 py-2 text-sm font-bold text-rose-700">
           {error}
         </p>
       )}

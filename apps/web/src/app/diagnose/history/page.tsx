@@ -51,16 +51,18 @@ export default async function DiagnoseHistoryPage() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="mx-auto w-full max-w-4xl px-6 py-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">诊断历史</h1>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.05]">
+            <span className="marker-yellow-thick">诊断历史</span>
+          </h1>
           <Link
             href="/diagnose"
-            className="text-sm text-neutral-500 hover:text-neutral-900"
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
             ← 返回本周诊断
           </Link>
         </div>
-        <p className="mb-6 text-sm text-neutral-500">
+        <p className="mt-3 mb-6 text-base font-medium text-ink/75 max-w-xl leading-relaxed">
           最近 12 周的诊断记录，按周倒序排列。
         </p>
 

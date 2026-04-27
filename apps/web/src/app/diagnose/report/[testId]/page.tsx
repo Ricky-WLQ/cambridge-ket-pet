@@ -87,7 +87,7 @@ export default async function DiagnoseReportPage({
         <div className="mb-4">
           <Link
             href="/diagnose"
-            className="text-sm text-neutral-500 hover:text-neutral-900"
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
             ← 返回本周诊断
           </Link>

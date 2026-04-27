@@ -72,7 +72,7 @@ const STATUS_PILL: Record<
 > = {
   NOT_STARTED: {
     label: t.diagnose.notStartedLabel,
-    className: "bg-neutral-100 text-neutral-600",
+    className: "bg-ink/5 text-ink/65",
   },
   IN_PROGRESS: {
     label: t.diagnose.inProgressLabel,
@@ -80,15 +80,15 @@ const STATUS_PILL: Record<
   },
   SUBMITTED: {
     label: t.diagnose.submittedLabel,
-    className: "bg-green-100 text-green-800",
+    className: "bg-emerald-100 text-emerald-800",
   },
   AUTO_SUBMITTED: {
     label: t.diagnose.autoSubmittedLabel,
-    className: "bg-blue-100 text-blue-800",
+    className: "bg-sky-soft text-ink/85",
   },
   GRADED: {
     label: t.diagnose.gradedLabel,
-    className: "bg-green-100 text-green-800",
+    className: "bg-emerald-100 text-emerald-800",
   },
 };
 
@@ -165,14 +165,14 @@ export default function SectionStatusCard({
 
   // Visual accent for the card border — green for done, amber for in-progress.
   const borderClass = isDone
-    ? "border-green-200"
+    ? "border-emerald-200"
     : isInProgress
       ? "border-amber-200"
-      : "border-neutral-200";
+      : "border-ink/10";
 
   return (
     <div
-      className={`flex flex-col gap-3 rounded-md border bg-white p-4 ${borderClass}`}
+      className={`flex flex-col gap-3 rounded-2xl bg-white border-2 p-4 stitched-card ${borderClass}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -180,13 +180,13 @@ export default function SectionStatusCard({
             {icon}
           </span>
           <div>
-            <div className="text-sm font-semibold text-neutral-900">
+            <div className="text-base font-extrabold">
               {title}
             </div>
           </div>
         </div>
         <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${pill.className}`}
+          className={`pill-tag !text-[11px] !py-0.5 !px-2 ${pill.className}`}
         >
           {pill.label}
         </span>
@@ -195,17 +195,17 @@ export default function SectionStatusCard({
       {ctaMode === "LINK" && (
         <Link
           href={ctaUrl}
-          className={`mt-auto inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium transition ${
+          className={`mt-auto inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-extrabold transition ${
             isDone
-              ? "border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
-              : "bg-neutral-900 text-white hover:bg-neutral-700"
+              ? "bg-white border-2 border-ink/15 text-ink/80 hover:bg-ink/5"
+              : "bg-ink text-white hover:bg-ink/90"
           }`}
         >
           {ctaLabel}
         </Link>
       )}
       {ctaMode === "DISABLED" && (
-        <div className="mt-auto inline-flex items-center justify-center rounded-md border border-dashed border-neutral-300 bg-neutral-50 px-3 py-1.5 text-xs text-neutral-500">
+        <div className="mt-auto inline-flex items-center justify-center rounded-full border-2 border-dashed border-ink/15 bg-ink/5 px-3 py-1.5 text-xs font-bold text-ink/55">
           {ctaLabel}
         </div>
       )}

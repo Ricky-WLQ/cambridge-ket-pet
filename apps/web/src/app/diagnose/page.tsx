@@ -54,23 +54,29 @@ export default async function DiagnoseHubPage() {
       <div className="flex min-h-screen flex-col">
         <SiteHeader />
         <main className="mx-auto w-full max-w-4xl px-6 py-10">
-          <div className="rounded-md border border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-purple-50/50 p-6">
-            <h1 className="flex items-center gap-2 text-lg font-semibold text-indigo-900">
+          <div
+            className="rounded-3xl border-2 border-ink/10 p-6 sm:p-7 stitched-card relative overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
+            }}
+          >
+            <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-extrabold">
               <span
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white"
+                className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white text-[11px] font-extrabold tracking-wider"
                 aria-hidden
               >
                 AI
               </span>
-              本周诊断（教师视图）
+              <span className="marker-yellow">本周诊断（教师视图）</span>
             </h1>
-            <p className="mt-2 text-sm text-indigo-800/80">
+            <p className="mt-3 text-sm font-medium text-ink/75 leading-relaxed">
               教师与管理员不参与本周诊断。请进入「我的班级」查看每位学生的本周诊断进度。
             </p>
             <div className="mt-4">
               <Link
                 href="/teacher/classes"
-                className="inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+                className="inline-block rounded-full bg-ink px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-ink/90"
               >
                 查看班级诊断状态 →
               </Link>
@@ -153,20 +159,28 @@ export default async function DiagnoseHubPage() {
         {wd === null ? (
           <>
             {/* Empty-state: student has not generated this week's diagnose. */}
-            <div className="mb-6 rounded-md border border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-purple-50/50 p-5">
-              <h1 className="flex items-center gap-2 text-lg font-semibold text-indigo-900">
+            <div
+              className="mb-6 rounded-3xl border-2 border-ink/10 p-6 sm:p-7 stitched-card relative overflow-hidden"
+              style={{
+                background:
+                  "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-2">
                 <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white"
+                  className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white text-[11px] font-extrabold tracking-wider"
                   aria-hidden
                 >
                   AI
                 </span>
-                {t.diagnose.pageTitle}
-              </h1>
-              <p className="mt-0.5 text-xs text-indigo-700/80">
+                <h1 className="text-2xl sm:text-3xl font-extrabold">
+                  <span className="marker-yellow">{t.diagnose.pageTitle}</span>
+                </h1>
+              </div>
+              <p className="text-sm font-medium text-ink/70 leading-relaxed">
                 {t.diagnose.pageSubtitle}
               </p>
-              <p className="mt-1 text-xs text-indigo-700/70">
+              <p className="mt-1 text-xs font-bold text-ink/60">
                 {weekStart.toISOString().slice(0, 10)} 至{" "}
                 {weekEnd.toISOString().slice(0, 10)}
               </p>
@@ -216,7 +230,7 @@ export default async function DiagnoseHubPage() {
             <div className="mt-3 text-right">
               <Link
                 href="/diagnose/history"
-                className="text-sm text-neutral-500 hover:text-neutral-900"
+                className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
               >
                 查看完整历史 →
               </Link>

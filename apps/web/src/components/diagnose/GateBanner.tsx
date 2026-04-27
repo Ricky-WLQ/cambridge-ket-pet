@@ -25,7 +25,7 @@ interface Props {
 export default function GateBanner({ requiredDiagnoseId }: Props) {
   return (
     <div
-      className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3"
+      className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-ink/10 bg-butter-tint stitched-card p-4"
       role="alert"
       data-required-diagnose-id={requiredDiagnoseId}
     >
@@ -33,13 +33,13 @@ export default function GateBanner({ requiredDiagnoseId }: Props) {
         <span className="text-lg" aria-hidden>
           ⚠
         </span>
-        <span className="text-sm font-medium text-amber-900">
+        <span className="text-sm font-extrabold text-ink">
           {t.diagnose.bannerGated}
         </span>
       </div>
       <Link
         href="/diagnose"
-        className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700"
+        className="rounded-full bg-ink px-4 py-1.5 text-xs font-extrabold text-white transition hover:bg-ink/90"
       >
         {t.diagnose.bannerCta}
       </Link>
