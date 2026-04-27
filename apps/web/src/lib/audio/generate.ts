@@ -3,6 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { generateListeningTest } from "../aiClient";
+import { ensureOptionImage } from "../listening/option-image";
 
 import {
   buildFullPlan,
@@ -21,6 +22,8 @@ import type {
   AudioSegmentRecord,
   ListeningTestPayloadV2,
 } from "./types";
+
+const OPTION_IMAGE_CONCURRENCY = 6;
 
 const SEGMENT_SYNTHESIS_CONCURRENCY = Number(
   process.env.LISTENING_SEGMENT_CONCURRENCY ?? 4,
@@ -139,7 +142,64 @@ export async function fetchListeningPayload(
     part: args.part,
     mode: args.mode,
   });
-  return snakeToCamelListening(raw);
+  const payload = snakeToCamelListening(raw);
+  await enrichListeningOptionImages(payload);
+  return payload;
+}
+
+/**
+ * Walk all MCQ_3_PICTURE option descriptions in the payload and resolve
+ * each to an R2 key via {@link ensureOptionImage}. Mutates the payload
+ * in-place. Failures (per-option) leave `imageUrl` undefined — the
+ * renderer falls back to the description text. Logs warnings but never
+ * throws — image generation must never block listening test creation.
+ */
+export async function enrichListeningOptionImages(
+  payload: ListeningTestPayloadV2,
+): Promise<void> {
+  // Collect all (option, description) pairs across all picture-MCQ parts
+  type Pending = {
+    option: { imageUrl?: string; imageDescription?: string };
+    description: string;
+  };
+  const pending: Pending[] = [];
+  for (const part of payload.parts) {
+    if (part.kind !== "MCQ_3_PICTURE") continue;
+    for (const q of part.questions) {
+      for (const opt of q.options ?? []) {
+        if (opt.imageDescription && !opt.imageUrl) {
+          pending.push({ option: opt, description: opt.imageDescription });
+        }
+      }
+    }
+  }
+
+  if (pending.length === 0) return;
+
+  let succeeded = 0;
+  let failed = 0;
+  await mapWithConcurrency(pending, OPTION_IMAGE_CONCURRENCY, async (p) => {
+    try {
+      const key = await ensureOptionImage(p.description);
+      if (key) {
+        p.option.imageUrl = key;
+        succeeded++;
+      } else {
+        failed++;
+      }
+    } catch (err) {
+      // ensureOptionImage is supposed to swallow its own errors and return
+      // null; this catch is purely defensive.
+      console.warn(
+        `[listening] enrichListeningOptionImages threw for "${p.description}":`,
+        err,
+      );
+      failed++;
+    }
+  });
+  console.log(
+    `[listening] enrichListeningOptionImages: ${succeeded} ok, ${failed} fell back to text (of ${pending.length} options)`,
+  );
 }
 
 /**
