@@ -43,18 +43,26 @@ describe("GET /api/vocab/audio/[wordId]", () => {
 
   it("redirects (302) to signed URL when audioKey present", async () => {
     findUnique.mockResolvedValue({ id: "w1", audioKey: "vocab/en-GB-RyanNeural/ket-act-v.mp3" });
-    sign.mockResolvedValue("https://r2.example/signed?x=1");
+    sign.mockResolvedValue("/api/r2/vocab/en-GB-RyanNeural/ket-act-v.mp3");
     const res = await GET(mkReq(), mkCtx("w1"));
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("https://r2.example/signed?x=1");
+    expect(res.headers.get("location")).toBe("/api/r2/vocab/en-GB-RyanNeural/ket-act-v.mp3");
     expect(res.headers.get("cache-control")).toContain("private");
   });
 
-  it("resolves relative signed URLs against request origin (NextResponse.redirect requires absolute)", async () => {
+  // The Location is intentionally server-relative — see the route's docstring
+  // for why (Zeabur's edge proxy doesn't preserve the public Host header, so
+  // `new URL(path, request.url)` would emit `http://localhost:8080/...`).
+  it("emits a server-relative Location, never an absolute URL with the inner socket host", async () => {
     findUnique.mockResolvedValue({ id: "w1", audioKey: "vocab/S1_male/ket-actor-n.mp3" });
-    sign.mockResolvedValue("/api/r2/vocab/S1_male/ket-actor-n.mp3");  // server-relative, like signR2PublicUrl actually returns
-    const res = await GET(mkReq(), mkCtx("w1"));
+    sign.mockResolvedValue("/api/r2/vocab/S1_male/ket-actor-n.mp3");
+    // Simulate Next.js seeing the inner socket as `request.url` on Zeabur.
+    const innerSocketReq = new Request("http://localhost:8080/api/vocab/audio/wid");
+    const res = await GET(innerSocketReq, mkCtx("w1"));
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("http://t/api/r2/vocab/S1_male/ket-actor-n.mp3");
+    const location = res.headers.get("location");
+    expect(location).toBe("/api/r2/vocab/S1_male/ket-actor-n.mp3");
+    expect(location).not.toMatch(/^https?:\/\//);
+    expect(location).not.toContain("localhost:8080");
   });
 });

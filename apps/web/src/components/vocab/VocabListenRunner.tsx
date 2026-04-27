@@ -47,12 +47,15 @@ export default function VocabListenRunner({ examType }: Props) {
   // Play audio when card changes. Silent on autoplay-block; if R2 audio
   // genuinely fails, we'd rather show no sound than fall back to a robotic
   // browser TTS voice — the user can click 播放发音 to retry.
+  // AbortError is expected when navigating between cards quickly: setting
+  // `src` triggers a fresh load that interrupts the in-flight `play()`. It's
+  // harmless and we filter it from the warn log alongside autoplay blocks.
   useEffect(() => {
     if (!cur || !audioRef.current) return;
     setRevealed(false);
     audioRef.current.src = `/api/vocab/audio/${cur.id}`;
     audioRef.current.play().catch((err: DOMException) => {
-      if (err?.name !== "NotAllowedError") {
+      if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
         console.warn("[vocab/listen] audio play failed:", err?.name, err?.message);
       }
     });
@@ -66,7 +69,7 @@ export default function VocabListenRunner({ examType }: Props) {
     if (!cur || !audioRef.current) return;
     audioRef.current.currentTime = 0;
     audioRef.current.play().catch((err: DOMException) => {
-      if (err?.name !== "NotAllowedError") {
+      if (err?.name !== "NotAllowedError" && err?.name !== "AbortError") {
         console.warn("[vocab/listen] audio replay failed:", err?.name, err?.message);
       }
     });

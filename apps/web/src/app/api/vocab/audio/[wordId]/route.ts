@@ -11,6 +11,15 @@ import { vocabAudioSignedUrl } from "@/lib/vocab/audio-url";
  * `vocabAudioSignedUrl`) which routes through the existing R2 stream-proxy so
  * the R2 domain stays hidden from Chinese users.
  *
+ * The Location header is intentionally a server-relative path (e.g.
+ * `/api/r2/...`). Browsers resolve it against the request URI per
+ * RFC 7231 §7.1.2, which keeps us correct on platforms whose reverse
+ * proxy does not preserve the public Host header (Zeabur's edge sets
+ * Host to the inner socket `localhost:8080`, so `new URL(path, request.url)`
+ * would emit `http://localhost:8080/...` and the browser would chase its
+ * own loopback). NextResponse.redirect() validates URLs are absolute, so
+ * we construct the response manually.
+ *
  * Cache-Control is `private, max-age=240` — 4 minutes, intentionally shorter
  * than the 5-minute logical TTL so the browser doesn't reuse a URL after the
  * presign window even if the helper is later swapped for a true presigner.
@@ -18,10 +27,10 @@ import { vocabAudioSignedUrl } from "@/lib/vocab/audio-url";
  * Returns:
  *   401 — no session
  *   404 — word not found, or word has no audioKey yet (audio not generated)
- *   302 — Location: <signed audio URL>
+ *   302 — Location: <signed audio URL> (server-relative)
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ wordId: string }> },
 ) {
   const session = await auth();
@@ -47,11 +56,11 @@ export async function GET(
   }
 
   const signed = await vocabAudioSignedUrl(word.audioKey);
-  // signed is a server-relative path (/api/r2/...); NextResponse.redirect
-  // requires absolute. Resolve against the inbound request's origin.
-  const absolute = new URL(signed, request.url);
-  return NextResponse.redirect(absolute, {
+  return new NextResponse(null, {
     status: 302,
-    headers: { "cache-control": "private, max-age=240" },
+    headers: {
+      Location: signed,
+      "cache-control": "private, max-age=240",
+    },
   });
 }
