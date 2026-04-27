@@ -5,5 +5,15 @@
   "engines": {
     "node": ">=22",
     "pnpm": ">=10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "bcryptjs",
+      "ffmpeg-static",
+      "prisma",
+      "sharp"
+    ]
   }
 }
