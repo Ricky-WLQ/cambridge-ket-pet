@@ -63,75 +63,80 @@ export default function GrammarHub({ examType }: Props) {
   const firstWeakTopicId = stats?.weakTopics?.[0];
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 py-8">
-      <h1 className="mb-2 text-2xl font-semibold">{examLabelZh} 语法 · {examLabelEn} Grammar</h1>
-      <p className="mb-6 text-sm text-neutral-500">
-        Cambridge {examLabelEn} 官方语法清单 · {Object.values(topicsByCategory).flat().length} 个主题
-      </p>
+    <div className="mx-auto w-full max-w-5xl px-6 py-8 flex flex-col gap-4">
+      <header>
+        <h1 className="text-3xl font-extrabold leading-tight">
+          {examLabelZh} 语法 · <span className="marker-yellow-thick">{examLabelEn} Grammar</span>
+        </h1>
+        <p className="mt-2 text-sm font-medium text-ink/65">
+          Cambridge {examLabelEn} 官方语法清单 · {Object.values(topicsByCategory).flat().length} 个主题
+        </p>
+      </header>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-neutral-300 bg-white p-4">
-          <div className="text-xs text-neutral-500">总答题</div>
-          <div className="mt-1 text-2xl font-semibold text-neutral-900">{loading ? "—" : totalAttempted}</div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="stat-card bg-white stitched-card p-4">
+          <div className="text-xs font-bold text-ink/55">总答题</div>
+          <div className="mt-1 text-2xl font-extrabold text-ink">{loading ? "—" : totalAttempted}</div>
         </div>
-        <div className="rounded-lg border border-neutral-300 bg-white p-4">
-          <div className="text-xs text-neutral-500">总正确率</div>
-          <div className={`mt-1 text-2xl font-semibold ${accuracyPct >= 80 ? "text-green-600" : accuracyPct >= 50 ? "text-amber-600" : "text-red-600"}`}>
+        <div className="stat-card bg-white stitched-card p-4">
+          <div className="text-xs font-bold text-ink/55">总正确率</div>
+          <div className={`mt-1 text-2xl font-extrabold ${accuracyPct >= 80 ? "text-emerald-600" : accuracyPct >= 50 ? "text-amber-600" : "text-red-600"}`}>
             {loading ? "—" : `${accuracyPct}%`}
           </div>
         </div>
-        <div className="rounded-lg border border-neutral-300 bg-white p-4">
-          <div className="text-xs text-neutral-500">错题</div>
-          <div className={`mt-1 text-2xl font-semibold ${mistakeCount > 0 ? "text-red-600" : "text-neutral-900"}`}>
+        <div className="stat-card bg-white stitched-card p-4">
+          <div className="text-xs font-bold text-ink/55">错题</div>
+          <div className={`mt-1 text-2xl font-extrabold ${mistakeCount > 0 ? "text-red-600" : "text-ink"}`}>
             {loading ? "—" : mistakeCount}
           </div>
         </div>
       </div>
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         <Link
           href={`/${examType.toLowerCase()}/grammar/quiz`}
-          className="rounded-lg border border-blue-600 bg-white p-4 transition hover:bg-blue-50"
+          className="rounded-2xl border-2 border-ink/10 tile-sky p-4 stitched-card transition hover:-translate-y-0.5 hover:border-ink"
         >
-          <div className="text-sm font-semibold text-blue-700">🎲 随机混合</div>
-          <div className="mt-1 text-xs text-neutral-500">10 题 · 跨主题</div>
+          <div className="text-sm font-extrabold text-ink">🎲 随机混合</div>
+          <div className="mt-1 text-xs font-bold text-ink/65">10 题 · 跨主题</div>
         </Link>
         {showWeakPointCta && firstWeakTopicId ? (
           <Link
             href={`/${examType.toLowerCase()}/grammar/quiz?topicId=${encodeURIComponent(firstWeakTopicId)}`}
-            className="rounded-lg border border-amber-600 bg-white p-4 transition hover:bg-amber-50"
+            className="rounded-2xl border-2 border-ink/10 tile-butter p-4 stitched-card transition hover:-translate-y-0.5 hover:border-ink"
           >
-            <div className="text-sm font-semibold text-amber-700">⚠ 薄弱点专练</div>
-            <div className="mt-1 text-xs text-neutral-500">{stats!.weakTopics.length} 个主题低于 60%</div>
+            <div className="text-sm font-extrabold text-ink">⚠ 薄弱点专练</div>
+            <div className="mt-1 text-xs font-bold text-ink/65">{stats!.weakTopics.length} 个主题低于 60%</div>
           </Link>
         ) : (
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 opacity-60">
-            <div className="text-sm font-semibold text-neutral-500">⚠ 薄弱点专练</div>
-            <div className="mt-1 text-xs text-neutral-400">{loading ? "加载中..." : "暂无薄弱点（多答题以解锁）"}</div>
+          <div className="rounded-2xl border-2 border-ink/10 bg-white p-4 stitched-card opacity-60">
+            <div className="text-sm font-extrabold text-ink/55">⚠ 薄弱点专练</div>
+            <div className="mt-1 text-xs font-bold text-ink/40">{loading ? "加载中..." : "暂无薄弱点（多答题以解锁）"}</div>
           </div>
         )}
         <Link
           href={`/${examType.toLowerCase()}/grammar/mistakes`}
-          className="rounded-lg border border-neutral-300 bg-white p-4 transition hover:border-neutral-900 hover:shadow-sm"
+          className="rounded-2xl border-2 border-ink/10 tile-peach p-4 stitched-card transition hover:-translate-y-0.5 hover:border-ink"
         >
-          <div className="text-sm font-semibold">📓 错题复习</div>
-          <div className="mt-1 text-xs text-neutral-500">{loading ? "—" : `${mistakeCount} 道待复习`}</div>
+          <div className="text-sm font-extrabold text-ink">📓 错题复习</div>
+          <div className="mt-1 text-xs font-bold text-ink/65">{loading ? "—" : `${mistakeCount} 道待复习`}</div>
         </Link>
       </div>
 
-      <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">分类</div>
+      <div className="text-xs font-extrabold uppercase tracking-wide text-ink/55">分类</div>
 
       {loading ? (
-        <div className="rounded-md border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl border-2 border-ink/10 bg-white p-6 text-center text-sm font-bold text-ink/55 stitched-card">
           加载中...
         </div>
       ) : (
         <div className="space-y-3">
-          {Object.entries(topicsByCategory).map(([category, topics]) => (
+          {Object.entries(topicsByCategory).map(([category, topics], idx) => (
             <CategoryCard
               key={category}
               examType={examType}
               category={category}
+              index={idx}
               topics={topics.map((t) => {
                 const stat = topicStatMap.get(t.topicId);
                 return {

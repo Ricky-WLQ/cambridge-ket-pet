@@ -76,101 +76,101 @@ export default function VocabHub({ examType }: Props) {
   }, [stats, wordlistTotals]);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 py-8">
-      <h1 className="mb-2 text-2xl font-semibold">{examLabelZh} 词汇 · {examLabel} Vocabulary</h1>
-      <p className="mb-6 text-sm text-neutral-500">
-        Cambridge {examLabel} 官方词表（2025 修订）{wordlistTotals ? ` · 共 ${wordlistTotals.total} 词` : ""}
-      </p>
+    <div className="mx-auto w-full max-w-5xl px-6 py-8 flex flex-col gap-4">
+      <header>
+        <h1 className="text-3xl font-extrabold leading-tight">
+          {examLabelZh} 词汇 · <span className="marker-yellow-thick">{examLabel} Vocabulary</span>
+        </h1>
+        <p className="mt-2 text-sm font-medium text-ink/65">
+          Cambridge {examLabel} 官方词表（2025 修订）{wordlistTotals ? ` · 共 ${wordlistTotals.total} 词` : ""}
+        </p>
+      </header>
 
       {/* Overall mastery card */}
-      <div className="mb-6 rounded-lg border border-neutral-300 p-5">
+      <div className="rounded-2xl tile-butter border-2 border-ink/10 p-5 stitched-card">
         <div className="flex items-baseline justify-between">
           <div>
-            <div className="text-xs text-neutral-500">总体掌握度（必修核心词）</div>
-            <div className="mt-1 text-2xl font-semibold">
+            <div className="text-xs font-bold text-ink/65">总体掌握度（必修核心词）</div>
+            <div className="mt-1 text-3xl font-extrabold">
               {stats?.byTier.CORE.mastered ?? "—"}{" "}
-              <span className="text-base font-normal text-neutral-400">
+              <span className="text-base font-bold text-ink/40">
                 / {wordlistTotals?.byTier.CORE ?? "—"}
               </span>
             </div>
           </div>
-          <div className="text-2xl font-semibold text-green-600">{overallPct}%</div>
+          <div className="text-3xl font-extrabold text-emerald-700">{overallPct}%</div>
         </div>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-neutral-200">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-ink/10">
           <div className="h-full bg-amber-600" style={{ width: `${overallPct}%` }} />
         </div>
       </div>
 
       {/* Practice CTAs */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href={`/${examType.toLowerCase()}/vocab/listen?tier=CORE`}
-          className="rounded-lg border border-blue-600 bg-white p-4 transition hover:bg-blue-50"
+          className="rounded-2xl border-2 border-ink/10 tile-sky p-4 stitched-card transition hover:-translate-y-0.5 hover:border-ink"
         >
-          <div className="text-sm font-semibold text-blue-700">🔊 听写 · 必修</div>
-          <div className="mt-1 text-xs text-neutral-500">{wordlistTotals?.byTier.CORE ?? "—"} 个核心词</div>
+          <div className="text-sm font-extrabold text-ink">🔊 听写 · 必修</div>
+          <div className="mt-1 text-xs font-bold text-ink/65">{wordlistTotals?.byTier.CORE ?? "—"} 个核心词</div>
         </Link>
         <Link
           href={`/${examType.toLowerCase()}/vocab/spell?tier=CORE`}
-          className="rounded-lg border border-blue-600 bg-white p-4 transition hover:bg-blue-50"
+          className="rounded-2xl border-2 border-ink/10 tile-butter p-4 stitched-card transition hover:-translate-y-0.5 hover:border-ink"
         >
-          <div className="text-sm font-semibold text-blue-700">✏️ 拼写 · 必修</div>
-          <div className="mt-1 text-xs text-neutral-500">填字母练习</div>
+          <div className="text-sm font-extrabold text-ink">✏️ 拼写 · 必修</div>
+          <div className="mt-1 text-xs font-bold text-ink/65">填字母练习</div>
         </Link>
         <Link
           href={`/${examType.toLowerCase()}/vocab/listen`}
-          className="rounded-lg border border-neutral-300 bg-white p-4 transition hover:border-neutral-900 hover:shadow-sm"
+          className="rounded-2xl border-2 border-ink/10 tile-mint p-4 stitched-card transition hover:-translate-y-0.5 hover:border-ink"
         >
-          <div className="text-sm font-semibold">🔊 听写 · 混合</div>
-          <div className="mt-1 text-xs text-neutral-500">所有词混合</div>
+          <div className="text-sm font-extrabold text-ink">🔊 听写 · 混合</div>
+          <div className="mt-1 text-xs font-bold text-ink/65">所有词混合</div>
         </Link>
         <Link
           href={`/${examType.toLowerCase()}/vocab/spell`}
-          className="rounded-lg border border-neutral-300 bg-white p-4 transition hover:border-neutral-900 hover:shadow-sm"
+          className="rounded-2xl border-2 border-ink/10 tile-peach p-4 stitched-card transition hover:-translate-y-0.5 hover:border-ink"
         >
-          <div className="text-sm font-semibold">✏️ 拼写 · 混合</div>
-          <div className="mt-1 text-xs text-neutral-500">所有词混合</div>
+          <div className="text-sm font-extrabold text-ink">✏️ 拼写 · 混合</div>
+          <div className="mt-1 text-xs font-bold text-ink/65">所有词混合</div>
         </Link>
       </div>
 
       {/* Tier cards */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {(["CORE", "RECOMMENDED", "EXTRA"] as WordTier[]).map((t) => {
           const meta = TIER_LABELS[t];
           const mastered = stats?.byTier[t]?.mastered ?? 0;
           const total = wordlistTotals?.byTier[t] ?? 0;
           const pct = total === 0 ? 0 : Math.round((mastered / total) * 100);
-          const isCore = t === "CORE";
+          const tileClass = t === "CORE" ? "tile-butter" : t === "RECOMMENDED" ? "tile-lavender" : "tile-sky";
           return (
             <Link
               key={t}
               href={`/${examType.toLowerCase()}/vocab/listen?tier=${t}`}
-              className={`block rounded-lg border p-4 transition hover:shadow-sm ${
-                isCore
-                  ? "border-yellow-600 bg-yellow-50 hover:bg-yellow-100"
-                  : "border-neutral-300 bg-white hover:border-neutral-900"
-              }`}
+              className={`stat-card ${tileClass} stitched-card p-4 transition hover:-translate-y-0.5 hover:border-ink`}
             >
-              <div className={`text-xs font-semibold uppercase tracking-wide ${isCore ? "text-yellow-700" : "text-neutral-500"}`}>
+              <div className="text-xs font-extrabold uppercase tracking-wide text-ink/70">
                 {meta.zh} {meta.stars}
               </div>
-              <div className={`mt-1 text-lg font-semibold ${isCore ? "text-yellow-800" : "text-neutral-900"}`}>
+              <div className="mt-1 text-lg font-extrabold text-ink">
                 {mastered} / {total}
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-neutral-200">
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-ink/10">
                 <div
-                  className={`h-full ${pct >= 80 ? "bg-green-600" : pct >= 50 ? "bg-amber-600" : "bg-red-600"}`}
+                  className={`h-full ${pct >= 80 ? "bg-emerald-600" : pct >= 50 ? "bg-amber-600" : "bg-red-600"}`}
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="mt-2 text-xs text-neutral-500">{meta.sub}</div>
+              <div className="mt-2 text-xs font-bold text-ink/65">{meta.sub}</div>
             </Link>
           );
         })}
       </div>
 
       {/* Filter row */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border-2 border-ink/10 bg-white p-3 stitched-card">
         {(["ALL", "CORE", "RECOMMENDED", "EXTRA"] as const).map((t) => {
           const counts = wordlistTotals
             ? t === "ALL"
@@ -181,8 +181,10 @@ export default function VocabHub({ examType }: Props) {
             <button
               key={t}
               onClick={() => { setTierFilter(t); setPage(1); }}
-              className={`rounded-full border px-3 py-1 text-xs ${
-                tierFilter === t ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-300 bg-white text-neutral-700"
+              className={`rounded-full border-2 px-3 py-1 text-xs font-bold transition ${
+                tierFilter === t
+                  ? "border-ink bg-ink text-white"
+                  : "border-ink/15 bg-white text-ink/80 hover:border-ink/40"
               }`}
             >
               {t === "ALL" ? "全部" : TIER_LABELS[t as WordTier].zh} {counts !== "" && <span className="ml-1 opacity-70">{counts}</span>}
@@ -190,7 +192,7 @@ export default function VocabHub({ examType }: Props) {
           );
         })}
         <input
-          className="ml-auto min-w-[180px] flex-1 rounded border border-neutral-300 bg-white px-2 py-1 text-sm"
+          className="ml-auto min-w-[180px] flex-1 rounded-lg border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-medium focus:border-ink outline-none transition"
           placeholder="搜索单词或释义..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -198,35 +200,37 @@ export default function VocabHub({ examType }: Props) {
       </div>
 
       {/* Word table */}
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-neutral-200 text-xs uppercase tracking-wide text-neutral-500">
-            <th className="px-3 py-2 text-left font-medium">单词</th>
-            <th className="px-3 py-2 text-left font-medium">词性</th>
-            <th className="px-3 py-2 text-left font-medium">释义</th>
-            <th className="px-3 py-2 text-left font-medium">等级</th>
-            <th className="px-3 py-2 text-left font-medium">熟练度</th>
-            <th className="px-3 py-2 text-left font-medium">上次复习</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={6} className="py-6 text-center text-neutral-400">加载中...</td></tr>
-          ) : words.length === 0 ? (
-            <tr><td colSpan={6} className="py-6 text-center text-neutral-400">暂无单词</td></tr>
-          ) : (
-            words.map((w) => <WordRow key={w.id} word={w} progress={progressByWord.get(w.id) ?? null} />)
-          )}
-        </tbody>
-      </table>
+      <div className="rounded-2xl border-2 border-ink/10 bg-white overflow-hidden stitched-card">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b-2 border-ink/10 text-xs uppercase tracking-wide text-ink/55 bg-ink/[0.02]">
+              <th className="px-3 py-2 text-left font-extrabold">单词</th>
+              <th className="px-3 py-2 text-left font-extrabold">词性</th>
+              <th className="px-3 py-2 text-left font-extrabold">释义</th>
+              <th className="px-3 py-2 text-left font-extrabold">等级</th>
+              <th className="px-3 py-2 text-left font-extrabold">熟练度</th>
+              <th className="px-3 py-2 text-left font-extrabold">上次复习</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={6} className="py-6 text-center font-bold text-ink/40">加载中...</td></tr>
+            ) : words.length === 0 ? (
+              <tr><td colSpan={6} className="py-6 text-center font-bold text-ink/40">暂无单词</td></tr>
+            ) : (
+              words.map((w) => <WordRow key={w.id} word={w} progress={progressByWord.get(w.id) ?? null} />)
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Pagination */}
       {totalCount > 50 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-neutral-500">
+        <div className="flex items-center justify-between text-sm font-bold text-ink/65">
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded border border-neutral-300 px-3 py-1 disabled:opacity-30"
+            className="rounded-full border-2 border-ink/15 px-4 py-1.5 font-bold hover:bg-ink/5 transition disabled:opacity-30"
           >
             ← 上一页
           </button>
@@ -234,7 +238,7 @@ export default function VocabHub({ examType }: Props) {
           <button
             disabled={page * 50 >= totalCount}
             onClick={() => setPage((p) => p + 1)}
-            className="rounded border border-neutral-300 px-3 py-1 disabled:opacity-30"
+            className="rounded-full border-2 border-ink/15 px-4 py-1.5 font-bold hover:bg-ink/5 transition disabled:opacity-30"
           >
             下一页 →
           </button>
