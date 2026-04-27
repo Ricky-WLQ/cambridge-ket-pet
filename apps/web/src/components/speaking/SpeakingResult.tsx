@@ -128,25 +128,29 @@ export function SpeakingResult({
   const showSpinner =
     status === "SUBMITTED" || status === "SCORING" || status === "IN_PROGRESS";
 
+  const TILES = ["tile-peach", "tile-butter", "tile-mint", "tile-sky", "tile-lavender", "tile-cream"];
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">口语结果 — {level}</h1>
-          <p className="mt-1 text-sm text-neutral-500">
+          <h1 className="text-3xl font-extrabold leading-tight">
+            口语结果 — <span className="marker-yellow">{level}</span>
+          </h1>
+          <p className="mt-1 text-sm text-ink/65">
             考官 Mina · 全程 AI 对话
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             href="/history"
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
           >
             ← 返回历史记录
           </Link>
           <Link
             href={portalBase}
-            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
           >
             返回 {level} 门户
           </Link>
@@ -155,7 +159,7 @@ export function SpeakingResult({
 
       {showSpinner && !rubric && (
         <div
-          className="rounded-md border border-neutral-300 bg-slate-50 p-4 text-neutral-700"
+          className="rounded-2xl border-2 border-ink/10 bg-mist p-4 text-ink/85 font-bold stitched-card"
           role="status"
           aria-live="polite"
         >
@@ -165,7 +169,7 @@ export function SpeakingResult({
 
       {error && (
         <div
-          className="rounded-md border border-red-300 bg-red-50 p-4 text-sm text-red-800"
+          className="rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 font-bold"
           role="alert"
         >
           {error}
@@ -174,30 +178,30 @@ export function SpeakingResult({
 
       {rubric && (
         <>
-          <section className="rounded-md bg-slate-100 p-4">
+          <section className="rounded-2xl tile-cream border-2 border-ink/10 p-4 stitched-card">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-xl font-semibold">
+              <p className="text-2xl font-extrabold">
                 得分:{rawScore ?? 0} / {totalPossible ?? 20}
               </p>
               {typeof scaledScore === "number" && (
-                <p className="text-base text-neutral-600">
+                <p className="text-base text-ink/70 font-bold">
                   折算 {scaledScore}%
                 </p>
               )}
             </div>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-ink/55">
               四项评分(0–5)按 Cambridge Speaking 评分标准
             </p>
           </section>
 
-          <section className="rounded-md border border-neutral-300 bg-white p-4">
+          <section className="rounded-2xl border-2 border-ink/10 bg-white p-4 stitched-card">
             <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="text-base font-semibold text-neutral-900">
+              <h2 className="text-base font-extrabold">
                 评分细项
               </h2>
-              <span className="tabular-nums text-2xl font-semibold text-emerald-600">
+              <span className="tabular-nums text-2xl font-extrabold text-emerald-600">
                 {rubric.overall.toFixed(1)}
-                <span className="ml-1 text-sm text-neutral-500">/ 5</span>
+                <span className="ml-1 text-sm text-ink/55 font-bold">/ 5</span>
               </span>
             </div>
             <div className="space-y-3">
@@ -216,30 +220,30 @@ export function SpeakingResult({
               />
             </div>
             {rubric.justification && (
-              <p className="mt-4 border-t border-neutral-200 pt-3 text-sm leading-relaxed text-neutral-700">
+              <p className="mt-4 border-t-2 border-ink/10 pt-3 text-sm leading-relaxed text-ink/80">
                 {rubric.justification}
               </p>
             )}
           </section>
 
           {rubric.weakPoints?.length > 0 && (
-            <section className="rounded-md border border-neutral-300 bg-white p-4">
-              <h2 className="text-base font-semibold text-neutral-900">
+            <section className="rounded-2xl border-2 border-ink/10 bg-white p-4 stitched-card">
+              <h2 className="text-base font-extrabold">
                 易错点
               </h2>
               <ul className="mt-3 space-y-3">
                 {rubric.weakPoints.map((wp, i) => (
                   <li
                     key={i}
-                    className="rounded border border-neutral-200 bg-slate-50 p-3 text-sm"
+                    className={`rounded-xl ${TILES[i % TILES.length]} border-2 border-ink/10 p-3 text-sm`}
                   >
-                    <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                    <span className="text-xs font-extrabold uppercase tracking-wide text-ink/65">
                       {wp.tag}
                     </span>
-                    <p className="mt-1 italic text-neutral-700">
+                    <p className="mt-1 italic text-ink/80">
                       “{wp.quote}”
                     </p>
-                    <p className="mt-1 text-neutral-900">
+                    <p className="mt-1 text-ink font-bold">
                       建议:{wp.suggestion}
                     </p>
                   </li>
@@ -255,23 +259,23 @@ export function SpeakingResult({
         defaultOpen={!rubric}
       />
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-6">
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink/10 pt-5">
         <Link
           href="/history"
-          className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+          className="rounded-full bg-white border-2 border-ink/15 px-4 py-2 text-sm font-bold hover:border-ink"
         >
           ← 返回历史记录
         </Link>
         <div className="flex flex-wrap gap-2">
           <Link
             href={`${portalBase}/speaking/new`}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+            className="rounded-full bg-ink text-white px-4 py-2 text-sm font-extrabold hover:bg-ink/90 transition"
           >
             新的口语测试
           </Link>
           <Link
             href={portalBase}
-            className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+            className="rounded-full bg-white border-2 border-ink/15 px-4 py-2 text-sm font-bold hover:border-ink"
           >
             返回 {level} 门户
           </Link>

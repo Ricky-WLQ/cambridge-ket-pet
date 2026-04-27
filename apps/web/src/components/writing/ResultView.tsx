@@ -65,42 +65,42 @@ export default function WritingResultView({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-8">
-      <h1 className="text-xl font-semibold">
-        {examType} 写作 · Part {part} · 成绩
-      </h1>
-      <p className="text-sm text-neutral-500">
+      <span className="pill-tag bg-lavender-tint text-ink border-2 border-ink/10">
         {mode === "MOCK" ? "模拟考试" : "练习模式"}
-      </p>
+      </span>
+      <h1 className="mt-2 text-3xl font-extrabold leading-tight">
+        {examType} 写作 · Part {part} · <span className="marker-yellow">成绩</span>
+      </h1>
 
-      <div className="mt-6 rounded-md border border-neutral-300 p-6 text-center">
-        <div className="text-xs uppercase tracking-wider text-neutral-500">
+      <div className="mt-6 stitched-card rounded-2xl bg-butter-tint p-6 text-center border-2 border-ink/10">
+        <div className="text-xs font-bold uppercase tracking-widest text-ink/60">
           总分
         </div>
-        <div className={`mt-1 text-4xl font-bold ${colorClass}`}>
+        <div className={`mt-1 text-5xl font-extrabold ${colorClass}`}>
           {totalBand}
-          <span className="text-xl text-neutral-400"> / 20</span>
+          <span className="text-2xl text-ink/30"> / 20</span>
         </div>
-        <div className="mt-1 text-lg text-neutral-600">{scaledScore}%</div>
+        <div className="mt-1 text-base text-ink/70 font-bold">{scaledScore}%</div>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2">
         {CRITERIA.map((c) => {
           const s = stored.scores?.[c.key] ?? 0;
           const pct = Math.round((s / 5) * 100);
           const barColor =
-            pct >= 70 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500";
+            pct >= 70 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-rose-500";
           return (
             <div
               key={c.key}
-              className="rounded-md border border-neutral-200 p-4 text-center"
+              className="rounded-xl border-2 border-ink/10 bg-white p-3 text-center"
             >
-              <div className="text-xs text-neutral-500">{c.labelEn}</div>
-              <div className="text-[11px] text-neutral-400">{c.labelZh}</div>
-              <div className="mt-1 text-2xl font-bold">
+              <div className="text-xs font-bold text-ink/60">{c.labelEn}</div>
+              <div className="text-[10px] text-ink/40">{c.labelZh}</div>
+              <div className="mt-1 text-2xl font-extrabold">
                 {s}
-                <span className="text-sm text-neutral-400"> / 5</span>
+                <span className="text-sm text-ink/30"> / 5</span>
               </div>
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
                 <div
                   className={`h-full ${barColor}`}
                   style={{ width: `${pct}%` }}
@@ -112,9 +112,9 @@ export default function WritingResultView({
       </div>
 
       {stored.feedback_zh && (
-        <div className="mt-6 rounded-md border border-blue-200 bg-blue-50 p-4">
-          <div className="mb-2 text-sm font-medium text-blue-900">评语</div>
-          <p className="whitespace-pre-wrap text-sm text-blue-900">
+        <div className="mt-6 rounded-xl tile-sky border-2 border-ink/10 p-4">
+          <div className="mb-2 text-sm font-extrabold text-ink">评语</div>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
             {stored.feedback_zh}
           </p>
         </div>
@@ -122,11 +122,11 @@ export default function WritingResultView({
 
       {stored.specific_suggestions_zh &&
         stored.specific_suggestions_zh.length > 0 && (
-          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4">
-            <div className="mb-2 text-sm font-medium text-amber-900">
+          <div className="mt-4 rounded-xl tile-butter border-2 border-ink/10 p-4">
+            <div className="mb-2 text-sm font-extrabold text-ink">
               改进建议
             </div>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-amber-900">
+            <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink/85">
               {stored.specific_suggestions_zh.map((s, i) => (
                 <li key={i}>{s}</li>
               ))}
@@ -134,22 +134,22 @@ export default function WritingResultView({
           </div>
         )}
 
-      <div className="mt-8 rounded-md border border-neutral-200 p-4">
-        <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+      <div className="mt-8 rounded-xl bg-white border-2 border-ink/10 p-4 stitched-card">
+        <div className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
           题目
           {chosenOption && (
-            <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-normal text-neutral-700">
+            <span className="pill-tag bg-ink/10 text-ink !text-xs">
               选项 {chosenOption}
             </span>
           )}
         </div>
-        <div className="whitespace-pre-wrap text-sm text-neutral-700">
+        <div className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
           {activePrompt ? activePrompt.prompt : payload.prompt}
         </div>
         {(() => {
           const cps = activePrompt?.content_points ?? payload.content_points;
           return cps && cps.length > 0 ? (
-            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-neutral-700">
+            <ul className="list-disc pl-5 mt-3 text-sm text-ink/80 space-y-1">
               {cps.map((cp, i) => (
                 <li key={i}>{cp}</li>
               ))}
@@ -158,12 +158,12 @@ export default function WritingResultView({
         })()}
       </div>
 
-      <div className="mt-4 rounded-md border border-neutral-200 p-4">
-        <div className="mb-2 text-sm font-medium">学生作文</div>
-        <div className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-800">
+      <div className="mt-4 rounded-xl bg-white border-2 border-ink/10 p-4 stitched-card">
+        <div className="mb-2 text-sm font-extrabold text-ink">学生作文</div>
+        <div className="whitespace-pre-wrap text-sm leading-relaxed text-ink/90">
           {userAnswers.response ?? ""}
         </div>
-        <div className="mt-2 text-xs text-neutral-400">
+        <div className="mt-3 text-xs text-ink/50 font-bold">
           字数：
           {(userAnswers.response ?? "").trim().split(/\s+/).filter(Boolean).length}
         </div>

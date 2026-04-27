@@ -39,25 +39,27 @@ export default async function KetListeningResultPage({
       <main className="flex-1">
         <div className="p-6 max-w-3xl mx-auto">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h1 className="text-2xl font-bold">听力结果 — KET</h1>
+            <h1 className="text-2xl font-extrabold">
+              听力结果 — <span className="marker-yellow">KET</span>
+            </h1>
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/history"
-                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+                className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
               >
                 ← 返回历史记录
               </Link>
               <Link
                 href="/ket"
-                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-100"
+                className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
               >
                 返回 KET 门户
               </Link>
             </div>
           </div>
 
-          <div className="p-4 bg-slate-100 rounded mb-6">
-            <p className="text-xl font-semibold">
+          <div className="rounded-2xl bg-butter-tint border-2 border-ink/10 p-5 mb-6 stitched-card">
+            <p className="text-2xl font-extrabold">
               得分: {attempt.rawScore ?? 0} / {attempt.totalPossible ?? 0}
             </p>
           </div>
@@ -87,7 +89,7 @@ export default async function KetListeningResultPage({
           <div className="mt-6">
             {payload.parts.map((part) => (
               <section key={part.partNumber} className="mb-6">
-                <h3 className="text-lg font-semibold">第 {part.partNumber} 部分</h3>
+                <h3 className="text-lg font-extrabold mb-3">第 {part.partNumber} 部分</h3>
                 {part.questions.map((q) => (
                   <QuestionRenderer
                     key={q.id}
@@ -102,10 +104,10 @@ export default async function KetListeningResultPage({
             ))}
           </div>
 
-          <div className="mt-8 mb-10 flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-6">
+          <div className="mt-8 mb-10 flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink/10 pt-5">
             <Link
               href="/history"
-              className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+              className="rounded-full bg-white border-2 border-ink/15 px-4 py-2 text-sm font-bold hover:border-ink"
             >
               ← 返回历史记录
             </Link>
@@ -114,20 +116,20 @@ export default async function KetListeningResultPage({
                 <input type="hidden" name="attemptId" value={attempt.id} />
                 <button
                   type="submit"
-                  className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+                  className="rounded-full bg-ink text-white px-4 py-2 text-sm font-extrabold hover:bg-ink/90 transition"
                 >
                   再做一次
                 </button>
               </form>
               <Link
                 href="/ket/listening/new"
-                className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+                className="rounded-full bg-white border-2 border-ink/15 px-4 py-2 text-sm font-bold hover:border-ink"
               >
                 新的听力测试
               </Link>
               <Link
                 href="/ket"
-                className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium hover:bg-neutral-100"
+                className="rounded-full bg-white border-2 border-ink/15 px-4 py-2 text-sm font-bold hover:border-ink"
               >
                 返回 KET 门户
               </Link>

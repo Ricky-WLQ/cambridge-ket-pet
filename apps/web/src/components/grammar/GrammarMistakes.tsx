@@ -50,14 +50,16 @@ export default function GrammarMistakes({ examType }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-8">
-      <div className="mb-4 flex items-center text-sm text-neutral-500">
-        <Link href={`/${examType.toLowerCase()}/grammar`} className="hover:text-neutral-900">← 语法主页</Link>
+      <div className="mb-4 flex items-center text-sm font-bold text-ink/70">
+        <Link href={`/${examType.toLowerCase()}/grammar`} className="hover:text-ink hover:underline">← 语法主页</Link>
       </div>
 
-      <h1 className="mb-2 text-2xl font-semibold">语法错题本</h1>
-      <p className="mb-6 text-sm text-neutral-500">所有错题按状态分组，可标记已复习 / 已掌握或重新练习</p>
+      <h1 className="mb-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.05]">
+        <span className="marker-yellow-thick">语法错题本</span>
+      </h1>
+      <p className="mt-3 mb-6 text-base sm:text-lg text-ink/75 max-w-xl leading-relaxed">所有错题按状态分组，可标记已复习 / 已掌握或重新练习</p>
 
-      <div className="mb-6 flex gap-1 border-b border-neutral-200">
+      <div className="mb-6 flex flex-wrap items-center gap-2 border-b-2 border-ink/10 pb-2">
         {STATUS_TABS.map((tab) => {
           const count = tab.key === "ALL" ? counts.total : counts[tab.key];
           const isActive = activeTab === tab.key;
@@ -65,66 +67,66 @@ export default function GrammarMistakes({ examType }: Props) {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`-mb-px border-b-2 px-3 py-2 text-sm transition ${
+              className={`pill-tag transition ${
                 isActive
-                  ? "border-neutral-900 font-semibold text-neutral-900"
-                  : "border-transparent text-neutral-500 hover:text-neutral-900"
+                  ? "bg-ink text-white"
+                  : "bg-white border-2 border-ink/15 hover:border-ink"
               }`}
             >
-              {tab.zh} <span className="ml-1 text-xs opacity-70">({count})</span>
+              {tab.zh} <span className="ml-1 opacity-70">({count})</span>
             </button>
           );
         })}
       </div>
 
       {loading ? (
-        <div className="rounded-md border border-neutral-200 bg-neutral-50 p-6 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl border-2 border-ink/10 bg-mist p-6 text-center text-sm text-ink/65 font-bold stitched-card">
           加载中...
         </div>
       ) : mistakes.length === 0 ? (
-        <div className="rounded-md border border-neutral-200 bg-neutral-50 p-8 text-center text-sm text-neutral-500">
+        <div className="rounded-2xl border-2 border-ink/10 bg-mist p-8 text-center text-sm text-ink/65 font-bold stitched-card">
           {activeTab === "ALL" ? "暂无错题" : `暂无「${STATUS_TABS.find((t) => t.key === activeTab)?.zh}」状态的错题`}
         </div>
       ) : (
         <div className="space-y-3">
           {mistakes.map((m) => {
             const borderColor = m.status === "NEW"
-              ? "border-l-red-500"
+              ? "border-l-rose-500"
               : m.status === "REVIEWED"
                 ? "border-l-amber-500"
-                : "border-l-green-500";
+                : "border-l-emerald-500";
             return (
-              <div key={m.id} className={`rounded-md border border-l-4 border-neutral-200 ${borderColor} bg-white p-4`}>
-                <p className="mb-3 text-sm text-neutral-900 leading-relaxed">{m.questionText}</p>
-                <ul className="mb-3 space-y-1 text-xs">
+              <div key={m.id} className={`rounded-2xl bg-white border-2 border-ink/10 border-l-[6px] ${borderColor} p-4 sm:p-5 stitched-card`}>
+                <p className="mb-3 text-base font-bold leading-snug text-ink/90">{m.questionText}</p>
+                <ul className="mb-3 space-y-1 text-sm">
                   {m.questionOptions.map((opt, i) => {
-                    let cls = "text-neutral-700";
+                    let cls = "text-ink/70";
                     let badge = "";
                     if (i === m.correctIndex) {
-                      cls = "text-green-700 font-medium";
+                      cls = "text-emerald-700 font-bold";
                       badge = " ✓ 正确";
                     } else if (i === m.userAnswer) {
-                      cls = "text-red-700 line-through";
+                      cls = "text-rose-700 line-through";
                       badge = " ✗ 你的答案";
                     }
                     return <li key={i} className={cls}>{String.fromCharCode(65 + i)}. {opt}{badge}</li>;
                   })}
                 </ul>
-                <div className="mb-3 rounded-md border border-neutral-200 bg-neutral-50 p-2 text-xs text-neutral-700">
-                  <span className="font-semibold">解析: </span>{m.explanationZh}
+                <div className="mb-3 rounded-xl bg-mist border border-ink/10 p-3 text-sm text-ink/80">
+                  <span className="font-extrabold">解析: </span>{m.explanationZh}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {m.status === "NEW" && (
                     <>
                       <button
                         onClick={() => updateStatus(m.id, "REVIEWED")}
-                        className="rounded-md border border-amber-600 bg-white px-3 py-1 text-xs text-amber-700 hover:bg-amber-50"
+                        className="rounded-full bg-white border-2 border-amber-600 text-amber-700 text-xs font-extrabold px-3.5 py-1.5 hover:bg-amber-50 transition"
                       >
                         标记已复习
                       </button>
                       <button
                         onClick={() => updateStatus(m.id, "MASTERED")}
-                        className="rounded-md border border-green-600 bg-white px-3 py-1 text-xs text-green-700 hover:bg-green-50"
+                        className="rounded-full bg-white border-2 border-emerald-600 text-emerald-700 text-xs font-extrabold px-3.5 py-1.5 hover:bg-emerald-50 transition"
                       >
                         标记已掌握
                       </button>
@@ -134,13 +136,13 @@ export default function GrammarMistakes({ examType }: Props) {
                     <>
                       <button
                         onClick={() => updateStatus(m.id, "MASTERED")}
-                        className="rounded-md border border-green-600 bg-white px-3 py-1 text-xs text-green-700 hover:bg-green-50"
+                        className="rounded-full bg-white border-2 border-emerald-600 text-emerald-700 text-xs font-extrabold px-3.5 py-1.5 hover:bg-emerald-50 transition"
                       >
                         标记已掌握
                       </button>
                       <button
                         onClick={() => updateStatus(m.id, "NEW")}
-                        className="rounded-md border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-700 hover:border-neutral-900"
+                        className="rounded-full bg-white border-2 border-ink/15 text-ink/80 text-xs font-extrabold px-3.5 py-1.5 hover:border-ink transition"
                       >
                         重新练习此题
                       </button>
@@ -149,7 +151,7 @@ export default function GrammarMistakes({ examType }: Props) {
                   {m.status === "MASTERED" && (
                     <button
                       onClick={() => updateStatus(m.id, "NEW")}
-                      className="rounded-md border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-700 hover:border-neutral-900"
+                      className="rounded-full bg-white border-2 border-ink/15 text-ink/80 text-xs font-extrabold px-3.5 py-1.5 hover:border-ink transition"
                     >
                       重新学习
                     </button>
