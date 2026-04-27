@@ -64,3 +64,5 @@ postgres-data/
 # ========== Next.js cache / build artifacts ==========
 next-env.d.ts
 .vercel
+.zeabur-key
+.zeabur-tmp/
