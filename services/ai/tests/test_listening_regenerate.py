@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic_ai import UnexpectedModelBehavior
 
 from app.agents.listening_generator import generate_listening_test
 from app.schemas.listening import (
@@ -124,4 +125,74 @@ async def test_generate_gives_up_after_3_retries() -> None:
     ):
         await generate_listening_test("KET", "PART", part=1)
 
+    assert mock_agent.run.call_count == 3
+
+
+async def test_generate_retries_on_pydantic_unexpected_model_behavior() -> None:
+    """If pydantic-ai raises UnexpectedModelBehavior on attempt 1, the outer
+    loop catches it and retries — succeeding on attempt 2."""
+    valid = _valid_response()
+
+    mock_agent = MagicMock()
+    mock_agent.run = AsyncMock(
+        side_effect=[
+            UnexpectedModelBehavior("Exceeded maximum retries (1) for output validation"),
+            _mock_run_result(valid),
+        ]
+    )
+
+    with patch(
+        "app.agents.listening_generator.get_listening_generator",
+        return_value=mock_agent,
+    ):
+        result = await generate_listening_test("KET", "PART", part=1)
+
+    assert result.parts[0].questions
+    assert mock_agent.run.call_count == 2
+
+
+async def test_generate_gives_up_after_3_pydantic_failures() -> None:
+    """If pydantic-ai raises UnexpectedModelBehavior every attempt, raise
+    ValueError mentioning pydantic schema validation."""
+    mock_agent = MagicMock()
+    mock_agent.run = AsyncMock(
+        side_effect=UnexpectedModelBehavior(
+            "Exceeded maximum retries (1) for output validation"
+        )
+    )
+
+    with (
+        patch(
+            "app.agents.listening_generator.get_listening_generator",
+            return_value=mock_agent,
+        ),
+        pytest.raises(ValueError, match="pydantic schema validation failed"),
+    ):
+        await generate_listening_test("KET", "PART", part=1)
+
+    assert mock_agent.run.call_count == 3
+
+
+async def test_generate_mixed_pydantic_then_format_then_succeeds() -> None:
+    """attempt 1 raises UnexpectedModelBehavior, attempt 2 fails format check,
+    attempt 3 succeeds — full coverage of the outer loop's two failure modes."""
+    invalid = _invalid_response()
+    valid = _valid_response()
+
+    mock_agent = MagicMock()
+    mock_agent.run = AsyncMock(
+        side_effect=[
+            UnexpectedModelBehavior("schema validation failed"),
+            _mock_run_result(invalid),
+            _mock_run_result(valid),
+        ]
+    )
+
+    with patch(
+        "app.agents.listening_generator.get_listening_generator",
+        return_value=mock_agent,
+    ):
+        result = await generate_listening_test("KET", "PART", part=1)
+
+    assert result.parts[0].questions
     assert mock_agent.run.call_count == 3

@@ -21,7 +21,7 @@ import logging
 import os
 from typing import Literal
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent, UnexpectedModelBehavior
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
@@ -49,7 +49,11 @@ def _build_agent() -> Agent[None, ListeningTestResponse]:
         model=model,
         output_type=ListeningTestResponse,
         system_prompt=LISTENING_SYSTEM_PROMPT,
-        retries=1,
+        # Two pydantic-ai-side retries (3 total LLM attempts per agent.run)
+        # for the rare case where DeepSeek's tool-call args have trailing
+        # characters or malformed JSON. The outer MAX_ATTEMPTS loop below
+        # also catches UnexpectedModelBehavior to give us further headroom.
+        retries=2,
     )
 
 
@@ -108,9 +112,35 @@ async def generate_listening_test(
 
     last_errors: list[ValidationError] | None = None
     last_response: ListeningTestResponse | None = None
+    last_pydantic_error: UnexpectedModelBehavior | None = None
+    last_failure_kind: Literal["pydantic", "format"] | None = None
+
     for _attempt in range(MAX_ATTEMPTS):
         agent = get_listening_generator()
-        run = await agent.run(prompt, model_settings=LISTENING_MODEL_SETTINGS)
+        try:
+            run = await agent.run(prompt, model_settings=LISTENING_MODEL_SETTINGS)
+        except UnexpectedModelBehavior as e:
+            # Pydantic-ai exhausted its own output-validation retry budget
+            # (typical cause: DeepSeek's tool-call args include trailing
+            # characters after the closing `}`, which pydantic-core rejects
+            # as "Invalid JSON: trailing characters at line 1 column NNN";
+            # see commit 54b8e81 for the original observation). Treat this
+            # the same as a Cambridge-format-check failure: log + continue
+            # the outer loop so we get a fresh DeepSeek call. Bubble up only
+            # if every outer attempt fails this way.
+            last_pydantic_error = e
+            last_failure_kind = "pydantic"
+            log.warning(
+                "generate_listening_test attempt %d (exam_type=%s scope=%s "
+                "part=%s) raised UnexpectedModelBehavior: %s",
+                _attempt + 1,
+                exam_type,
+                scope,
+                part,
+                repr(e)[:500],
+            )
+            continue
+
         response: ListeningTestResponse = run.output
         errors = validate_listening_response(response)
         if not errors:
@@ -123,11 +153,27 @@ async def generate_listening_test(
             return response
         last_errors = errors
         last_response = response
+        last_failure_kind = "format"
         log.warning(
             "generate_listening_test attempt %d failed format checks: %s",
             _attempt + 1,
             [f"{e.code}: {e.message}" for e in errors],
         )
+
+    if last_failure_kind == "pydantic" and last_pydantic_error is not None:
+        log.error(
+            "generate_listening_test gave up after %d attempts (last failure: "
+            "pydantic-ai schema validation; exam_type=%s scope=%s part=%s): %s",
+            MAX_ATTEMPTS,
+            exam_type,
+            scope,
+            part,
+            repr(last_pydantic_error)[:500],
+        )
+        raise ValueError(
+            f"Listening generation pydantic schema validation failed after "
+            f"{MAX_ATTEMPTS} attempts: {last_pydantic_error}"
+        ) from last_pydantic_error
 
     assert last_errors is not None
     error_msgs = "; ".join(f"{e.code}: {e.message}" for e in last_errors)
