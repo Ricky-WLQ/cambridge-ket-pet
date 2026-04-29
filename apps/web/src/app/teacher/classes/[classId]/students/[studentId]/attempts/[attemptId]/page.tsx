@@ -175,7 +175,9 @@ export default async function TeacherAttemptDetailPage({
   }
 
   if (attempt.test.kind === "READING") {
-    const payload = attempt.test.payload as unknown as ReadingPayload;
+    const payload = (attempt.test.payload ?? {}) as Partial<ReadingPayload>;
+    const questions = payload.questions ?? [];
+    const passage = payload.passage ?? null;
     // `weakPoints` may be `{}` (truthy → ?? skipped) or have missing keys
     // for older attempts. Default each list independently.
     const stored = (attempt.weakPoints ?? {}) as Partial<StoredWeakPoints>;
@@ -226,11 +228,11 @@ export default async function TeacherAttemptDetailPage({
             part={attempt.test.part ?? 0}
             mode={attempt.mode}
             rawScore={attempt.rawScore ?? 0}
-            totalPossible={attempt.totalPossible ?? payload.questions.length}
+            totalPossible={attempt.totalPossible ?? questions.length}
             scaledScore={attempt.scaledScore ?? 0}
             userAnswers={userAnswers}
-            passage={payload.passage}
-            questions={payload.questions}
+            passage={passage}
+            questions={questions}
             weakPoints={weakPoints}
           />
         </main>

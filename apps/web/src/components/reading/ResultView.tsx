@@ -72,6 +72,9 @@ export default function ResultView({
   questions,
   weakPoints,
 }: ResultViewProps) {
+  // Defensive: legacy attempts can have payload.questions absent. Page-side
+  // already defaults to []; this is belt-and-suspenders for any new caller.
+  const safeQuestions = questions ?? [];
   const passRate = scaledScore;
   const scoreColor =
     passRate >= 70
@@ -189,7 +192,7 @@ export default function ResultView({
 
       {/* Per-question breakdown */}
       <ol className="space-y-4">
-        {questions.map((q, idx) => {
+        {safeQuestions.map((q, idx) => {
           const ua = userAnswers[q.id] ?? "";
           const blank = ua.trim().length === 0;
           const correct = isCorrect(q, ua);

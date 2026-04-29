@@ -63,7 +63,9 @@ export default async function KetReadingResultPage({
     redirect(`/ket/reading/runner/${attemptId}`);
   }
 
-  const payload = attempt.test.payload as unknown as ReadingTestPayload;
+  const payload = (attempt.test.payload ?? {}) as Partial<ReadingTestPayload>;
+  const questions = payload.questions ?? [];
+  const passage = payload.passage ?? null;
   // Older attempts (or attempts where the grading pipeline didn't write
   // weak-point arrays) can have `weakPoints` as `{}` or missing keys —
   // truthy enough to skip a `??` fallback but not array-shaped. Default
@@ -115,11 +117,11 @@ export default async function KetReadingResultPage({
           part={attempt.test.part ?? 0}
           mode={attempt.mode}
           rawScore={attempt.rawScore ?? 0}
-          totalPossible={attempt.totalPossible ?? payload.questions.length}
+          totalPossible={attempt.totalPossible ?? questions.length}
           scaledScore={attempt.scaledScore ?? 0}
           userAnswers={userAnswers}
-          passage={payload.passage}
-          questions={payload.questions}
+          passage={passage}
+          questions={questions}
           weakPoints={weakPoints}
         />
         <div className="mx-auto flex max-w-3xl w-full flex-wrap items-center justify-between gap-3 px-1">
