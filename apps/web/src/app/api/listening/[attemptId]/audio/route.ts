@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getAudioStream } from "@/lib/audio/r2-client";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 /**
  * GET /api/listening/[attemptId]/audio
@@ -24,7 +27,11 @@ export async function GET(
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    const portal = derivePortalFromRequest(req);
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   const { attemptId } = await ctx.params;

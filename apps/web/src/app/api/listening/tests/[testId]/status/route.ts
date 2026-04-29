@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 /**
  * GET /api/listening/tests/[testId]/status
@@ -25,7 +28,7 @@ import { prisma } from "@/lib/prisma";
  * trying to read `parts[].instructionZh` on a payload that doesn't have it.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ testId: string }> },
 ) {
   const { testId } = await params;
@@ -33,7 +36,11 @@ export async function GET(
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    const portal = derivePortalFromRequest(req);
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   const test = await prisma.test.findUnique({
