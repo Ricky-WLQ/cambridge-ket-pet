@@ -14,6 +14,13 @@ const serverOnlyMain = req.resolve("server-only");
 const serverOnlyEmpty = path.join(path.dirname(serverOnlyMain), "empty.js");
 
 export default defineConfig({
+  test: {
+    // jsdom for React component tests (PortalProvider, Mascot, snapshot tests
+    // for portal hubs in Phase B+). Pure-Node tests like voice.test.ts work
+    // under jsdom too — there's no need for a per-file environment override.
+    environment: "jsdom",
+    setupFiles: ["./vitest.setup.ts"],
+  },
   resolve: {
     alias: {
       "server-only": serverOnlyEmpty,
