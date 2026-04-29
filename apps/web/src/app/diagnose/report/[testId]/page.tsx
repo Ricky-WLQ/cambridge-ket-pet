@@ -81,10 +81,10 @@ export default async function DiagnoseReportPage({
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl px-6 py-10">
-        <div className="mb-4">
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="px-2">
           <Link
             href="/diagnose"
             className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"

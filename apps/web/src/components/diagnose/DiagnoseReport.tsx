@@ -15,6 +15,7 @@
  * The component sorts knowledge points by severity locally — the persisted
  * order is whatever the AI emitted, which we don't trust to be sorted.
  */
+import { Mascot, type MascotPose } from "@/components/Mascot";
 import {
   type DiagnoseSectionKind,
   DIAGNOSE_SECTION_KINDS,
@@ -133,59 +134,60 @@ function ScoreRing({ pct }: { pct: number }) {
   );
 }
 
+function poseForScore(score: number | null): MascotPose {
+  if (score === null) return "thinking";
+  if (score >= 70) return "celebrating";
+  if (score >= 50) return "thinking";
+  return "confused";
+}
+
 export default function DiagnoseReport({ report, showStudentName }: Props) {
   const sortedKps = report.knowledgePoints
     ? sortBySeverity(report.knowledgePoints)
     : [];
+  const portal = report.examType === "KET" ? "ket" : "pet";
 
   return (
-    <div className="space-y-6">
-      {/* Header banner. */}
-      <div
-        className="rounded-3xl border-2 border-ink/10 p-6 sm:p-7 stitched-card relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
-        }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5 mb-2">
-              <span
-                className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white text-[11px] font-extrabold tracking-wider"
-                aria-hidden
-              >
-                AI
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold">
-                <span className="marker-yellow">本周诊断报告</span>
-              </h1>
-              <span className="pill-tag bg-white border-2 border-ink/10">
-                {report.examType}
-              </span>
-            </div>
-            <p className="text-xs font-bold text-ink/60">
-              {report.weekStart} 至 {report.weekEnd}
-              {showStudentName && report.student.name && (
-                <span className="ml-2">· {report.student.name}</span>
-              )}
-            </p>
-          </div>
-          {report.overallScore !== null && (
-            <ScoreRing pct={report.overallScore} />
-          )}
+    <div className="flex flex-col gap-5">
+      {/* Compact hero: mascot + title + score ring. */}
+      <div className="flex items-center gap-3 px-2">
+        <Mascot
+          pose={poseForScore(report.overallScore)}
+          portal={portal}
+          width={64}
+          height={64}
+          className="rounded-xl"
+        />
+        <div className="flex-1">
+          <h1 className="text-lg font-extrabold leading-tight">
+            本周诊断报告
+            <span className="ml-2 pill-tag bg-white border border-ink/10 align-middle">
+              {report.examType}
+            </span>
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            {report.weekStart} 至 {report.weekEnd}
+            {showStudentName && report.student.name && (
+              <span className="ml-2">· {report.student.name}</span>
+            )}
+          </p>
         </div>
-        {report.reportError && (
-          <div className="mt-3 rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">
-            报告生成出错：{report.reportError}
-          </div>
+        {report.overallScore !== null && (
+          <ScoreRing pct={report.overallScore} />
         )}
       </div>
+
+      {report.reportError && (
+        <div className="mx-2 rounded-2xl border-2 border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">
+          报告生成出错：{report.reportError}
+        </div>
+      )}
 
       {/* Per-section score grid. */}
       {report.perSectionScores && (
         <section>
-          <h2 className="text-xl sm:text-2xl font-extrabold mb-3">
-            <span className="marker-yellow">六项能力本周得分</span>
+          <h2 className="px-2 text-base font-extrabold mb-2 text-ink/85">
+            六项能力本周得分
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {DIAGNOSE_SECTION_KINDS.map((kind) => {
@@ -263,8 +265,8 @@ export default function DiagnoseReport({ report, showStudentName }: Props) {
       {/* Knowledge-point clusters. */}
       {sortedKps.length > 0 && (
         <section>
-          <h2 className="text-xl sm:text-2xl font-extrabold mb-3">
-            <span className="marker-yellow">本周知识点弱项</span>
+          <h2 className="px-2 text-base font-extrabold mb-2 text-ink/85">
+            本周知识点弱项
           </h2>
           <div className="space-y-3">
             {sortedKps.map((g, i) => (
