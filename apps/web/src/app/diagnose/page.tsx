@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import type { WeeklyDiagnose } from "@prisma/client";
 
 import { SiteHeader } from "@/components/SiteHeader";
+import { Mascot } from "@/components/Mascot";
 import DiagnoseHub, {
   type DiagnoseHubStatus,
 } from "@/components/diagnose/DiagnoseHub";
@@ -51,32 +52,20 @@ export default async function DiagnoseHubPage() {
   // them at the class-level roll-up instead.
   if (isTeacher) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="page-section">
         <SiteHeader />
-        <main className="mx-auto w-full max-w-4xl px-6 py-10">
-          <div
-            className="rounded-3xl border-2 border-ink/10 p-6 sm:p-7 stitched-card relative overflow-hidden"
-            style={{
-              background:
-                "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
-            }}
-          >
-            <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl font-extrabold">
-              <span
-                className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white text-[11px] font-extrabold tracking-wider"
-                aria-hidden
-              >
-                AI
-              </span>
-              <span className="marker-yellow">本周诊断（教师视图）</span>
+        <main className="flex flex-1 flex-col gap-3.5">
+          <div className="rounded-3xl border-2 border-ink/10 p-5 stitched-card bg-gradient-to-br from-lavender-tint to-sky-tint">
+            <h1 className="text-xl sm:text-2xl font-extrabold">
+              本周诊断（教师视图）
             </h1>
-            <p className="mt-3 text-sm font-medium text-ink/75 leading-relaxed">
+            <p className="mt-2 text-sm font-medium text-ink/70">
               教师与管理员不参与本周诊断。请进入「我的班级」查看每位学生的本周诊断进度。
             </p>
-            <div className="mt-4">
+            <div className="mt-3">
               <Link
                 href="/teacher/classes"
-                className="inline-block rounded-full bg-ink px-5 py-2.5 text-sm font-extrabold text-white transition hover:bg-ink/90"
+                className="inline-block rounded-full bg-ink px-4 py-2 text-sm font-extrabold text-white transition hover:bg-ink/90"
               >
                 查看班级诊断状态 →
               </Link>
@@ -150,40 +139,32 @@ export default async function DiagnoseHubPage() {
       wd.status === "REPORT_FAILED");
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
       {wd !== null && (
         <SessionRefresher shouldRefresh={ungated} weeklyDiagnoseId={wd.id} />
       )}
-      <main className="mx-auto w-full max-w-4xl px-6 py-10">
+      <main className="flex flex-1 flex-col gap-3.5">
         {wd === null ? (
           <>
             {/* Empty-state: student has not generated this week's diagnose. */}
-            <div
-              className="mb-6 rounded-3xl border-2 border-ink/10 p-6 sm:p-7 stitched-card relative overflow-hidden"
-              style={{
-                background:
-                  "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
-              }}
-            >
-              <div className="flex items-center gap-2.5 mb-2">
-                <span
-                  className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white text-[11px] font-extrabold tracking-wider"
-                  aria-hidden
-                >
-                  AI
-                </span>
-                <h1 className="text-2xl sm:text-3xl font-extrabold">
-                  <span className="marker-yellow">{t.diagnose.pageTitle}</span>
+            <div className="flex items-center gap-3 px-2">
+              <Mascot
+                pose="thinking"
+                portal="ket"
+                width={64}
+                height={64}
+                className="rounded-xl"
+              />
+              <div className="flex-1">
+                <h1 className="text-lg font-extrabold leading-tight">
+                  {t.diagnose.pageTitle}
                 </h1>
+                <p className="mt-0.5 text-xs font-medium text-ink/60">
+                  {weekStart.toISOString().slice(0, 10)} 至{" "}
+                  {weekEnd.toISOString().slice(0, 10)}
+                </p>
               </div>
-              <p className="text-sm font-medium text-ink/70 leading-relaxed">
-                {t.diagnose.pageSubtitle}
-              </p>
-              <p className="mt-1 text-xs font-bold text-ink/60">
-                {weekStart.toISOString().slice(0, 10)} 至{" "}
-                {weekEnd.toISOString().slice(0, 10)}
-              </p>
             </div>
             <GenerateButton />
           </>
@@ -210,7 +191,7 @@ export default async function DiagnoseHubPage() {
         )}
 
         {pastHistory.length > 0 && (
-          <div className="mt-10">
+          <div className="mt-3">
             <HistoryList
               items={pastHistory.map((h) => ({
                 id: h.id,
@@ -227,7 +208,7 @@ export default async function DiagnoseHubPage() {
                 overallScore: h.overallScore,
               }))}
             />
-            <div className="mt-3 text-right">
+            <div className="mt-2 text-right px-2">
               <Link
                 href="/diagnose/history"
                 className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"

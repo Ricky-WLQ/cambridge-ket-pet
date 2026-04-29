@@ -24,7 +24,9 @@
 import Link from "next/link";
 
 import { t } from "@/i18n/zh-CN";
+import type { Portal } from "@/i18n/voice";
 import type { DiagnoseSectionKind } from "@/lib/diagnose/sectionLimits";
+import { Mascot, type MascotPose } from "@/components/Mascot";
 
 export type DiagnoseSectionStatus =
   | "NOT_STARTED"
@@ -57,13 +59,13 @@ export const SECTION_TITLE_ZH: Record<DiagnoseSectionKind, string> = {
   GRAMMAR: "语法",
 };
 
-const SECTION_ICON: Record<DiagnoseSectionKind, string> = {
-  READING: "📖",
-  LISTENING: "🎧",
-  WRITING: "✍",
-  SPEAKING: "🎤",
-  VOCAB: "🔤",
-  GRAMMAR: "📐",
+const SECTION_POSE: Record<DiagnoseSectionKind, MascotPose> = {
+  READING: "reading",
+  LISTENING: "listening",
+  WRITING: "writing",
+  SPEAKING: "microphone",
+  VOCAB: "flashcards",
+  GRAMMAR: "chart",
 };
 
 const STATUS_PILL: Record<
@@ -105,6 +107,8 @@ interface Props {
   weeklyDiagnoseStatus?: WeeklyDiagnoseStatus;
   /** Parent Test row id — needed to deep-link the report viewer. */
   testId?: string | null;
+  /** Which mascot to render — Leo for KET, Aria for PET. Defaults to "ket". */
+  portal?: Portal;
 }
 
 export default function SectionStatusCard({
@@ -113,9 +117,10 @@ export default function SectionStatusCard({
   attemptId,
   weeklyDiagnoseStatus,
   testId,
+  portal = "ket",
 }: Props) {
   const title = SECTION_TITLE_ZH[kind];
-  const icon = SECTION_ICON[kind];
+  const pose = SECTION_POSE[kind];
   const pill = STATUS_PILL[status];
 
   const isDone =
@@ -175,15 +180,15 @@ export default function SectionStatusCard({
       className={`flex flex-col gap-3 rounded-2xl bg-white border-2 p-4 stitched-card ${borderClass}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xl" aria-hidden>
-            {icon}
-          </span>
-          <div>
-            <div className="text-base font-extrabold">
-              {title}
-            </div>
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Mascot
+            pose={pose}
+            portal={portal}
+            width={48}
+            height={48}
+            decorative
+          />
+          <div className="text-base font-extrabold">{title}</div>
         </div>
         <span
           className={`pill-tag !text-[11px] !py-0.5 !px-2 ${pill.className}`}

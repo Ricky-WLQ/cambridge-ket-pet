@@ -291,6 +291,7 @@ export const t = {
     startSection: "开始测验",
     continueSection: "继续测验",
     viewAttempt: "查看报告",
+    viewReport: "查看本周诊断报告 →",
     submittedLabel: "已提交",
     inProgressLabel: "进行中",
     notStartedLabel: "未开始",
