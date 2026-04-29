@@ -36,14 +36,14 @@ export const t = {
     weekPillProgress: (done: number, total: number) =>
       `本周诊断打卡 ${done}/${total}`,
     todayLabel: "今天",
-    streakLabel: (days: number) => `🔥 连打 ${days} 天`,
+    streakLabel: (days: number) => `连打 ${days} 天`,
     modes: {
-      reading: "📖 读",
-      writing: "✍ 写",
-      listening: "🎧 听",
-      speaking: "🎤 说",
-      vocab: "🔠 词",
-      grammar: "📐 语法",
+      reading: "读",
+      writing: "写",
+      listening: "听",
+      speaking: "说",
+      vocab: "词",
+      grammar: "语法",
     },
   },
   petPortal: {

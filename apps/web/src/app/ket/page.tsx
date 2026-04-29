@@ -145,7 +145,7 @@ export default async function KetPortalPage(props: {
   return (
     <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto flex w-full max-w-[640px] flex-col gap-3.5 px-4">
+      <main className="flex flex-1 flex-col gap-3.5">
         {/* Hero strip: Leo + greeting + week pill (real diagnose progress) */}
         <div className="flex items-center gap-3 px-2">
           <Mascot

@@ -61,13 +61,13 @@ const TILE_BG: Record<ModeChip["palette"], string> = {
  */
 export function PortalMap({ portal, chips, title }: PortalMapProps) {
   return (
-    <div className="flex w-full flex-col gap-2.5">
+    <div className="flex grow-fill w-full flex-col gap-2.5">
       {title && (
         <h2 className="px-1 text-xs font-extrabold tracking-[0.06em] text-ink/55">
           {title}
         </h2>
       )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 grow-fill">
         {chips.map((c) => (
           <Link
             key={c.mode}
@@ -76,27 +76,27 @@ export function PortalMap({ portal, chips, title }: PortalMapProps) {
           >
             <div className="flex items-start justify-between">
               {/* Ordinal badge */}
-              <span className="grid h-7 w-7 place-items-center rounded-full bg-ink text-[0.75rem] font-extrabold text-white shadow-sm">
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-sm font-extrabold text-white shadow-sm">
                 {c.order}
               </span>
               <span className="arrow-chip">→</span>
             </div>
 
-            <div className="flex flex-col items-start gap-1.5">
+            <div className="flex flex-col items-start gap-2">
               <Mascot
                 pose={c.mascotPose}
                 portal={portal}
-                width={56}
-                height={56}
+                width={88}
+                height={88}
                 decorative
                 className="drop-shadow-sm"
               />
               <div>
-                <div className="text-2xl font-extrabold leading-tight">
+                <div className="text-3xl font-extrabold leading-tight sm:text-4xl">
                   {c.label}
                 </div>
                 {c.subtitle && (
-                  <div className="mt-0.5 text-[0.7rem] font-bold text-ink/55">
+                  <div className="mt-1 text-sm font-bold text-ink/55">
                     {c.subtitle}
                   </div>
                 )}
