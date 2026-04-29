@@ -6,8 +6,13 @@ export interface ModeChip {
   mode: "reading" | "listening" | "writing" | "speaking" | "vocab" | "grammar";
   /** Visible chip label (e.g., "📖 读" for KET kid voice or "阅读" for PET teen voice). */
   label: string;
-  /** Right-aligned secondary metric (e.g., "84%", "312/1599", "→" when active). */
-  accuracy: string;
+  /**
+   * Right-aligned secondary metric (e.g., "84%" accuracy, "312/1599" progress).
+   * Optional — omit when no real per-mode metric is computed for the user.
+   * Per the no-fabricated-UI-data rule (spec §2.1.1), do NOT pass example
+   * values; either pass a real query result or leave undefined.
+   */
+  accuracy?: string;
   /** Click-through target. */
   href: string;
   /** Absolute CSS positioning over the map background, expressed as percentages. */
@@ -54,13 +59,15 @@ export function PortalMap({ portal, chips, alt }: PortalMapProps) {
             style={{ top: c.position.top, left: c.position.left }}
           >
             <span>{c.label}</span>
-            <span
-              className={`text-[0.6rem] font-bold ${
-                c.active ? "opacity-100" : "opacity-55"
-              }`}
-            >
-              {c.accuracy}
-            </span>
+            {c.accuracy !== undefined && (
+              <span
+                className={`text-[0.6rem] font-bold ${
+                  c.active ? "opacity-100" : "opacity-55"
+                }`}
+              >
+                {c.accuracy}
+              </span>
+            )}
           </Link>
         ))}
       </div>
