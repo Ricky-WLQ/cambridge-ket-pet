@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+import { Mascot } from "@/components/Mascot";
 
 export interface NewListeningPickerProps {
   portal: "ket" | "pet";
@@ -50,11 +53,28 @@ export function NewListeningPicker(props: NewListeningPickerProps) {
     router.push(`/${props.portal}/listening/runner/${attemptId}`);
   };
 
+  const examType = props.portal.toUpperCase();
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-extrabold mb-6">
-        {props.portal.toUpperCase()} · <span className="marker-yellow-thick">听力练习</span>
-      </h1>
+    <div className="mx-auto max-w-2xl w-full">
+      <div className="mb-3 px-1">
+        <Link
+          href={`/${props.portal}`}
+          className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+        >
+          ← 返回 {examType} 门户
+        </Link>
+      </div>
+      <div className="mb-5 flex items-center gap-3 px-1">
+        <Mascot pose="listening" portal={props.portal} width={64} height={64} decorative />
+        <div className="flex-1">
+          <h1 className="text-lg font-extrabold leading-tight">
+            {examType} 听力练习
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            选择模式与范围，AI 即时生成
+          </p>
+        </div>
+      </div>
 
       <fieldset className="rounded-2xl bg-white border-2 border-ink/10 p-5 mb-4 stitched-card">
         <legend className="px-2 text-sm font-extrabold">模式</legend>

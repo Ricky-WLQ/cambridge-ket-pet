@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
+import { Mascot } from "@/components/Mascot";
 import { MicPermissionGate } from "./MicPermissionGate";
 import { ConnectionTest } from "./ConnectionTest";
 
@@ -42,16 +44,28 @@ export function SpeakingNewPage({ level }: Props) {
     }
   }
 
+  const portal = level === "KET" ? "ket" : "pet";
   return (
-    <div className="mx-auto max-w-xl space-y-4 p-6">
-      <header>
-        <h1 className="text-3xl font-extrabold leading-tight">
-          口语测试 — <span className="marker-yellow-thick">{level}</span>
-        </h1>
-        <p className="mt-2 text-base sm:text-lg text-ink/75 leading-relaxed">
-          本次练习由 AI 考官 Mina 全程对话。请在安静环境下佩戴耳机,并允许麦克风权限。
-        </p>
-      </header>
+    <div className="mx-auto max-w-xl w-full space-y-4">
+      <div className="px-1">
+        <Link
+          href={`/${portal}`}
+          className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+        >
+          ← 返回 {level} 门户
+        </Link>
+      </div>
+      <div className="flex items-center gap-3 px-1">
+        <Mascot pose="microphone" portal={portal} width={64} height={64} decorative />
+        <div className="flex-1">
+          <h1 className="text-lg font-extrabold leading-tight">
+            {level} 口语测试
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            AI 考官 Mina 全程对话 · 请佩戴耳机并允许麦克风
+          </p>
+        </div>
+      </div>
 
       <MicPermissionGate onReady={() => setMicOk(true)} />
       <ConnectionTest onResult={setNetOk} />
