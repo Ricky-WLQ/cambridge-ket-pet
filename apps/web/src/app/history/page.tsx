@@ -143,16 +143,19 @@ export default async function HistoryPage({
   if (sp.mode && (MODE_VALUES as readonly string[]).includes(sp.mode)) {
     where.mode = sp.mode as (typeof MODE_VALUES)[number];
   }
-  const testFilter: Prisma.TestWhereInput = {};
+  // DIAGNOSE attempts live under /diagnose/history (per-section replay /
+  // overall report). Excluding them here prevents them from rendering in
+  // the regular history grid where the result-link template doesn't know
+  // how to view them — kindPathFor() defaults DIAGNOSE -> "reading", which
+  // produced a 500 / blank breakdown previously.
+  const testFilter: Prisma.TestWhereInput = { kind: { not: "DIAGNOSE" } };
   if (sp.examType && (EXAM_VALUES as readonly string[]).includes(sp.examType)) {
     testFilter.examType = sp.examType as (typeof EXAM_VALUES)[number];
   }
   if (sp.kind && (KIND_VALUES as readonly string[]).includes(sp.kind)) {
     testFilter.kind = sp.kind as (typeof KIND_VALUES)[number];
   }
-  if (Object.keys(testFilter).length > 0) {
-    where.test = testFilter;
-  }
+  where.test = testFilter;
 
   const [attempts, mistakeCount, comments] = await Promise.all([
     prisma.testAttempt.findMany({

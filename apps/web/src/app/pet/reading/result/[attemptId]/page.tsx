@@ -45,6 +45,7 @@ export default async function PetReadingResultPage({
       test: {
         select: {
           examType: true,
+          kind: true,
           part: true,
           mode: true,
           payload: true,
@@ -56,6 +57,10 @@ export default async function PetReadingResultPage({
   if (!attempt || attempt.userId !== userId) notFound();
   if (attempt.test.examType !== "PET") {
     redirect(`/ket/reading/result/${attemptId}`);
+  }
+  // DIAGNOSE attempts have their own viewer — redirect to the diagnose hub.
+  if (attempt.test.kind !== "READING") {
+    redirect("/diagnose");
   }
   if (attempt.status !== "GRADED") {
     redirect(`/pet/reading/runner/${attemptId}`);

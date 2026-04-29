@@ -45,6 +45,7 @@ export default async function KetReadingResultPage({
       test: {
         select: {
           examType: true,
+          kind: true,
           part: true,
           mode: true,
           payload: true,
@@ -56,6 +57,13 @@ export default async function KetReadingResultPage({
   if (!attempt || attempt.userId !== userId) notFound();
   if (attempt.test.examType !== "KET") {
     redirect(`/pet/reading/result/${attemptId}`);
+  }
+  // DIAGNOSE attempts have their own viewer (per-section replay or
+  // overall report). The regular reading result page expects payload
+  // to have top-level `passage`/`questions`, but diagnose payloads
+  // are shaped { sections: { READING, LISTENING, ... } }. Redirect.
+  if (attempt.test.kind !== "READING") {
+    redirect("/diagnose");
   }
   if (attempt.status !== "GRADED") {
     // In Phase 1 we grade synchronously on submit, so an ungraded attempt
