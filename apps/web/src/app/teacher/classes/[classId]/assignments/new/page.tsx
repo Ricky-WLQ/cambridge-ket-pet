@@ -33,24 +33,28 @@ export default async function NewAssignmentPage({
   return (
     <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-2xl px-6 py-10">
-        <Link
-          href={`/teacher/classes/${cls.id}`}
-          className="inline-flex items-center gap-1 rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold text-ink hover:bg-ink/5 transition"
-        >
-          <span aria-hidden>←</span> 返回 {cls.name}
-        </Link>
-        <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">
-          <span className="marker-yellow-thick">布置新作业</span>
-        </h1>
-        <p className="mt-1 text-base sm:text-lg text-ink/75 leading-relaxed">
-          作业由学生在对应门户完成，系统根据答卷自动标记完成状态
-        </p>
-        <div className="mt-6">
-          <NewAssignmentForm
-            classId={cls.id}
-            defaultExamType={cls.examFocus ?? "KET"}
-          />
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="mx-auto max-w-2xl w-full">
+          <div className="px-1">
+            <Link
+              href={`/teacher/classes/${cls.id}`}
+              className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+            >
+              ← 返回 {cls.name}
+            </Link>
+          </div>
+          <div className="mt-2 px-1">
+            <h1 className="text-lg font-extrabold leading-tight">布置新作业</h1>
+            <p className="mt-0.5 text-xs font-medium text-ink/60">
+              作业由学生在对应门户完成，系统根据答卷自动标记完成状态
+            </p>
+          </div>
+          <div className="mt-4">
+            <NewAssignmentForm
+              classId={cls.id}
+              defaultExamType={cls.examFocus ?? "KET"}
+            />
+          </div>
         </div>
       </main>
     </div>

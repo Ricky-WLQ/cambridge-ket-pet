@@ -36,16 +36,14 @@ export default async function TeacherClassesPage() {
     <div className="page-section">
       <SiteHeader />
 
-      <main className="mx-auto w-full max-w-3xl px-6 py-10">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            <span className="marker-yellow-thick">
-              {t.classes.teacher.title}
-            </span>
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="flex items-center justify-between gap-2 px-2">
+          <h1 className="text-base font-extrabold leading-tight">
+            {t.classes.teacher.title}
           </h1>
           <Link
             href="/teacher/classes/new"
-            className="rounded-full bg-ink px-4 py-2 text-sm font-extrabold text-white hover:bg-ink/90 transition"
+            className="rounded-full bg-ink px-4 py-2 text-sm font-extrabold text-white hover:bg-ink/90 transition whitespace-nowrap"
           >
             {t.classes.teacher.createButton}
           </Link>

@@ -137,9 +137,9 @@ export default async function TeacherAttemptDetailPage({
     <div className="mx-auto w-full max-w-3xl px-6 pt-8">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1 rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold text-ink hover:bg-ink/5 transition"
+        className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
       >
-        <span aria-hidden>←</span> 返回学生详情
+        ← 返回学生详情
       </Link>
       <div className="mt-4 rounded-2xl border-2 border-ink/10 bg-sky-tint p-4 text-sm text-ink stitched-card">
         <div className="font-extrabold">
