@@ -80,79 +80,57 @@ export default async function KetPortalPage(props: {
 
   const portal = "ket" as const;
 
-  // LEARNING-PATH layout (top-to-bottom):
-  //     ① 词汇 (foundation, top)
-  //     ② 语法 (structure)
-  //     ③ 听 (input — comprehension)
-  //     ④ 说 (production — from input)
-  //     ⑤ 读 (input at scale)
-  //     ⑥ 写 (full production, bottom)
-  // The path winds top-to-bottom across the empty island background
-  // (/maps/ket-island-bg.png). PortalMap draws the dotted pebble road
-  // through the plotCenters and renders each building on a small grass
-  // plot disc. Chip name-tags carry a numbered badge so the journey is
-  // unambiguous. Accuracy fields are intentionally omitted — spec §2.1.1
-  // (no fabricated UI data).
+  // PRODUCTION-grade KET 岛: the unified user-approved illustration is
+  // vectorized into /maps/ket-island.svg with per-building <g> groups
+  // wrapped in <a href> for pixel-perfect HTML-native click targets.
+  // PortalMap renders the SVG via <object>; chips below overlay the
+  // ordinal badge ① → ⑥ above each building's location on the map.
+  //
+  // tagPosition is the chip name-tag center (in viewBox % coords),
+  // hand-positioned over each building on the unified map. Accuracy
+  // fields are intentionally omitted — spec §2.1.1 (no fabricated data).
   const chips: ModeChip[] = [
     {
       mode: "vocab",
       order: 1,
       label: t.ketPortal.modes.vocab,
       href: "/ket/vocab",
-      imgSrc: "/maps/buildings/ket/vocab.png",
-      plotCenter: { x: 50, y: 36 },
-      placement: { x: 40, y: 26, w: 20, h: 20 },
-      labelAnchor: "top-center",
+      tagPosition: { x: 78, y: 75 },
     },
     {
       mode: "grammar",
       order: 2,
       label: t.ketPortal.modes.grammar,
       href: "/ket/grammar",
-      imgSrc: "/maps/buildings/ket/grammar.png",
-      plotCenter: { x: 70, y: 48 },
-      placement: { x: 60, y: 36, w: 20, h: 22 },
-      labelAnchor: "top-center",
+      tagPosition: { x: 90, y: 38 },
     },
     {
       mode: "listening",
       order: 3,
       label: t.ketPortal.modes.listening,
       href: "/ket/listening/new",
-      imgSrc: "/maps/buildings/ket/listening.png",
-      plotCenter: { x: 32, y: 56 },
-      placement: { x: 22, y: 46, w: 20, h: 18 },
-      labelAnchor: "top-center",
+      tagPosition: { x: 66, y: 22 },
     },
     {
       mode: "speaking",
       order: 4,
       label: t.ketPortal.modes.speaking,
       href: "/ket/speaking/new",
-      imgSrc: "/maps/buildings/ket/speaking.png",
-      plotCenter: { x: 70, y: 66 },
-      placement: { x: 60, y: 56, w: 20, h: 18 },
-      labelAnchor: "top-center",
+      tagPosition: { x: 50, y: 42 },
     },
     {
       mode: "reading",
       order: 5,
       label: t.ketPortal.modes.reading,
       href: "/ket/reading/new",
-      imgSrc: "/maps/buildings/ket/reading.png",
-      plotCenter: { x: 32, y: 76 },
-      placement: { x: 22, y: 66, w: 20, h: 18 },
-      labelAnchor: "top-center",
+      tagPosition: { x: 18, y: 60 },
     },
     {
       mode: "writing",
       order: 6,
       label: t.ketPortal.modes.writing,
       href: "/ket/writing/new",
-      imgSrc: "/maps/buildings/ket/writing.png",
-      plotCenter: { x: 56, y: 84 },
-      placement: { x: 46, y: 74, w: 20, h: 18 },
-      labelAnchor: "top-center",
+      tagPosition: { x: 38, y: 22 },
     },
   ];
 

@@ -20,10 +20,7 @@ vi.mock("@/lib/diagnose/eligibility", () => ({
     grammarStatus: "NOT_STARTED",
   })),
 }));
-vi.mock("next/navigation", () => ({
-  redirect: vi.fn(),
-  useRouter: () => ({ push: vi.fn() }),
-}));
+vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/components/SiteHeader", () => ({ SiteHeader: () => null }));
 vi.mock("@/components/student/AssignmentList", () => ({ default: () => null }));
 
@@ -37,14 +34,13 @@ describe("KET portal home", () => {
     // Leo greeting in the hero strip is a normal next/image <img>.
     expect(container.querySelector('img[alt="Leo"]')).toBeTruthy();
 
-    // KET 岛 map composite is the SVG-wrapped div with role="img"
-    // + aria-label. The empty island background <image> is inside.
+    // KET 岛 map is the vectorized SVG loaded via <object>.
     const mapWrapper = container.querySelector(
       'div[role="img"][aria-label="KET 岛"]',
     );
     expect(mapWrapper).toBeTruthy();
     expect(
-      mapWrapper?.querySelector('image[href="/maps/ket-island-bg.png"]'),
+      mapWrapper?.querySelector('object[data="/maps/ket-island.svg"]'),
     ).toBeTruthy();
 
     // 6 chip name-tag <Link>s for the 6 modes.
