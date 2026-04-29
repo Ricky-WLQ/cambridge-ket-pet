@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import DiagnoseReport from "@/components/diagnose/DiagnoseReport";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { runFinalizePipeline } from "@/lib/diagnose/finalize";
 import type {
   DiagnoseSummary,
   KnowledgePointGroup,
@@ -36,13 +37,36 @@ export default async function DiagnoseReportPage({
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
 
-  const wd = await prisma.weeklyDiagnose.findUnique({
+  let wd = await prisma.weeklyDiagnose.findUnique({
     where: { testId },
     include: {
       user: { select: { id: true, name: true } },
     },
   });
   if (!wd) notFound();
+
+  // Mirror /diagnose page's auto-finalize trigger: when the row is in
+  // COMPLETE but reportAt is null, the AI report hasn't been generated
+  // yet. Without this, refreshing the report URL just re-renders an
+  // empty "report still generating" page forever; only visiting
+  // /diagnose hub would kick the pipeline. Owner-only — teachers
+  // viewing don't trigger generation on the student's behalf.
+  if (
+    wd.userId === userId &&
+    wd.status === "COMPLETE" &&
+    wd.reportAt === null
+  ) {
+    try {
+      await runFinalizePipeline(userId);
+    } catch (err) {
+      console.error("[diagnose-report] finalize pipeline failed:", err);
+    }
+    wd = await prisma.weeklyDiagnose.findUnique({
+      where: { testId },
+      include: { user: { select: { id: true, name: true } } },
+    });
+    if (!wd) notFound();
+  }
 
   // Ownership check.
   const isOwner = wd.userId === userId;
