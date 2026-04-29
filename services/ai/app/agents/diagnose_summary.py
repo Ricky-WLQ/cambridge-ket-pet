@@ -45,6 +45,7 @@ from app.schemas.diagnose import (
     DiagnoseSummaryRequest,
     DiagnoseSummaryResponse,
 )
+from app.validators._banned_phrases import BANNED_PHRASES, find_banned
 from app.validators.diagnose import validate_diagnose_summary
 
 log = logging.getLogger(__name__)
@@ -96,6 +97,47 @@ def _build_agent(exam_type: str) -> Agent[None, DiagnoseSummaryResponse]:
 # IMPORTANT: pydantic-ai applies model_settings only at agent.run(...) — see
 # listening_generator.py:62-65 for the same pattern.
 _SUMMARY_MODEL_SETTINGS = {"max_tokens": 8000}
+
+
+# Soft replacements for the most common banned phrases. Used as a last-resort
+# scrub when 3 retries failed to produce clean output (e.g., model is being
+# stubborn). Keeps the report readable instead of leaking exam-cram register.
+_BANNED_REPLACEMENTS: dict[str, str] = {
+    "决定通过率": "影响考试结果",
+    "属于低分段": "需要更多练习",
+    "未达标": "还有提升空间",
+    "短板": "薄弱处",
+    "critical 弱项": "重点弱项",
+    "moderate 弱项": "中等弱项",
+    "minor 弱项": "次要弱项",
+    "[critical]": "（重点）",
+    "[moderate]": "（中等）",
+    "[minor]": "（次要）",
+    "请重视": "可以多关注",
+    "切记": "记得",
+    "不容忽视": "值得关注",
+    "亟待提升": "需要练习",
+}
+
+
+def _scrub_banned(text: str) -> str:
+    """Replace banned phrases with friendlier paraphrases as a fallback."""
+    for banned, replacement in _BANNED_REPLACEMENTS.items():
+        if banned in text:
+            text = text.replace(banned, replacement)
+    return text
+
+
+def _scrub_response(resp: DiagnoseSummaryResponse) -> DiagnoseSummaryResponse:
+    """Walk every user-visible field and scrub banned phrases."""
+    return resp.model_copy(
+        update={
+            "strengths": [_scrub_banned(s) for s in resp.strengths],
+            "weaknesses": [_scrub_banned(s) for s in resp.weaknesses],
+            "priority_actions": [_scrub_banned(s) for s in resp.priority_actions],
+            "narrative_zh": _scrub_banned(resp.narrative_zh),
+        }
+    )
 
 
 async def summarize_diagnose(
@@ -163,4 +205,18 @@ async def summarize_diagnose(
         raise RuntimeError(
             "diagnose_summary received no response from agent"
         )
+    # Last-resort scrub: even if the model stubbornly emits banned phrases
+    # for all 3 attempts, we never persist them — paraphrase to a neutral
+    # equivalent so the rendered report stays redesign-clean. Only kicks in
+    # when validate_diagnose_summary already rejected the response above.
+    if any(p in s for p in BANNED_PHRASES for s in (
+        *last_response.strengths,
+        *last_response.weaknesses,
+        *last_response.priority_actions,
+        last_response.narrative_zh,
+    )):
+        log.warning(
+            "diagnose_summary scrubbing banned phrases from final response"
+        )
+        last_response = _scrub_response(last_response)
     return last_response
