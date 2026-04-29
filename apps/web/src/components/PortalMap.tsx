@@ -34,6 +34,12 @@ export interface ModeChip {
   labelAnchor?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   /** Renders the chip name-tag in the highlighted ink-black variant. */
   active?: boolean;
+  /**
+   * Ordinal in the learning path (1-based). When set, a small numbered
+   * badge renders inside the chip name-tag so kids can see the journey
+   * order: 1=词汇, 2=语法, 3=听, 4=说, 5=读, 6=写.
+   */
+  order?: number;
 }
 
 interface PortalMapProps {
@@ -149,7 +155,9 @@ export function PortalMap({
 
         {/* Layer 2: per-building click images.
             visiblePainted = pointer events fire only on opaque pixels →
-            pixel-perfect click areas. Cursor pointer + accessible role. */}
+            pixel-perfect click areas. Cursor pointer + accessible role.
+            outline:none + focus class suppresses the harsh browser-default
+            focus frame; we add a custom drop-shadow on hover/focus instead. */}
         {chips.map((c) => (
           <image
             key={c.mode}
@@ -159,7 +167,11 @@ export function PortalMap({
             width={c.placement.w}
             height={c.placement.h}
             preserveAspectRatio="xMidYMid meet"
-            style={{ pointerEvents: "visiblePainted", cursor: "pointer" }}
+            style={{
+              pointerEvents: "visiblePainted",
+              cursor: "pointer",
+              outline: "none",
+            }}
             filter={debug ? `url(#${DEBUG_FILTER_ID[c.mode]})` : undefined}
             role="link"
             aria-label={c.label}
@@ -196,12 +208,23 @@ export function PortalMap({
               href={c.href}
               aria-hidden="true"
               tabIndex={-1}
-              className={`pointer-events-auto absolute inline-flex cursor-pointer items-center gap-1.5 rounded-xl border-[2.5px] px-2 py-1 text-[0.7rem] font-extrabold shadow-md motion-safe:transition-transform motion-safe:duration-200 hover:scale-105 ${
+              className={`pointer-events-auto absolute inline-flex cursor-pointer items-center gap-1 rounded-xl border-2 px-2 py-1 text-[0.7rem] font-extrabold shadow-sm motion-safe:transition-transform motion-safe:duration-200 hover:scale-105 ${
                 c.active
-                  ? "bg-ink text-white border-ink"
-                  : "bg-white/95 border-ink text-ink"
+                  ? "bg-ink text-white border-ink/70"
+                  : "bg-white/95 border-ink/30 text-ink"
               } ${ANCHOR_POSITION[anchor]}`}
             >
+              {c.order !== undefined && (
+                <span
+                  className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[0.55rem] font-extrabold ${
+                    c.active
+                      ? "bg-white text-ink"
+                      : "bg-ink/85 text-white"
+                  }`}
+                >
+                  {c.order}
+                </span>
+              )}
               <span>{c.label}</span>
               {c.accuracy !== undefined && (
                 <span

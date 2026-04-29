@@ -80,65 +80,74 @@ export default async function KetPortalPage(props: {
 
   const portal = "ket" as const;
 
-  // Pixel-perfect compositing approach (Path B): the empty-island
-  // background lives at /maps/ket-island-bg.png; each building lives at
-  // /maps/buildings/ket/<mode>.png with a transparent background. The
-  // SVG composite uses pointer-events="visiblePainted" so clicks register
-  // only on opaque building pixels — the building's alpha channel IS the
-  // click area, by construction.
-  //
-  // `placement` boxes were chosen to match the 6 empty plot positions on
-  // the bg image. Each building is drawn at its placement size; the
-  // building's own visual (with its grass platform underneath) sits on
-  // top of the matching plot. Accuracy fields are intentionally omitted
-  // — spec §2.1.1 (no fabricated UI data).
+  // LEARNING-PATH layout: the 6 buildings are positioned along the
+  // winding pebble road on /maps/ket-island-bg.png in the order kids
+  // naturally progress through language learning:
+  //     1. 词汇 (foundation)
+  //     2. 语法 (structure)
+  //     3. 听 (input — comprehension)
+  //     4. 说 (production — from input)
+  //     5. 读 (input at scale)
+  //     6. 写 (full production)
+  // Placements were chosen to land on the 6 plots visible on the new bg,
+  // walking the road from bottom-left to top-right. SVG composite uses
+  // pointer-events="visiblePainted" so clicks register only on opaque
+  // building pixels (pixel-perfect). Order index renders as a small
+  // numbered badge on each chip name-tag. Accuracy fields are
+  // intentionally omitted — spec §2.1.1 (no fabricated UI data).
   const chips: ModeChip[] = [
     {
+      mode: "vocab",
+      order: 1,
+      label: t.ketPortal.modes.vocab,
+      href: "/ket/vocab",
+      imgSrc: "/maps/buildings/ket/vocab.png",
+      placement: { x: 24, y: 60, w: 26, h: 26 },
+      labelAnchor: "bottom-left",
+    },
+    {
+      mode: "grammar",
+      order: 2,
+      label: t.ketPortal.modes.grammar,
+      href: "/ket/grammar",
+      imgSrc: "/maps/buildings/ket/grammar.png",
+      placement: { x: 6, y: 36, w: 24, h: 30 },
+      labelAnchor: "bottom-left",
+    },
+    {
+      mode: "listening",
+      order: 3,
+      label: t.ketPortal.modes.listening,
+      href: "/ket/listening/new",
+      imgSrc: "/maps/buildings/ket/listening.png",
+      placement: { x: 38, y: 38, w: 24, h: 26 },
+      labelAnchor: "top-left",
+    },
+    {
+      mode: "speaking",
+      order: 4,
+      label: t.ketPortal.modes.speaking,
+      href: "/ket/speaking/new",
+      imgSrc: "/maps/buildings/ket/speaking.png",
+      placement: { x: 62, y: 26, w: 24, h: 26 },
+      labelAnchor: "top-right",
+    },
+    {
       mode: "reading",
+      order: 5,
       label: t.ketPortal.modes.reading,
       href: "/ket/reading/new",
       imgSrc: "/maps/buildings/ket/reading.png",
-      placement: { x: 8, y: 38, w: 28, h: 28 },
+      placement: { x: 6, y: 10, w: 24, h: 26 },
       labelAnchor: "top-left",
     },
     {
       mode: "writing",
+      order: 6,
       label: t.ketPortal.modes.writing,
       href: "/ket/writing/new",
       imgSrc: "/maps/buildings/ket/writing.png",
-      placement: { x: 28, y: 14, w: 26, h: 28 },
-      labelAnchor: "top-left",
-    },
-    {
-      mode: "listening",
-      label: t.ketPortal.modes.listening,
-      href: "/ket/listening/new",
-      imgSrc: "/maps/buildings/ket/listening.png",
-      placement: { x: 56, y: 14, w: 24, h: 28 },
-      labelAnchor: "top-right",
-    },
-    {
-      mode: "speaking",
-      label: t.ketPortal.modes.speaking,
-      href: "/ket/speaking/new",
-      imgSrc: "/maps/buildings/ket/speaking.png",
-      placement: { x: 36, y: 36, w: 26, h: 26 },
-      labelAnchor: "top-left",
-    },
-    {
-      mode: "vocab",
-      label: t.ketPortal.modes.vocab,
-      href: "/ket/vocab",
-      imgSrc: "/maps/buildings/ket/vocab.png",
-      placement: { x: 12, y: 60, w: 28, h: 26 },
-      labelAnchor: "top-left",
-    },
-    {
-      mode: "grammar",
-      label: t.ketPortal.modes.grammar,
-      href: "/ket/grammar",
-      imgSrc: "/maps/buildings/ket/grammar.png",
-      placement: { x: 60, y: 50, w: 24, h: 32 },
+      placement: { x: 40, y: 6, w: 24, h: 26 },
       labelAnchor: "top-right",
     },
   ];

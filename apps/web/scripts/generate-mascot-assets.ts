@@ -100,7 +100,7 @@ const MAPS: MapTask[] = [
   {
     file: "ket-island-bg.png",
     prompt:
-      "Cheerful children's storybook illustrated empty island viewed from a slight isometric angle, called KET Island, lush green island floating on calm blue water, six EMPTY GRASSY PLOTS where buildings will be placed (NO BUILDINGS, NO HOUSES, NO STRUCTURES present), winding pastel pebble path connecting the six empty plots, fluffy soft white clouds drifting in clear pastel sky, smiling sun in upper corner, palm trees and small bushes scattered around the island edges, no people, no text, no logos, no watermarks, flat 2D vector illustration style, vibrant kid-friendly pastel palette, professional children's book illustration",
+      "Cheerful children's storybook empty island viewed from a slight isometric angle, lush green island floating on calm blue water, ONE CONTINUOUS WINDING PASTEL PEBBLE ROAD that visibly snakes from the bottom-left corner of the island all the way up to the top-right corner, passing through six clearly distinct empty grass plots arranged in sequential order along the road (1st plot at bottom-left start, 2nd plot lower-middle, 3rd plot center, 4th plot upper-center, 5th plot upper-middle, 6th plot at top-right end). Each plot is a flat grass square with a slightly darker green border. The pebble road is the central feature — wide, clearly visible, made of round colorful pebbles. ABSOLUTELY NO BUILDINGS, NO HOUSES, NO STRUCTURES on the plots — they are empty grass squares. Soft pastel sky with fluffy white clouds, smiling sun, palm trees scattered along the island edges. Flat 2D vector illustration style, vibrant kid-friendly pastel palette, no people, no text, no numbers, no logos, no watermarks, professional children's book illustration",
     sub: "maps",
     size: "1024x1024",
   },
@@ -168,17 +168,28 @@ interface SfResp {
 }
 
 async function whiteToAlpha(buf: Buffer): Promise<Buffer> {
-  // Convert near-white pixels (RGB all > 240) to alpha=0 so the building
-  // PNG is transparent everywhere except the building itself. Done with
-  // sharp's raw pixel access — the SF model returns clean white BGs so
-  // a single threshold pass is sufficient.
+  // Two-stage threshold to avoid white halos around anti-aliased edges:
+  //   - RGB all > 235 → alpha = 0 (fully transparent)
+  //   - RGB all > 220 but ≤ 235 → alpha = scaled (smooth fade), so AA
+  //     edge pixels blend cleanly instead of leaving a hard white halo.
+  // Tighter than the original 240 cutoff — image #8 showed a halo around
+  // the vocab garden because anti-aliased edge pixels at ~225 were still
+  // being kept fully opaque.
   const { data, info } = await sharp(buf)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
   for (let i = 0; i < data.length; i += 4) {
-    if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const minRgb = Math.min(r, g, b);
+    if (minRgb > 235) {
       data[i + 3] = 0;
+    } else if (minRgb > 220) {
+      // Linear scale: 220 → α=255, 235 → α=0
+      const alpha = Math.round(((235 - minRgb) / 15) * 255);
+      data[i + 3] = Math.max(0, Math.min(255, alpha));
     }
   }
   return sharp(data, {
