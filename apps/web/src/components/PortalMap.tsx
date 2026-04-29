@@ -17,15 +17,22 @@ export interface ModeChip {
   href: string;
   /**
    * Bounding box of the building footprint on the map, expressed as CSS
-   * percentages. The entire region is the click target — direct
-   * manipulation of the building artwork (per ui-ux-pro-max
-   * Immersive/Interactive pattern). Tap targets ≥ 44x44 px on mobile
-   * comfortably exceeded by these building-sized regions.
+   * percentages. The clipPath polygon below cuts the click area to the
+   * building's actual silhouette within this box.
    */
   region: { top: string; left: string; width: string; height: string };
-  /** Optional: where the chip *label* sits inside the region (defaults to top-left). */
+  /**
+   * CSS clip-path polygon string (relative to the region's own box) that
+   * matches the building silhouette. Click and hover only register inside
+   * the polygon — so the *house itself* is the click target, not the
+   * surrounding rectangle.
+   *
+   * Example house pentagon: `polygon(50% 0, 100% 30%, 100% 100%, 0 100%, 0 30%)`
+   */
+  clipPath: string;
+  /** Where the chip name-tag sits inside the region (defaults to top-left). */
   labelAnchor?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-  /** Renders the chip label in the highlighted ink-black variant (today's recommendation). */
+  /** Renders the chip name-tag in the highlighted ink-black variant. */
   active?: boolean;
 }
 
@@ -44,14 +51,20 @@ const ANCHOR_POSITION: Record<NonNullable<ModeChip["labelAnchor"]>, string> = {
 };
 
 /**
- * Portal-aware map background with mode-chip overlay. KET portals show
- * KET 岛 (island), PET portals show PET 城 (city). Each building has an
- * invisible click region covering its footprint; the chip is a small
- * name-tag label inside the region (top-left by default).
+ * Portal-aware map background with clickable building silhouettes.
  *
- * Hover state: claymorphism soft-press — subtle scale + ink ring at
- * 200ms ease-out. Respects prefers-reduced-motion via Tailwind's
- * motion-safe: prefix.
+ * Each chip renders TWO sibling links inside an unclipped wrapper:
+ *   1. A large building-shaped link (`clip-path: polygon(...)`) — primary
+ *      click target; matches the visible building outline.
+ *   2. A small decorative name-tag link in a corner of the wrapper —
+ *      redundant click target for kids who tap the label, marked
+ *      aria-hidden + tabIndex=-1 so keyboard/screen-reader nav sees only
+ *      the primary link.
+ *
+ * Hover state on the building link: claymorphism soft press — subtle
+ * ink wash inside the clipped polygon, 200ms ease-out, motion-safe so
+ * `prefers-reduced-motion` users don't see the scale animation. Per
+ * ui-ux-pro-max (Immersive/Interactive pattern + Claymorphism style).
  */
 export function PortalMap({ portal, chips, alt }: PortalMapProps) {
   const src = portal === "ket" ? "/maps/ket-island.png" : "/maps/pet-city.png";
@@ -68,11 +81,9 @@ export function PortalMap({ portal, chips, alt }: PortalMapProps) {
       />
       <div className="pointer-events-none absolute inset-0">
         {chips.map((c) => (
-          <Link
+          <div
             key={c.mode}
-            href={c.href}
-            aria-label={c.label}
-            className="pointer-events-auto group absolute block rounded-2xl ring-0 ring-ink/0 motion-safe:transition-all motion-safe:duration-200 hover:ring-4 hover:ring-ink/30 focus-visible:ring-4 focus-visible:ring-ink/60 focus-visible:outline-none motion-safe:hover:scale-[1.02] cursor-pointer"
+            className="pointer-events-none absolute"
             style={{
               top: c.region.top,
               left: c.region.left,
@@ -80,19 +91,20 @@ export function PortalMap({ portal, chips, alt }: PortalMapProps) {
               height: c.region.height,
             }}
           >
-            {/* Soft press effect: a transparent inner layer that gains a
-                subtle dark wash on hover/focus to confirm the building was
-                tapped. */}
-            <span
-              aria-hidden
-              className="absolute inset-0 rounded-2xl bg-ink/0 motion-safe:transition-colors motion-safe:duration-200 group-hover:bg-ink/5 group-focus-visible:bg-ink/10"
+            {/* (1) Primary click target — building silhouette via clip-path. */}
+            <Link
+              href={c.href}
+              aria-label={c.label}
+              style={{ clipPath: c.clipPath }}
+              className="pointer-events-auto absolute inset-0 block cursor-pointer bg-ink/0 motion-safe:transition-colors motion-safe:duration-200 hover:bg-ink/15 focus-visible:bg-ink/20 focus-visible:outline-none"
             />
 
-            {/* Chip name-tag — small label anchored to a corner of the
-                building region. Decorative; the click target is the whole
-                region above. */}
-            <span
-              className={`pointer-events-none absolute inline-flex items-center gap-1.5 rounded-xl border-[2.5px] px-2 py-1 text-[0.7rem] font-extrabold shadow-md ${
+            {/* (2) Decorative chip name-tag — small redundant click target. */}
+            <Link
+              href={c.href}
+              aria-hidden="true"
+              tabIndex={-1}
+              className={`pointer-events-auto absolute inline-flex cursor-pointer items-center gap-1.5 rounded-xl border-[2.5px] px-2 py-1 text-[0.7rem] font-extrabold shadow-md motion-safe:transition-transform motion-safe:duration-200 hover:scale-105 ${
                 c.active
                   ? "bg-ink text-white border-ink"
                   : "bg-white/95 border-ink text-ink"
@@ -108,8 +120,8 @@ export function PortalMap({ portal, chips, alt }: PortalMapProps) {
                   {c.accuracy}
                 </span>
               )}
-            </span>
-          </Link>
+            </Link>
+          </div>
         ))}
       </div>
     </div>
