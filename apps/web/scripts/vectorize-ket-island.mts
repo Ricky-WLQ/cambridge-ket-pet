@@ -26,6 +26,7 @@ import { fileURLToPath } from "node:url";
 import { PNG } from "pngjs";
 // imagetracerjs has no first-class types; import via CJS shim
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+// @ts-expect-error -- imagetracerjs ships no .d.ts
 import ImageTracer from "imagetracerjs";
 
 const __filename = fileURLToPath(import.meta.url);

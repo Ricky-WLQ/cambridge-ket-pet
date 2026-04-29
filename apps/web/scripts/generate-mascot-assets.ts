@@ -167,7 +167,7 @@ interface SfResp {
   data?: Array<{ url?: string }>;
 }
 
-async function whiteToAlpha(buf: Buffer): Promise<Buffer> {
+async function whiteToAlpha(buf: Uint8Array): Promise<Buffer> {
   // Two-stage threshold to avoid white halos around anti-aliased edges:
   //   - RGB all > 235 → alpha = 0 (fully transparent)
   //   - RGB all > 220 but ≤ 235 → alpha = scaled (smooth fade), so AA
@@ -248,7 +248,7 @@ async function genOne(
     console.error(`download ${dl.status} for ${outPath}`);
     return false;
   }
-  let buf = Buffer.from(await dl.arrayBuffer());
+  let buf: Buffer<ArrayBufferLike> = Buffer.from(await dl.arrayBuffer());
   if (whiteAlpha) {
     buf = await whiteToAlpha(buf);
   }
