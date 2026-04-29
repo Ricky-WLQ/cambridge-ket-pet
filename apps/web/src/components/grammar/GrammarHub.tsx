@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { ExamType } from "@prisma/client";
+import { Mascot } from "@/components/Mascot";
 import { CategoryCard } from "./CategoryCard";
 import type { GrammarTopicDto, GrammarProgressStats } from "@/lib/grammar/types";
 
@@ -62,16 +63,26 @@ export default function GrammarHub({ examType }: Props) {
   const showWeakPointCta = (stats?.weakTopics?.length ?? 0) > 0;
   const firstWeakTopicId = stats?.weakTopics?.[0];
 
+  const portal = examType === "KET" ? "ket" : "pet";
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 py-8 flex flex-col gap-4">
-      <header>
-        <h1 className="text-3xl font-extrabold leading-tight">
-          {examLabelZh} 语法 · <span className="marker-yellow-thick">{examLabelEn} Grammar</span>
-        </h1>
-        <p className="mt-2 text-sm font-medium text-ink/65">
-          Cambridge {examLabelEn} 官方语法清单 · {Object.values(topicsByCategory).flat().length} 个主题
-        </p>
-      </header>
+    <div className="flex flex-col gap-3.5 grow-fill">
+      <div className="flex items-center gap-3 px-2">
+        <Mascot pose="chart" portal={portal} width={56} height={56} decorative />
+        <div className="flex-1">
+          <h1 className="text-base font-extrabold leading-tight">
+            {examLabelZh} 语法 · {examLabelEn} Grammar
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            Cambridge {examLabelEn} 官方语法清单 · {Object.values(topicsByCategory).flat().length} 个主题
+          </p>
+        </div>
+        <Link
+          href={`/${portal}`}
+          className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink whitespace-nowrap"
+        >
+          ← {examType} 门户
+        </Link>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="stat-card bg-white stitched-card p-4">

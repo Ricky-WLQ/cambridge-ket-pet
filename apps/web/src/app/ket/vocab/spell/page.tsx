@@ -8,9 +8,11 @@ export default async function KetVocabSpellPage() {
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="flex-1"><VocabSpellRunner examType="KET" /></main>
+      <main className="flex flex-1 flex-col gap-3.5">
+        <VocabSpellRunner examType="KET" />
+      </main>
     </div>
   );
 }
