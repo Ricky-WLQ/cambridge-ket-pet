@@ -1,139 +1,158 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Mascot } from "@/components/Mascot";
+import { PortalMap, type ModeChip } from "@/components/PortalMap";
 import AssignmentList from "@/components/student/AssignmentList";
 import { auth } from "@/lib/auth";
 import { getStudentAssignments } from "@/lib/assignments";
-import { requireUngated } from "@/lib/diagnose/eligibility";
+import {
+  findCurrentWeekDiagnose,
+  requireUngated,
+} from "@/lib/diagnose/eligibility";
+import {
+  DIAGNOSE_SECTION_KINDS,
+  type DiagnoseSectionKind,
+} from "@/lib/diagnose/sectionLimits";
+import type { WeeklyDiagnose } from "@prisma/client";
+import { t } from "@/i18n/zh-CN";
+
+const SECTION_DONE = new Set(["SUBMITTED", "AUTO_SUBMITTED", "GRADED"]);
+
+function sectionStatusFor(wd: WeeklyDiagnose, kind: DiagnoseSectionKind): string {
+  switch (kind) {
+    case "READING":
+      return wd.readingStatus;
+    case "LISTENING":
+      return wd.listeningStatus;
+    case "WRITING":
+      return wd.writingStatus;
+    case "SPEAKING":
+      return wd.speakingStatus;
+    case "VOCAB":
+      return wd.vocabStatus;
+    case "GRAMMAR":
+      return wd.grammarStatus;
+    default: {
+      const _exhaustive: never = kind;
+      void _exhaustive;
+      return "NOT_STARTED";
+    }
+  }
+}
 
 export default async function PetPortalPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
 
-  // Belt-and-suspenders against stale JWT cache: the middleware should have
-  // already redirected gated STUDENTs to /diagnose, but the JWT cache may
-  // be stale (e.g., a teacher tool reset the user's diagnose mid-session,
-  // or this is the first request after generate before update() ran).
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (role === "STUDENT") {
-    await requireUngated(userId); // throws redirect to /diagnose if gated
+    await requireUngated(userId);
   }
 
-  const assignments = await getStudentAssignments(userId, { examType: "PET" });
+  const [assignments, wd] = await Promise.all([
+    getStudentAssignments(userId, { examType: "PET" }),
+    findCurrentWeekDiagnose(userId),
+  ]);
+
+  const completedSections = wd
+    ? DIAGNOSE_SECTION_KINDS.filter((k) =>
+        SECTION_DONE.has(sectionStatusFor(wd, k)),
+      ).length
+    : 0;
+  const totalSections = DIAGNOSE_SECTION_KINDS.length;
+
+  const portal = "pet" as const;
+
+  const chips: ModeChip[] = [
+    {
+      mode: "vocab",
+      order: 1,
+      label: t.petPortal.modes.vocab,
+      href: "/pet/vocab",
+      mascotPose: "flashcards",
+      palette: "lavender",
+      subtitle: "Vocabulary",
+    },
+    {
+      mode: "grammar",
+      order: 2,
+      label: t.petPortal.modes.grammar,
+      href: "/pet/grammar",
+      mascotPose: "chart",
+      palette: "cream",
+      subtitle: "Grammar",
+    },
+    {
+      mode: "listening",
+      order: 3,
+      label: t.petPortal.modes.listening,
+      href: "/pet/listening/new",
+      mascotPose: "listening",
+      palette: "sky",
+      subtitle: "Listening",
+    },
+    {
+      mode: "speaking",
+      order: 4,
+      label: t.petPortal.modes.speaking,
+      href: "/pet/speaking/new",
+      mascotPose: "microphone",
+      palette: "peach",
+      subtitle: "Speaking",
+    },
+    {
+      mode: "reading",
+      order: 5,
+      label: t.petPortal.modes.reading,
+      href: "/pet/reading/new",
+      mascotPose: "reading",
+      palette: "mint",
+      subtitle: "Reading",
+    },
+    {
+      mode: "writing",
+      order: 6,
+      label: t.petPortal.modes.writing,
+      href: "/pet/writing/new",
+      mascotPose: "writing",
+      palette: "butter",
+      subtitle: "Writing",
+    },
+  ];
 
   return (
     <div className="page-section">
       <SiteHeader />
       <main className="flex flex-1 flex-col gap-3.5">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.1]">
-            <span className="marker-yellow-thick">PET 门户</span>
-          </h1>
-          <p className="mt-3 text-sm sm:text-base font-medium text-ink/70">
-            Cambridge B1 Preliminary · 选择你想练习的题目类型
-          </p>
+        <div className="flex items-center gap-3 px-2">
+          <Mascot
+            pose="greeting"
+            portal={portal}
+            width={64}
+            height={64}
+            className="rounded-xl"
+          />
+          <div className="flex-1">
+            <h1 className="text-lg font-extrabold leading-tight">
+              {t.petPortal.greeting}
+            </h1>
+            <p className="mt-0.5 text-xs font-medium text-ink/60">
+              {t.petPortal.greetingSub}
+            </p>
+          </div>
+          <Link
+            href="/diagnose"
+            className="rounded-full bg-gradient-to-br from-lavender to-sky px-3 py-1.5 text-xs font-extrabold text-ink/90 hover:opacity-90 transition"
+          >
+            {t.petPortal.weekPillProgress(completedSections, totalSections)}
+          </Link>
         </div>
 
         <AssignmentList examType="PET" assignments={assignments} />
 
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 grow-fill">
-          <Link
-            href="/pet/reading/new"
-            className="skill-tile tile-lavender stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>📖</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">阅读</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Reading · AI 即时生成仿真题
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/pet/writing/new"
-            className="skill-tile tile-butter stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>✍️</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">写作</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Writing · AI 即时生成写作任务
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/pet/listening/new"
-            className="skill-tile tile-sky stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>🎧</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">听力</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Listening · AI 即时生成真题听力
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/pet/speaking/new"
-            className="skill-tile tile-peach stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>🎤</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">口语</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Speaking · 与 AI 考官 Mina 实时对话
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/pet/vocab"
-            className="skill-tile tile-mint stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>🔠</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">词汇</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Vocabulary · B1 Preliminary 官方词表 · 3,046 词
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/pet/grammar"
-            className="skill-tile tile-cream stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>📐</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">语法</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Grammar · B1 Preliminary 官方语法清单 · 21 个主题
-              </div>
-            </div>
-          </Link>
-        </div>
+        <PortalMap portal={portal} chips={chips} />
       </main>
     </div>
   );

@@ -53,7 +53,7 @@ export const t = {
     weekPillProgress: (done: number, total: number) =>
       `本周诊断打卡 ${done}/${total}`,
     todayLabel: "TODAY",
-    streakLabel: (days: number) => `🔥 ${days} 天连打`,
+    streakLabel: (days: number) => `${days} 天连打`,
     modes: {
       reading: "阅读",
       writing: "写作",
