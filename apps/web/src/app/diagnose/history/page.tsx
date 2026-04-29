@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { SiteHeader } from "@/components/SiteHeader";
+import { Mascot } from "@/components/Mascot";
 import HistoryList from "@/components/diagnose/HistoryList";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -48,23 +49,26 @@ export default async function DiagnoseHistoryPage() {
   }));
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl px-6 py-10">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.05]">
-            <span className="marker-yellow-thick">诊断历史</span>
-          </h1>
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="flex items-center gap-3 px-2">
+          <Mascot pose="thinking" portal="ket" width={56} height={56} decorative />
+          <div className="flex-1">
+            <h1 className="text-base font-extrabold leading-tight">
+              诊断历史
+            </h1>
+            <p className="mt-0.5 text-xs font-medium text-ink/60">
+              最近 12 周的诊断记录
+            </p>
+          </div>
           <Link
             href="/diagnose"
-            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+            className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink whitespace-nowrap"
           >
-            ← 返回本周诊断
+            ← 本周诊断
           </Link>
         </div>
-        <p className="mt-3 mb-6 text-base font-medium text-ink/75 max-w-xl leading-relaxed">
-          最近 12 周的诊断记录，按周倒序排列。
-        </p>
 
         <HistoryList items={items} />
       </main>
