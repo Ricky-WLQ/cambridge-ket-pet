@@ -88,7 +88,18 @@ def _build_system_prompt_template() -> str:
         "在 weaknesses 与 priority_actions 中针对前 1-3 个弱项给出具体可执行建议。\n"
         "- 全部使用简体中文 (zh-CN)。可以保留 Reading / Writing / Listening / Speaking / "
         "Vocab / Grammar / Part 等剑桥考试术语英文原文。\n"
-        "- 不要使用 emoji。不要使用 markdown 标题。不要给学生编名字（直接用 '你' / '本周'）。"
+        "- 不要使用 emoji。不要使用 markdown 标题。不要给学生编名字（直接用 '你' / '本周'）。\n"
+        "\n"
+        "## 禁用词汇（BANNED — 验证器会硬性拒绝）\n"
+        "以下应试培训行业的口头禅一律不能出现在任何字段中。这是面向 10-16 岁学生的"
+        "AI 助教，不是培训机构话术：\n"
+        "  ❌ 决定通过率 / 属于低分段 / 未达标 / 短板 / 亟待提升 / 不容忽视 / 请重视 / 切记\n"
+        "  ❌ critical 弱项 / moderate 弱项 / minor 弱项（不要把数据表的 severity tag 抄进文本）\n"
+        "  ❌ [critical] / [moderate] / [minor]（同上，是 JSON 数据，不是给学生看的）\n"
+        "如果想表达类似意思，请改写为友好直接的描述，例如：\n"
+        "  ✅ '本周 Reading 25%，需要更多练习'（替代 '属于低分段'）\n"
+        "  ✅ 'Listening 这块还有提升空间'（替代 '是当前最突出的短板'）\n"
+        "  ✅ '本周练习了 3 道现在完成时的错题'（替代 'critical 弱项「现在完成时」'）"
     )
 
 

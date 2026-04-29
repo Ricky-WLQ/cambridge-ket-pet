@@ -29,6 +29,7 @@ from app.schemas.diagnose import (
     DiagnoseSummaryResponse,
     KnowledgePointCategory,
 )
+from app.validators._banned_phrases import find_banned
 from app.validators._score_misreading import check_score_misreading
 
 # Derive the closed-set whitelists from the Literal types in schemas so
@@ -80,6 +81,26 @@ def validate_diagnose_analysis(response: DiagnoseAnalysisResponse) -> list[str]:
                 errors.append(
                     f"knowledge_points[{i}].questions[{j}].why_wrong is empty"
                 )
+
+    # Banned-phrase scan across every user-visible field. Without this the
+    # exam-cram register (短板, 属于低分段, [critical] tag, etc.) leaks
+    # straight to the rendered report — exactly what the redesign forbids.
+    haystack_parts: list[str] = []
+    for group in response.knowledge_points:
+        haystack_parts.extend(
+            [group.knowledge_point, group.mini_lesson, group.rule]
+        )
+        haystack_parts.extend(group.example_sentences)
+        for q in group.questions:
+            haystack_parts.append(q.why_wrong)
+    haystack = "\n".join(haystack_parts)
+    banned = find_banned(haystack)
+    if banned:
+        errors.append(
+            "knowledge_points contain banned exam-cram phrases: "
+            + ", ".join(banned)
+            + " — rephrase without these terms"
+        )
 
     return errors
 
@@ -170,10 +191,24 @@ def validate_diagnose_summary(
     if not response.priority_actions:
         errors.append("priority_actions must have >=1 entry")
 
+    # Combined haystack (all 4 fields concatenated) used for both
+    # banned-phrase + score-misreading scans.
+    text = _all_summary_text(response)
+
+    # Banned-phrase scan — without this, the AI happily emits "属于低分段",
+    # "critical 弱项", "短板" etc. into narrative_zh + bullets, which is
+    # exactly the exam-cram register the redesign is meant to eliminate.
+    banned = find_banned(text)
+    if banned:
+        errors.append(
+            "summary contains banned exam-cram phrases: "
+            + ", ".join(banned)
+            + " — rephrase without these terms"
+        )
+
     # Score-misreading checks — only when caller provided the request so
     # we know which percentages to scan for.
     if request is not None:
-        text = _all_summary_text(response)
         percent_scores = _collect_percentage_scores(request)
         errors.extend(check_score_misreading(text, percent_scores))
 
