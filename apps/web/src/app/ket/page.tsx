@@ -80,21 +80,19 @@ export default async function KetPortalPage(props: {
 
   const portal = "ket" as const;
 
-  // LEARNING-PATH layout: the 6 buildings are positioned along the
-  // winding pebble road on /maps/ket-island-bg.png in the order kids
-  // naturally progress through language learning:
-  //     1. 词汇 (foundation)
-  //     2. 语法 (structure)
-  //     3. 听 (input — comprehension)
-  //     4. 说 (production — from input)
-  //     5. 读 (input at scale)
-  //     6. 写 (full production)
-  // Placements were chosen to land on the 6 plots visible on the new bg,
-  // walking the road from bottom-left to top-right. SVG composite uses
-  // pointer-events="visiblePainted" so clicks register only on opaque
-  // building pixels (pixel-perfect). Order index renders as a small
-  // numbered badge on each chip name-tag. Accuracy fields are
-  // intentionally omitted — spec §2.1.1 (no fabricated UI data).
+  // LEARNING-PATH layout (top-to-bottom):
+  //     ① 词汇 (foundation, top)
+  //     ② 语法 (structure)
+  //     ③ 听 (input — comprehension)
+  //     ④ 说 (production — from input)
+  //     ⑤ 读 (input at scale)
+  //     ⑥ 写 (full production, bottom)
+  // The path winds top-to-bottom across the empty island background
+  // (/maps/ket-island-bg.png). PortalMap draws the dotted pebble road
+  // through the plotCenters and renders each building on a small grass
+  // plot disc. Chip name-tags carry a numbered badge so the journey is
+  // unambiguous. Accuracy fields are intentionally omitted — spec §2.1.1
+  // (no fabricated UI data).
   const chips: ModeChip[] = [
     {
       mode: "vocab",
@@ -102,8 +100,9 @@ export default async function KetPortalPage(props: {
       label: t.ketPortal.modes.vocab,
       href: "/ket/vocab",
       imgSrc: "/maps/buildings/ket/vocab.png",
-      placement: { x: 24, y: 60, w: 26, h: 26 },
-      labelAnchor: "bottom-left",
+      plotCenter: { x: 42, y: 18 },
+      placement: { x: 32, y: 8, w: 20, h: 18 },
+      labelAnchor: "top-center",
     },
     {
       mode: "grammar",
@@ -111,8 +110,9 @@ export default async function KetPortalPage(props: {
       label: t.ketPortal.modes.grammar,
       href: "/ket/grammar",
       imgSrc: "/maps/buildings/ket/grammar.png",
-      placement: { x: 6, y: 36, w: 24, h: 30 },
-      labelAnchor: "bottom-left",
+      plotCenter: { x: 70, y: 32 },
+      placement: { x: 60, y: 22, w: 20, h: 20 },
+      labelAnchor: "top-center",
     },
     {
       mode: "listening",
@@ -120,8 +120,9 @@ export default async function KetPortalPage(props: {
       label: t.ketPortal.modes.listening,
       href: "/ket/listening/new",
       imgSrc: "/maps/buildings/ket/listening.png",
-      placement: { x: 38, y: 38, w: 24, h: 26 },
-      labelAnchor: "top-left",
+      plotCenter: { x: 24, y: 46 },
+      placement: { x: 14, y: 36, w: 20, h: 18 },
+      labelAnchor: "top-center",
     },
     {
       mode: "speaking",
@@ -129,8 +130,9 @@ export default async function KetPortalPage(props: {
       label: t.ketPortal.modes.speaking,
       href: "/ket/speaking/new",
       imgSrc: "/maps/buildings/ket/speaking.png",
-      placement: { x: 62, y: 26, w: 24, h: 26 },
-      labelAnchor: "top-right",
+      plotCenter: { x: 70, y: 60 },
+      placement: { x: 60, y: 50, w: 20, h: 18 },
+      labelAnchor: "top-center",
     },
     {
       mode: "reading",
@@ -138,8 +140,9 @@ export default async function KetPortalPage(props: {
       label: t.ketPortal.modes.reading,
       href: "/ket/reading/new",
       imgSrc: "/maps/buildings/ket/reading.png",
-      placement: { x: 6, y: 10, w: 24, h: 26 },
-      labelAnchor: "top-left",
+      plotCenter: { x: 24, y: 74 },
+      placement: { x: 14, y: 64, w: 20, h: 18 },
+      labelAnchor: "top-center",
     },
     {
       mode: "writing",
@@ -147,8 +150,9 @@ export default async function KetPortalPage(props: {
       label: t.ketPortal.modes.writing,
       href: "/ket/writing/new",
       imgSrc: "/maps/buildings/ket/writing.png",
-      placement: { x: 40, y: 6, w: 24, h: 26 },
-      labelAnchor: "top-right",
+      plotCenter: { x: 50, y: 86 },
+      placement: { x: 40, y: 76, w: 20, h: 18 },
+      labelAnchor: "top-center",
     },
   ];
 
