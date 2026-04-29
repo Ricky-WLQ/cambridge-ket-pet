@@ -15,10 +15,11 @@ const serverOnlyEmpty = path.join(path.dirname(serverOnlyMain), "empty.js");
 
 export default defineConfig({
   test: {
-    // jsdom for React component tests (PortalProvider, Mascot, snapshot tests
-    // for portal hubs in Phase B+). Pure-Node tests like voice.test.ts work
-    // under jsdom too — there's no need for a per-file environment override.
-    environment: "jsdom",
+    // Default to Node environment so existing speaking/audio tests that
+    // import Node-only APIs keep working. React component tests opt into
+    // jsdom via a per-file pragma:
+    //   // @vitest-environment jsdom
+    environment: "node",
     setupFiles: ["./vitest.setup.ts"],
   },
   resolve: {
