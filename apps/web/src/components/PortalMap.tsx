@@ -1,13 +1,4 @@
 import Link from "next/link";
-import {
-  BookOpen,
-  BookText,
-  Headphones,
-  type LucideIcon,
-  Mic,
-  PenLine,
-  SquareLibrary,
-} from "lucide-react";
 import { Mascot, type MascotPose } from "./Mascot";
 import type { Portal } from "@/i18n/voice";
 
@@ -50,21 +41,6 @@ const TILE_BG: Record<ModeChip["palette"], string> = {
   peach: "tile-peach",
   mint: "tile-mint",
   cream: "tile-cream",
-};
-
-/**
- * Per-mode Lucide SVG icon. Sits next to the Chinese label so each
- * tile communicates its mode iconographically in addition to the
- * mascot pose. Lucide is a clean SVG icon set (NOT emoji — see
- * feedback_no_emojis_in_ui memory rule).
- */
-const MODE_ICON: Record<ModeChip["mode"], LucideIcon> = {
-  vocab: SquareLibrary, // letters/words on a card
-  grammar: BookText, // book with rules/structure
-  listening: Headphones,
-  speaking: Mic,
-  reading: BookOpen,
-  writing: PenLine,
 };
 
 /**
@@ -116,20 +92,8 @@ export function PortalMap({ portal, chips, title }: PortalMapProps) {
                 className="drop-shadow-sm"
               />
               <div>
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const Icon = MODE_ICON[c.mode];
-                    return (
-                      <Icon
-                        className="h-7 w-7 shrink-0 text-ink/85"
-                        strokeWidth={2.4}
-                        aria-hidden
-                      />
-                    );
-                  })()}
-                  <div className="text-3xl font-extrabold leading-tight sm:text-4xl">
-                    {c.label}
-                  </div>
+                <div className="text-3xl font-extrabold leading-tight sm:text-4xl">
+                  {c.label}
                 </div>
                 {c.subtitle && (
                   <div className="mt-1 text-sm font-bold text-ink/55">

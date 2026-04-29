@@ -14,6 +14,14 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(import.meta.dirname, "..", ".."),
   },
+  // Next.js 16 requires query strings on local <Image src> to be allowlisted.
+  // Mascot.tsx uses `?v=N` cache-busters when assets are regenerated; if the
+  // ASSET_VERSION constant in Mascot.tsx is bumped, bump `search` here too.
+  images: {
+    localPatterns: [
+      { pathname: "/mascots/**", search: "?v=4" },
+    ],
+  },
 };
 
 export default nextConfig;

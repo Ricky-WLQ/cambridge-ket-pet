@@ -44,14 +44,7 @@ function sectionStatusFor(wd: WeeklyDiagnose, kind: DiagnoseSectionKind): string
   }
 }
 
-export default async function KetPortalPage(props: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
-  // Debug mode for refining polygon hit areas against the rendered map.
-  // Toggle with /ket?debug=1. Never enabled in production by default.
-  const params = props.searchParams ? await props.searchParams : {};
-  const debug = params.debug === "1";
-
+export default async function KetPortalPage() {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) redirect("/login");
@@ -173,7 +166,7 @@ export default async function KetPortalPage(props: {
 
         <AssignmentList examType="KET" assignments={assignments} />
 
-        <PortalMap portal={portal} chips={chips} debug={debug} />
+        <PortalMap portal={portal} chips={chips} />
       </main>
     </div>
   );
