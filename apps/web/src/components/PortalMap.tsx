@@ -177,17 +177,24 @@ export function PortalMap({
           preserveAspectRatio="xMidYMid slice"
         />
 
-        {/* Layer 2: dotted-pebble learning road. dashed stroke produces
-            the kid-friendly pebble look; the stroke color matches the
-            warm KET palette. */}
+        {/* Layer 2: dotted-pebble learning road. Two strokes layered
+            for visibility: a thin warm-cream halo behind a thicker
+            peach-pink dotted stroke. */}
         <path
           d={pathD}
           fill="none"
-          stroke="#FFC4D1"
-          strokeWidth="2.4"
+          stroke="#fff7e8"
+          strokeWidth="4.2"
           strokeLinecap="round"
-          strokeDasharray="0.6 3"
-          opacity="0.9"
+          opacity="0.6"
+        />
+        <path
+          d={pathD}
+          fill="none"
+          stroke="#FF9FB6"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray="0.6 3.2"
         />
 
         {/* Layer 3: small grass plot disc anchoring each building.
