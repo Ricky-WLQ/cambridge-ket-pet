@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 
+import { Mascot } from "@/components/Mascot";
+
 export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -59,12 +61,20 @@ export default function SignupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-6">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-5">
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold leading-[1.05] tracking-tight">
-            <span className="marker-yellow-thick">注册账号</span>
+          <Mascot
+            pose="greeting"
+            portal="ket"
+            width={88}
+            height={88}
+            decorative
+            className="mx-auto"
+          />
+          <h1 className="mt-1 text-2xl font-extrabold leading-tight">
+            注册账号
           </h1>
-          <p className="mt-2.5 text-sm font-medium text-ink/65">
+          <p className="mt-1 text-sm font-medium text-ink/65">
             开始你的剑桥 KET / PET 备考之旅
           </p>
         </div>
