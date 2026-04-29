@@ -34,14 +34,15 @@ describe("KET portal home", () => {
     // Leo greeting in the hero strip is a normal next/image <img>.
     expect(container.querySelector('img[alt="Leo"]')).toBeTruthy();
 
-    // KET 岛 map is the vectorized SVG loaded via <object>.
-    const mapWrapper = container.querySelector(
-      'div[role="img"][aria-label="KET 岛"]',
-    );
-    expect(mapWrapper).toBeTruthy();
-    expect(
-      mapWrapper?.querySelector('object[data="/maps/ket-island.svg"]'),
-    ).toBeTruthy();
+    // 6 mode tiles render as a grid.
+    const modeLinks = Array.from(container.querySelectorAll("a"))
+      .map((a) => a.getAttribute("href"))
+      .filter(
+        (h): h is string =>
+          !!h &&
+          /^\/ket\/(reading|writing|listening|speaking|vocab|grammar)/.test(h),
+      );
+    expect(new Set(modeLinks).size).toBe(6);
 
     // 6 chip name-tag <Link>s for the 6 modes.
     const chipHrefs = Array.from(container.querySelectorAll("a"))

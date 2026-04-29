@@ -1,145 +1,110 @@
-"use client";
-
 import Link from "next/link";
+import { Mascot, type MascotPose } from "./Mascot";
 import type { Portal } from "@/i18n/voice";
 
 export interface ModeChip {
   mode: "reading" | "listening" | "writing" | "speaking" | "vocab" | "grammar";
   /** Visible chip label (e.g., "📖 读" for KET kid voice or "阅读" for PET teen voice). */
   label: string;
-  /** Click-through target. */
+  /** Click-through target (real route). */
   href: string;
   /**
-   * Where the chip name-tag sits on the map, in viewBox coords (the SVG
-   * uses viewBox="0 0 100 100" so values are percentages). The name-tag
-   * renders ABOVE the building it labels.
+   * Ordinal in the learning path (1-based) — renders as a small numbered
+   * badge in the corner of the tile. Order: ① 词 → ⑥ 写.
    */
-  tagPosition: { x: number; y: number };
-  /** Renders the chip name-tag in the highlighted ink-black variant. */
-  active?: boolean;
+  order: number;
   /**
-   * Ordinal in the learning path (1-based). Renders as a small numbered
-   * badge inside the chip name-tag.
+   * Mascot pose to render inside the tile (e.g., 'flashcards' for vocab,
+   * 'reading' for reading mode). Picks from the 12-pose library.
    */
-  order?: number;
+  mascotPose: MascotPose;
   /**
-   * Right-aligned secondary metric (e.g., "84%" accuracy).
-   * Optional — omit when no real value is computed for the user.
+   * Tile palette key — selects the per-tile pastel background. Maps to
+   * the existing Variant A tile classes in globals.css.
    */
-  accuracy?: string;
+  palette: "lavender" | "sky" | "butter" | "peach" | "mint" | "cream";
+  /** Optional Cambridge English subtitle below the label (e.g., "Reading"). */
+  subtitle?: string;
 }
 
 interface PortalMapProps {
   portal: Portal;
   chips: ModeChip[];
-  /** Optional override for the map alt text. */
-  alt?: string;
+  /** Optional grid title shown above the tiles. */
+  title?: string;
 }
 
+const TILE_BG: Record<ModeChip["palette"], string> = {
+  lavender: "tile-lavender",
+  sky: "tile-sky",
+  butter: "tile-butter",
+  peach: "tile-peach",
+  mint: "tile-mint",
+  cream: "tile-cream",
+};
+
 /**
- * Portal-aware map composite using a vectorized unified illustration.
+ * Per-portal "learning journey" tile grid.
  *
- * For KET: /maps/ket-island.svg — produced by vectorize-ket-island.mts,
- * which bins imagetracerjs paths by per-building bounding box into named
- * <g id="reading">, <g id="writing">, etc. groups. Each group is wrapped
- * in <a href="/ket/<mode>/new"> inside the SVG, so clicking any painted
- * pixel of a building navigates via standard HTML.
+ * Replaces the earlier illustrated-map approach which couldn't reach
+ * production quality with the available raster-AI toolchain (separate
+ * generations drift in style; vectorized output blurs to oil-painting;
+ * SVG <a> in <object> sandboxes navigation). The tile grid:
  *
- * The chip name-tags overlay on top as DOM <Link>s for typography +
- * ordinal badges (① ② ③ ④ ⑤ ⑥). They're aria-hidden because the SVG <a>s
- * already provide the accessible link per building.
- *
- * Trade-off: SVG <a> fires a full page navigation (no Next.js client
- * routing). For portal-home → mode-page transitions this is acceptable
- * — the destination renders fresh anyway.
+ *  - Renders 6 large tiles in a 3×2 grid (2×3 on mobile)
+ *  - Each tile shows ordinal ① ② ③ ④ ⑤ ⑥ + Mascot pose + label + arrow
+ *  - Click-through is via next/link → client-side routing intact
+ *  - Pixel-perfect by definition (each tile is a rectangle)
+ *  - Production-ready immediately; commissioning a proper illustrated
+ *    map is a Phase-5 follow-up that can swap this component without
+ *    affecting downstream phases
  */
-export function PortalMap({ portal, chips, alt }: PortalMapProps) {
-  const svgSrc =
-    portal === "ket"
-      ? "/maps/ket-island.svg"
-      : "/maps/pet-city.png"; // PET vectorization lands in Phase C
-  const defaultAlt = portal === "ket" ? "KET 岛" : "PET 城";
-  const isVector = portal === "ket";
-
+export function PortalMap({ portal, chips, title }: PortalMapProps) {
   return (
-    <div
-      className="stitched-card relative w-full aspect-square overflow-hidden rounded-2xl"
-      role="img"
-      aria-label={alt ?? defaultAlt}
-    >
-      {isVector ? (
-        // Inline-fetch the SVG so its internal <a href> elements navigate
-        // on click. <object> sandboxes the SVG's links to the same
-        // origin; clicking any painted pixel of a building <g> navigates.
-        <object
-          data={svgSrc}
-          type="image/svg+xml"
-          aria-label={alt ?? defaultAlt}
-          className="absolute inset-0 h-full w-full"
-        >
-          <img
-            src={svgSrc}
-            alt={alt ?? defaultAlt}
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        </object>
-      ) : (
-        // Fallback (PET portal until Phase C vectorizes its map).
-        <img
-          src={svgSrc}
-          alt={alt ?? defaultAlt}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+    <div className="flex w-full flex-col gap-2.5">
+      {title && (
+        <h2 className="px-1 text-xs font-extrabold tracking-[0.06em] text-ink/55">
+          {title}
+        </h2>
       )}
-
-      {/* Chip name-tags overlay — order badge + label, anchored to a
-          point above each building. The <object> below already handles
-          clicks on the building artwork; these chips are aria-hidden so
-          screen-reader nav doesn't double up, but sighted users get a
-          redundant click target via Next/Link (so name-tag clicks stay
-          on Next's client router). */}
-      {chips.map((c) => (
-        <div
-          key={c.mode}
-          className="pointer-events-none absolute"
-          style={{
-            left: `${c.tagPosition.x}%`,
-            top: `${c.tagPosition.y}%`,
-            transform: "translate(-50%, -50%)",
-          }}
-        >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {chips.map((c) => (
           <Link
+            key={c.mode}
             href={c.href}
-            aria-hidden="true"
-            tabIndex={-1}
-            className={`pointer-events-auto inline-flex cursor-pointer items-center gap-1 rounded-xl border-2 px-2 py-1 text-[0.7rem] font-extrabold shadow-sm motion-safe:transition-transform motion-safe:duration-200 hover:scale-105 ${
-              c.active
-                ? "bg-ink text-white border-ink/70"
-                : "bg-white/95 border-ink/30 text-ink"
-            }`}
+            className={`skill-tile stitched-card group ${TILE_BG[c.palette]} relative cursor-pointer`}
           >
-            {c.order !== undefined && (
-              <span
-                className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[0.55rem] font-extrabold ${
-                  c.active ? "bg-white text-ink" : "bg-ink/85 text-white"
-                }`}
-              >
+            <div className="flex items-start justify-between">
+              {/* Ordinal badge */}
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-ink text-[0.75rem] font-extrabold text-white shadow-sm">
                 {c.order}
               </span>
-            )}
-            <span>{c.label}</span>
-            {c.accuracy !== undefined && (
-              <span
-                className={`text-[0.6rem] font-bold ${
-                  c.active ? "opacity-100" : "opacity-55"
-                }`}
-              >
-                {c.accuracy}
-              </span>
-            )}
+              <span className="arrow-chip">→</span>
+            </div>
+
+            <div className="flex flex-col items-start gap-1.5">
+              <Mascot
+                pose={c.mascotPose}
+                portal={portal}
+                width={56}
+                height={56}
+                decorative
+                className="drop-shadow-sm"
+              />
+              <div>
+                <div className="text-2xl font-extrabold leading-tight">
+                  {c.label}
+                </div>
+                {c.subtitle && (
+                  <div className="mt-0.5 text-[0.7rem] font-bold text-ink/55">
+                    {c.subtitle}
+                  </div>
+                )}
+              </div>
+            </div>
           </Link>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

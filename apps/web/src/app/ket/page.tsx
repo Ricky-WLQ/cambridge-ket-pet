@@ -80,57 +80,65 @@ export default async function KetPortalPage(props: {
 
   const portal = "ket" as const;
 
-  // PRODUCTION-grade KET 岛: the unified user-approved illustration is
-  // vectorized into /maps/ket-island.svg with per-building <g> groups
-  // wrapped in <a href> for pixel-perfect HTML-native click targets.
-  // PortalMap renders the SVG via <object>; chips below overlay the
-  // ordinal badge ① → ⑥ above each building's location on the map.
-  //
-  // tagPosition is the chip name-tag center (in viewBox % coords),
-  // hand-positioned over each building on the unified map. Accuracy
-  // fields are intentionally omitted — spec §2.1.1 (no fabricated data).
+  // Learning-journey tile grid (Phase 5 will revisit the illustrated-map
+  // metaphor after the rest of the redesign ships). Order ① → ⑥ matches
+  // the natural progression: 词汇 (foundation) → 写 (full output).
+  // Each tile carries Leo doing the matching activity (Mascot pose) +
+  // ordinal badge + bilingual label. No fabricated data — spec §2.1.1.
   const chips: ModeChip[] = [
     {
       mode: "vocab",
       order: 1,
       label: t.ketPortal.modes.vocab,
       href: "/ket/vocab",
-      tagPosition: { x: 78, y: 75 },
+      mascotPose: "flashcards",
+      palette: "lavender",
+      subtitle: "Vocabulary",
     },
     {
       mode: "grammar",
       order: 2,
       label: t.ketPortal.modes.grammar,
       href: "/ket/grammar",
-      tagPosition: { x: 90, y: 38 },
+      mascotPose: "chart",
+      palette: "cream",
+      subtitle: "Grammar",
     },
     {
       mode: "listening",
       order: 3,
       label: t.ketPortal.modes.listening,
       href: "/ket/listening/new",
-      tagPosition: { x: 66, y: 22 },
+      mascotPose: "listening",
+      palette: "sky",
+      subtitle: "Listening",
     },
     {
       mode: "speaking",
       order: 4,
       label: t.ketPortal.modes.speaking,
       href: "/ket/speaking/new",
-      tagPosition: { x: 50, y: 42 },
+      mascotPose: "microphone",
+      palette: "peach",
+      subtitle: "Speaking",
     },
     {
       mode: "reading",
       order: 5,
       label: t.ketPortal.modes.reading,
       href: "/ket/reading/new",
-      tagPosition: { x: 18, y: 60 },
+      mascotPose: "reading",
+      palette: "mint",
+      subtitle: "Reading",
     },
     {
       mode: "writing",
       order: 6,
       label: t.ketPortal.modes.writing,
       href: "/ket/writing/new",
-      tagPosition: { x: 38, y: 22 },
+      mascotPose: "writing",
+      palette: "butter",
+      subtitle: "Writing",
     },
   ];
 

@@ -9,49 +9,71 @@ const sampleChips: ModeChip[] = [
     order: 1,
     label: "📖 词",
     href: "/ket/vocab",
-    tagPosition: { x: 50, y: 30 },
+    mascotPose: "flashcards",
+    palette: "lavender",
+    subtitle: "Vocabulary",
   },
   {
     mode: "writing",
     order: 6,
     label: "✍ 写",
     href: "/ket/writing/new",
-    tagPosition: { x: 50, y: 80 },
-    active: true,
+    mascotPose: "writing",
+    palette: "butter",
+    subtitle: "Writing",
   },
 ];
 
 describe("<PortalMap>", () => {
-  it("renders the vectorized KET map via <object data='/maps/ket-island.svg'>", () => {
-    const { container } = render(<PortalMap portal="ket" chips={sampleChips} />);
-    const obj = container.querySelector("object");
-    expect(obj).toBeTruthy();
-    expect(obj?.getAttribute("data")).toBe("/maps/ket-island.svg");
-    expect(obj?.getAttribute("type")).toBe("image/svg+xml");
-  });
-
-  it("falls back to PNG <img> for portal=pet (vectorization pending Phase C)", () => {
-    const { container } = render(<PortalMap portal="pet" chips={sampleChips} />);
-    expect(container.querySelector("object")).toBeFalsy();
-    const img = container.querySelector("img");
-    expect(img?.getAttribute("src")).toBe("/maps/pet-city.png");
-  });
-
-  it("renders a chip name-tag <Link> per chip with the order badge", () => {
-    const { container } = render(<PortalMap portal="ket" chips={sampleChips} />);
+  it("renders one Next/Link tile per chip with the mode href", () => {
+    const { container } = render(
+      <PortalMap portal="ket" chips={sampleChips} />,
+    );
     const links = container.querySelectorAll("a");
     expect(links.length).toBe(2);
     expect(links[0].getAttribute("href")).toBe("/ket/vocab");
-    expect(links[0].getAttribute("aria-hidden")).toBe("true");
-    // Order badge with the numeral 1.
-    expect(links[0].textContent).toContain("1");
-    expect(links[1].textContent).toContain("6");
+    expect(links[1].getAttribute("href")).toBe("/ket/writing/new");
   });
 
-  it("active chip name-tag uses the inverted ink-black variant", () => {
-    const { container } = render(<PortalMap portal="ket" chips={sampleChips} />);
+  it("each tile shows the ordinal badge", () => {
+    const { container } = render(
+      <PortalMap portal="ket" chips={sampleChips} />,
+    );
+    expect(container.textContent).toContain("1");
+    expect(container.textContent).toContain("6");
+  });
+
+  it("each tile renders Leo (KET) mascot with the per-mode pose", () => {
+    const { container } = render(
+      <PortalMap portal="ket" chips={sampleChips} />,
+    );
+    const imgs = container.querySelectorAll("img");
+    // Two mascot images — one per chip.
+    expect(imgs.length).toBe(2);
+    // Mascot uses next/image which rewrites the src; decode and check
+    // the underlying asset path.
+    const flashcards = decodeURIComponent(imgs[0].getAttribute("src") ?? "");
+    expect(flashcards).toContain("/mascots/leo/flashcards.png");
+    const writing = decodeURIComponent(imgs[1].getAttribute("src") ?? "");
+    expect(writing).toContain("/mascots/leo/writing.png");
+  });
+
+  it("PET portal renders Aria mascot poses instead of Leo", () => {
+    const { container } = render(
+      <PortalMap portal="pet" chips={sampleChips} />,
+    );
+    const imgs = container.querySelectorAll("img");
+    expect(decodeURIComponent(imgs[0].getAttribute("src") ?? "")).toContain(
+      "/mascots/aria/flashcards.png",
+    );
+  });
+
+  it("tile background uses the per-chip palette class", () => {
+    const { container } = render(
+      <PortalMap portal="ket" chips={sampleChips} />,
+    );
     const links = container.querySelectorAll("a");
-    expect(links[0].className).toContain("bg-white/95");
-    expect(links[1].className).toContain("bg-ink");
+    expect(links[0].className).toContain("tile-lavender");
+    expect(links[1].className).toContain("tile-butter");
   });
 });
