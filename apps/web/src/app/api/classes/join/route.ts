@@ -2,28 +2,41 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 const joinSchema = z.object({
   inviteCode: z.string().min(1).max(20),
 });
 
 export async function POST(req: Request) {
+  const portal = derivePortalFromRequest(req);
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "请求格式错误" }, { status: 400 });
+    return NextResponse.json(
+      { error: pickTone(t.api.malformedRequest, portal) },
+      { status: 400 },
+    );
   }
 
   const parsed = joinSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "请输入邀请码" }, { status: 400 });
+    return NextResponse.json(
+      { error: pickTone(t.api.inviteCodeRequired, portal) },
+      { status: 400 },
+    );
   }
 
   const inviteCode = parsed.data.inviteCode.trim().toUpperCase();
@@ -34,7 +47,10 @@ export async function POST(req: Request) {
   });
 
   if (!targetClass) {
-    return NextResponse.json({ error: "邀请码无效" }, { status: 404 });
+    return NextResponse.json(
+      { error: pickTone(t.api.inviteCodeInvalid, portal) },
+      { status: 404 },
+    );
   }
 
   if (targetClass.teacherId === userId) {
