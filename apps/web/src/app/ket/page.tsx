@@ -80,79 +80,65 @@ export default async function KetPortalPage(props: {
 
   const portal = "ket" as const;
 
-  // Each chip's `region` is a bounding box on the KET 岛 map; the
-  // `clipPath` polygon (relative to that box) cuts the click area down
-  // to the building's actual silhouette. So clicking grass / sky / path
-  // does nothing; clicking the *house* navigates. Per ui-ux-pro-max
-  // Immersive/Interactive pattern with Claymorphism soft-press hover.
+  // Pixel-perfect compositing approach (Path B): the empty-island
+  // background lives at /maps/ket-island-bg.png; each building lives at
+  // /maps/buildings/ket/<mode>.png with a transparent background. The
+  // SVG composite uses pointer-events="visiblePainted" so clicks register
+  // only on opaque building pixels — the building's alpha channel IS the
+  // click area, by construction.
   //
-  // Polygons were traced from apps/web/public/maps/ket-island.png; any
-  // misses can be fine-tuned with the visual tool later. Accuracy fields
-  // are intentionally omitted — spec §2.1.1 (no fabricated UI data).
+  // `placement` boxes were chosen to match the 6 empty plot positions on
+  // the bg image. Each building is drawn at its placement size; the
+  // building's own visual (with its grass platform underneath) sits on
+  // top of the matching plot. Accuracy fields are intentionally omitted
+  // — spec §2.1.1 (no fabricated UI data).
   const chips: ModeChip[] = [
     {
       mode: "reading",
       label: t.ketPortal.modes.reading,
       href: "/ket/reading/new",
-      region: { top: "38%", left: "3%", width: "29%", height: "32%" },
-      // House pentagon + extension to the lower-left for the stack of books.
-      clipPath:
-        "polygon(45% 0, 80% 25%, 100% 25%, 100% 100%, 0 100%, 0 50%, 18% 50%, 28% 30%)",
+      imgSrc: "/maps/buildings/ket/reading.png",
+      placement: { x: 8, y: 38, w: 28, h: 28 },
       labelAnchor: "top-left",
     },
     {
       mode: "writing",
       label: t.ketPortal.modes.writing,
       href: "/ket/writing/new",
-      region: { top: "14%", left: "24%", width: "26%", height: "32%" },
-      // House pentagon (yellow café — steam plume above the chimney is
-      // intentionally outside the polygon since clicking the steam isn't
-      // an obvious affordance).
-      clipPath:
-        "polygon(50% 5%, 90% 30%, 100% 100%, 0 100%, 10% 30%)",
+      imgSrc: "/maps/buildings/ket/writing.png",
+      placement: { x: 28, y: 14, w: 26, h: 28 },
       labelAnchor: "top-left",
     },
     {
       mode: "listening",
       label: t.ketPortal.modes.listening,
       href: "/ket/listening/new",
-      region: { top: "12%", left: "52%", width: "25%", height: "30%" },
-      // Cube with the headphones notch on top — keep the headphones in
-      // the click region (kids may aim for them).
-      clipPath:
-        "polygon(20% 0, 80% 0, 80% 25%, 100% 25%, 100% 100%, 0 100%, 0 25%, 20% 25%)",
+      imgSrc: "/maps/buildings/ket/listening.png",
+      placement: { x: 56, y: 14, w: 24, h: 28 },
       labelAnchor: "top-right",
     },
     {
       mode: "speaking",
       label: t.ketPortal.modes.speaking,
       href: "/ket/speaking/new",
-      region: { top: "32%", left: "36%", width: "24%", height: "26%" },
-      // Pavilion: triangular roof + open base. Polygon: peaked roof at
-      // top, full-width body below.
-      clipPath: "polygon(20% 0, 80% 0, 100% 35%, 100% 100%, 0 100%, 0 35%)",
+      imgSrc: "/maps/buildings/ket/speaking.png",
+      placement: { x: 36, y: 36, w: 26, h: 26 },
       labelAnchor: "top-left",
     },
     {
       mode: "vocab",
       label: t.ketPortal.modes.vocab,
       href: "/ket/vocab",
-      region: { top: "60%", left: "60%", width: "32%", height: "23%" },
-      // Vocab garden = scattered alphabet letters + flowers; no clear
-      // silhouette. Use the full bounding rectangle (still smaller than
-      // a textbook button so clicks feel intentional).
-      clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
+      imgSrc: "/maps/buildings/ket/vocab.png",
+      placement: { x: 12, y: 60, w: 28, h: 26 },
       labelAnchor: "top-left",
     },
     {
       mode: "grammar",
       label: t.ketPortal.modes.grammar,
       href: "/ket/grammar",
-      region: { top: "16%", left: "78%", width: "20%", height: "48%" },
-      // Tower with crenellated battlements at top — small notch profile
-      // and tall body.
-      clipPath:
-        "polygon(20% 5%, 35% 5%, 35% 0, 50% 0, 50% 5%, 65% 5%, 65% 0, 80% 0, 80% 5%, 100% 15%, 100% 100%, 0 100%, 0 15%)",
+      imgSrc: "/maps/buildings/ket/grammar.png",
+      placement: { x: 60, y: 50, w: 24, h: 32 },
       labelAnchor: "top-right",
     },
   ];

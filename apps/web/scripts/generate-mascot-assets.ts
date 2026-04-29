@@ -23,6 +23,7 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import dotenv from "dotenv";
+import sharp from "sharp";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -92,6 +93,73 @@ const MAPS: MapTask[] = [
     sub: "maps",
     size: "1024x1024",
   },
+  // ── Pixel-perfect KET 岛: background-only + 6 transparent-bg buildings ──
+  // Compositing pattern: <image> background + per-building <image
+  // pointer-events="visiblePainted"> overlays. White→transparent
+  // post-process applied to building PNGs after generation.
+  {
+    file: "ket-island-bg.png",
+    prompt:
+      "Cheerful children's storybook illustrated empty island viewed from a slight isometric angle, called KET Island, lush green island floating on calm blue water, six EMPTY GRASSY PLOTS where buildings will be placed (NO BUILDINGS, NO HOUSES, NO STRUCTURES present), winding pastel pebble path connecting the six empty plots, fluffy soft white clouds drifting in clear pastel sky, smiling sun in upper corner, palm trees and small bushes scattered around the island edges, no people, no text, no logos, no watermarks, flat 2D vector illustration style, vibrant kid-friendly pastel palette, professional children's book illustration",
+    sub: "maps",
+    size: "1024x1024",
+  },
+];
+
+// Per-building tasks. `bg: 'white-to-alpha'` means after generation we run
+// a sharp transform that converts near-white pixels (>240/255) to alpha=0
+// so the building PNG is transparent everywhere except the building itself.
+interface BuildingTask {
+  file: string;
+  prompt: string;
+  size: string;
+  /** Apply white→alpha post-process. */
+  whiteToAlpha: true;
+}
+
+const KET_BUILDINGS: BuildingTask[] = [
+  {
+    file: "buildings/ket/reading.png",
+    prompt:
+      "A cozy pink storybook cottage in slight isometric view, soft pink wooden walls, peaked pink roof, small front porch with wooden steps, large open bookshelf visible inside the front displaying colorful spine-out books, stack of additional colorful books beside the entrance, small windows with white trim, NO ground or grass beneath the cottage, NO shadow on the ground, isolated single building floating on a PURE WHITE SOLID BACKGROUND with no other elements, no signs with words, no text, no logos, no watermarks, flat 2D vector illustration style, kid-friendly storybook palette of soft pink white cream and warm wood brown, soft cel-shaded edges, professional children's book illustration",
+    size: "1024x1024",
+    whiteToAlpha: true,
+  },
+  {
+    file: "buildings/ket/writing.png",
+    prompt:
+      "A butter-yellow storybook café building in slight isometric view, yellow wooden walls, terracotta sloped roof, small chimney with a single curling steam plume, decorative giant coffee cup sitting on the roof, two small windows with white trim, charming wooden front deck with steps, NO ground or grass beneath the building, NO shadow on the ground, isolated single building floating on a PURE WHITE SOLID BACKGROUND with no other elements, no signs with words, no text, no logos, no watermarks, flat 2D vector illustration style, kid-friendly storybook palette of butter-yellow cream terracotta and warm wood brown, soft cel-shaded edges, professional children's book illustration",
+    size: "1024x1024",
+    whiteToAlpha: true,
+  },
+  {
+    file: "buildings/ket/listening.png",
+    prompt:
+      "A bright sky-blue cube-shaped studio building in slight isometric view, large oversized cartoon headphones perched on the flat roof, a single decorative musical note shape on the front wall, small windows with violet trim, charming wooden front deck, NO ground or grass beneath the building, NO shadow on the ground, isolated single building floating on a PURE WHITE SOLID BACKGROUND with no other elements, no signs with words, no text, no logos, no watermarks, flat 2D vector illustration style, kid-friendly storybook palette of sky-blue cream violet butter-yellow accents, soft cel-shaded edges, professional children's book illustration",
+    size: "1024x1024",
+    whiteToAlpha: true,
+  },
+  {
+    file: "buildings/ket/speaking.png",
+    prompt:
+      "A mint-green outdoor performance pavilion in slight isometric view, four wooden posts supporting a peaked mint-green roof, simple wooden raised stage floor, single decorative microphone on a stand at center stage, NO ground or grass beneath the pavilion, NO shadow on the ground, isolated single pavilion floating on a PURE WHITE SOLID BACKGROUND with no other elements, no signs with words, no text, no logos, no watermarks, flat 2D vector illustration style, kid-friendly storybook palette of mint-green warm-wood-brown black-microphone, soft cel-shaded edges, professional children's book illustration",
+    size: "1024x1024",
+    whiteToAlpha: true,
+  },
+  {
+    file: "buildings/ket/vocab.png",
+    prompt:
+      "A small lavender vocabulary garden patch in slight isometric view, four to six giant 3D alphabet letter flower stems standing in a tight cluster, decorative pink purple and butter-yellow round flower buds clustered around the base, small lavender soil patches visible at the bottom of the cluster, NO ground or grass beneath the patch, NO shadow on the ground, isolated single garden cluster floating on a PURE WHITE SOLID BACKGROUND with no other elements, no signs with words, no text on the letters (just abstract decorative letter shapes), no logos, no watermarks, flat 2D vector illustration style, kid-friendly storybook palette of lavender-purple pink butter-yellow cream-letters, soft cel-shaded edges, professional children's book illustration",
+    size: "1024x1024",
+    whiteToAlpha: true,
+  },
+  {
+    file: "buildings/ket/grammar.png",
+    prompt:
+      "A peach-colored fairy-tale tower castle in slight isometric view, tall cylindrical peach tower with crenellated battlement notches at the top, small arched windows along the height, conical pink roof spire on the very top, decorative archway at the tower base entrance, NO ground or grass beneath the tower, NO shadow on the ground, isolated single tower floating on a PURE WHITE SOLID BACKGROUND with no other elements, no signs with words, no text, no logos, no watermarks, flat 2D vector illustration style, kid-friendly storybook palette of peach coral cream and accent pink, soft cel-shaded edges, professional children's book illustration",
+    size: "1024x1024",
+    whiteToAlpha: true,
+  },
 ];
 
 interface SfResp {
@@ -99,10 +167,32 @@ interface SfResp {
   data?: Array<{ url?: string }>;
 }
 
+async function whiteToAlpha(buf: Buffer): Promise<Buffer> {
+  // Convert near-white pixels (RGB all > 240) to alpha=0 so the building
+  // PNG is transparent everywhere except the building itself. Done with
+  // sharp's raw pixel access — the SF model returns clean white BGs so
+  // a single threshold pass is sufficient.
+  const { data, info } = await sharp(buf)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) {
+      data[i + 3] = 0;
+    }
+  }
+  return sharp(data, {
+    raw: { width: info.width, height: info.height, channels: 4 },
+  })
+    .png()
+    .toBuffer();
+}
+
 async function genOne(
   prompt: string,
   outPath: string,
   size: string,
+  whiteAlpha = false,
 ): Promise<boolean> {
   if (!FORCE && existsSync(outPath)) {
     console.log(`SKIP ${path.relative(PUB_DIR, outPath)} (exists)`);
@@ -147,8 +237,12 @@ async function genOne(
     console.error(`download ${dl.status} for ${outPath}`);
     return false;
   }
+  let buf = Buffer.from(await dl.arrayBuffer());
+  if (whiteAlpha) {
+    buf = await whiteToAlpha(buf);
+  }
   await mkdir(path.dirname(outPath), { recursive: true });
-  await writeFile(outPath, Buffer.from(await dl.arrayBuffer()));
+  await writeFile(outPath, buf);
   console.log(`OK ${path.relative(PUB_DIR, outPath)} in ${Date.now() - t0}ms`);
   return true;
 }
@@ -157,6 +251,7 @@ interface Task {
   prompt: string;
   out: string;
   size: string;
+  whiteAlpha?: boolean;
 }
 
 async function main() {
@@ -189,6 +284,16 @@ async function main() {
       });
     }
   }
+  if (!ONLY || ONLY === "ket-buildings") {
+    for (const b of KET_BUILDINGS) {
+      tasks.push({
+        prompt: b.prompt,
+        out: path.join(PUB_DIR, "maps", b.file),
+        size: b.size,
+        whiteAlpha: true,
+      });
+    }
+  }
 
   // Concurrency 4 keeps the SF API within reasonable rate limits.
   const CONCURRENCY = 4;
@@ -200,7 +305,7 @@ async function main() {
       while (i < tasks.length) {
         const idx = i++;
         const t = tasks[idx];
-        const ok = await genOne(t.prompt, t.out, t.size);
+        const ok = await genOne(t.prompt, t.out, t.size, t.whiteAlpha ?? false);
         if (ok) okCount++;
         else failCount++;
       }
