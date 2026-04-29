@@ -5,6 +5,13 @@
 //
 // This file is the only place UI copy should live. Future multi-locale work
 // (e.g. en-US) will clone the shape and swap via a resolver; keys are stable.
+//
+// Per-portal voice: entries that differ between KET (kid voice) and PET
+// (teen voice) use the `Tone<T>` helper. Resolve at render time via
+// `pickTone(value, portal)` from `./voice` or via the `useT()` hook from
+// `./PortalProvider`. Plain strings are shared by both portals.
+
+import type { Tone } from "./voice";
 
 export const t = {
   app: {
@@ -252,6 +259,41 @@ export const t = {
     retryReport: "重新生成报告",
     bannerGated: "本周诊断测试未完成 · 其他练习功能已锁定",
     bannerCta: "立即去做诊断 →",
+  },
+  api: {
+    // Per-portal voice for user-visible API error / instruction strings.
+    // Resolved server-side via pickTone(t.api.<key>, derivedPortal) — see
+    // `apps/web/src/i18n/derivePortalFromPathname.ts`.
+    unauthorized: { ket: "先登录一下哦 →", pet: "请先登录" } as Tone<string>,
+    malformedRequest: { ket: "这个请求看不懂", pet: "请求格式错误" } as Tone<string>,
+    inviteCodeRequired: { ket: "邀请码呢？", pet: "请输入邀请码" } as Tone<string>,
+    inviteCodeInvalid: { ket: "邀请码不对", pet: "邀请码无效" } as Tone<string>,
+    diagnoseRateLimit: {
+      ket: "今天先休息一下吧",
+      pet: "诊断生成调用次数已达上限，请稍后再试",
+    } as Tone<string>,
+    diagnoseGenerateFailed: {
+      ket: "出题没成功，再试一下",
+      pet: "诊断生成失败，请稍后重试",
+    } as Tone<string>,
+    audioNotReady: {
+      ket: "音频还没好 · 重新生成",
+      pet: "音频加载失败，请重新生成",
+    } as Tone<string>,
+    queueFull: { ket: "现在人多 · 等一下", pet: "系统繁忙，请稍后再试" } as Tone<string>,
+    timeExceeded: {
+      ket: "时间到 · 已交卷",
+      pet: "考试时间已结束，答案已自动提交",
+    } as Tone<string>,
+    writingEmpty: { ket: "先写下你的作文哦", pet: "请先写下你的作文" } as Tone<string>,
+    listeningInstruction: {
+      ket: "听一听 · 选答案",
+      pet: "听音频后选择答案",
+    } as Tone<string>,
+    auth: {
+      emailInvalid: { ket: "邮箱填错啦", pet: "邮箱格式不正确" } as Tone<string>,
+      passwordTooShort: { ket: "密码要 8 位以上", pet: "密码至少 8 位" } as Tone<string>,
+    },
   },
 } as const;
 
