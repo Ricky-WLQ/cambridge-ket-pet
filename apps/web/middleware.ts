@@ -1,5 +1,5 @@
 /**
- * Diagnose-gate middleware (T27).
+ * Diagnose-gate middleware (T27) + portal-aware layout helper.
  *
  * Runs on the Edge runtime — JWT-only, NO Prisma imports. The JWT carries
  * `role` and `requiredDiagnoseId` (refreshed on signIn / update() in the
@@ -11,6 +11,10 @@
  *  - TEACHER / ADMIN: pass through unconditionally.
  *  - STUDENT with non-null `requiredDiagnoseId`: redirect to /diagnose.
  *  - STUDENT with null `requiredDiagnoseId`: pass through (unblocked).
+ *
+ * Every pass-through response carries an `x-pathname` request header so the
+ * Next.js root layout (a Server Component) can derive the active KET / PET
+ * portal without becoming a client component.
  *
  * The matcher excludes:
  *  - `/_next` static / build assets
@@ -37,6 +41,7 @@
 
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 const ALLOW_PATHS = new Set<string>([
   "/login",
@@ -60,25 +65,36 @@ const ALLOW_PREFIXES = [
   "/history/",
 ];
 
+/**
+ * Pass-through response that forwards `x-pathname` so RootLayout can derive
+ * the active portal. Use this in place of the default `NextResponse.next()`
+ * (or an unset return) on every non-redirect branch.
+ */
+function nextWithPathname(req: NextRequest): NextResponse {
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-pathname", req.nextUrl.pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   // Allowlisted paths/prefixes pass through.
-  if (ALLOW_PATHS.has(pathname)) return;
-  if (ALLOW_PREFIXES.some((p) => pathname.startsWith(p))) return;
+  if (ALLOW_PATHS.has(pathname)) return nextWithPathname(req);
+  if (ALLOW_PREFIXES.some((p) => pathname.startsWith(p))) return nextWithPathname(req);
 
   // Anonymous users: let per-page redirects handle them (this middleware
   // only enforces the diagnose gate, not auth).
   const u = req.auth?.user as
     | { role?: string; requiredDiagnoseId?: string | null }
     | undefined;
-  if (!u) return;
+  if (!u) return nextWithPathname(req);
 
   // Teachers and admins are exempt from the gate.
-  if (u.role !== "STUDENT") return;
+  if (u.role !== "STUDENT") return nextWithPathname(req);
 
   // STUDENT with no required diagnose: unblocked.
-  if (!u.requiredDiagnoseId) return;
+  if (!u.requiredDiagnoseId) return nextWithPathname(req);
 
   // Gated: redirect to /diagnose.
   const url = req.nextUrl.clone();
