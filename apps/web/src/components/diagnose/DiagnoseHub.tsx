@@ -104,12 +104,14 @@ export default function DiagnoseHub({
       </div>
 
       {reportReady && testId && (
-        <Link
-          href={`/diagnose/report/${testId}`}
-          className="mx-2 rounded-full bg-ink text-white text-sm font-extrabold px-5 py-2.5 hover:bg-ink/90 transition text-center"
-        >
-          {t.diagnose.viewReport}
-        </Link>
+        <div className="px-2">
+          <Link
+            href={`/diagnose/report/${testId}`}
+            className="inline-flex rounded-full bg-ink text-white text-sm font-extrabold px-5 py-2.5 hover:bg-ink/90 transition"
+          >
+            {t.diagnose.viewReport}
+          </Link>
+        </div>
       )}
 
       {reportFailed && (
