@@ -59,7 +59,36 @@ All assets generated via SiliconFlow Qwen-Image during brainstorming; total spen
 2. **More attractive.** Per-portal brand identity (Leo + KET 岛 / Aria + PET 城). Layout migrates from 6-equal-tile grid to map-metaphor + today-focused dashboard.
 3. **Production-ready.** Every user-facing surface exercised end-to-end and probed for verbosity regressions before deploy.
 
-### 2.2 Scope (Tier A vs Tier B vs Out)
+### 2.1.1 Binding rule — **No fabricated UI data, ever**
+
+(Added 2026-04-29 after a Phase B fabrication incident — see commit history.)
+
+Every user-visible data element in the redesign — counts, percentages,
+streaks, recommendations, weekly progress, scores, dates — must trace
+to a real source: a DB query, a deterministic computation from real
+data, an API response, a session/JWT field, or a static string that
+makes no claim about the user.
+
+If real data exists today, **wire it.** If real data does not exist
+today (no model, no recommender), **drop the element entirely.** Do not
+ship hardcoded example numbers as if real, even with `// Temp` comments
+or "scaffolding to be replaced in Phase H" plans. The user reads the
+rendered page, not the source.
+
+A `—` placeholder is acceptable only when its meaning is genuinely
+"no data yet" and a viewing student would understand that — not as a
+stand-in for "we'll fill this later."
+
+Mockups during brainstorming may show example numbers (clearly
+illustrative). Implementation must not. Approval of a mockup is
+approval of a layout direction, not of the literal example values.
+
+This rule supersedes any `Phase H wires real data` deferral notes
+elsewhere in this spec or the implementation plan. Phases must drop
+fabricated elements when they ship; Phase H restores them with real
+queries.
+
+## 2.2 Scope (Tier A vs Tier B vs Out)
 
 #### Tier A — student-facing (50 routes)
 
