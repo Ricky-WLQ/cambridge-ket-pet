@@ -41,7 +41,24 @@ interface PortalMapProps {
   chips: ModeChip[];
   /** Optional override for the map image alt text. */
   alt?: string;
+  /**
+   * Debug mode — when true, every building polygon is rendered with a
+   * semi-transparent color fill so the click-region shape is visually
+   * obvious. Use during development (e.g., `/ket?debug=1`) to refine the
+   * polygons against the underlying map image. NEVER true in production.
+   */
+  debug?: boolean;
 }
+
+/** Per-building debug fills (vivid, distinguishable). */
+const DEBUG_FILL: Record<ModeChip["mode"], string> = {
+  reading: "bg-pink-500/45",
+  writing: "bg-amber-500/45",
+  listening: "bg-blue-500/45",
+  speaking: "bg-emerald-500/45",
+  vocab: "bg-purple-500/45",
+  grammar: "bg-orange-500/45",
+};
 
 const ANCHOR_POSITION: Record<NonNullable<ModeChip["labelAnchor"]>, string> = {
   "top-left": "top-2 left-2",
@@ -66,7 +83,7 @@ const ANCHOR_POSITION: Record<NonNullable<ModeChip["labelAnchor"]>, string> = {
  * `prefers-reduced-motion` users don't see the scale animation. Per
  * ui-ux-pro-max (Immersive/Interactive pattern + Claymorphism style).
  */
-export function PortalMap({ portal, chips, alt }: PortalMapProps) {
+export function PortalMap({ portal, chips, alt, debug = false }: PortalMapProps) {
   const src = portal === "ket" ? "/maps/ket-island.png" : "/maps/pet-city.png";
   const defaultAlt = portal === "ket" ? "KET 岛" : "PET 城";
   return (
@@ -91,12 +108,18 @@ export function PortalMap({ portal, chips, alt }: PortalMapProps) {
               height: c.region.height,
             }}
           >
-            {/* (1) Primary click target — building silhouette via clip-path. */}
+            {/* (1) Primary click target — building silhouette via clip-path.
+                In debug mode the link gets a vivid translucent fill so the
+                polygon shape is immediately visible against the map. */}
             <Link
               href={c.href}
               aria-label={c.label}
               style={{ clipPath: c.clipPath }}
-              className="pointer-events-auto absolute inset-0 block cursor-pointer bg-ink/0 motion-safe:transition-colors motion-safe:duration-200 hover:bg-ink/15 focus-visible:bg-ink/20 focus-visible:outline-none"
+              className={`pointer-events-auto absolute inset-0 block cursor-pointer motion-safe:transition-colors motion-safe:duration-200 focus-visible:outline-none ${
+                debug
+                  ? `${DEBUG_FILL[c.mode]} hover:opacity-80`
+                  : "bg-ink/0 hover:bg-ink/15 focus-visible:bg-ink/20"
+              }`}
             />
 
             {/* (2) Decorative chip name-tag — small redundant click target. */}
