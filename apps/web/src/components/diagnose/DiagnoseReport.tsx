@@ -363,25 +363,107 @@ function DetailsCollapsible({
             </div>
             <ul className="space-y-1.5">
               {knowledgePoints.map((kp, i) => (
-                <li
+                <KnowledgePointItem
                   key={`${kp.knowledgePoint}-${i}`}
-                  className="flex items-center gap-2 rounded-xl border border-ink/10 bg-mist px-3 py-2"
-                >
-                  <span className="pill-tag bg-amber-100 text-amber-800">
-                    {KP_CATEGORY_ZH[kp.category] ?? kp.category}
-                  </span>
-                  <span className="flex-1 text-sm font-bold text-ink truncate">
-                    {kp.knowledgePoint}
-                  </span>
-                  <span className="shrink-0 text-xs font-medium text-ink/55">
-                    {kp.questions.length} 道错题
-                  </span>
-                </li>
+                  group={kp}
+                />
               ))}
             </ul>
           </div>
         )}
       </div>
     </details>
+  );
+}
+
+// ── Per-knowledge-point expandable item ────────────────────────────────
+
+const SECTION_LABEL_ZH: Record<string, string> = {
+  READING: "阅读",
+  LISTENING: "听力",
+  WRITING: "写作",
+  SPEAKING: "口语",
+  VOCAB: "词汇",
+  GRAMMAR: "语法",
+};
+
+function KnowledgePointItem({ group }: { group: KnowledgePointGroup }) {
+  // Collapsed by default. Expanded view shows the AI's mini-lesson
+  // (1–2 sentences) plus each wrong question with the user's actual
+  // answer, the correct answer, and the why_wrong from the agent.
+  // No fabrication — every field comes straight from `group`.
+  const hasMiniLesson = group.miniLesson?.trim().length > 0;
+  const questionCount = group.questions.length;
+  return (
+    <li>
+      <details className="group rounded-xl border border-ink/10 bg-mist">
+        <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 list-none">
+          <span className="pill-tag bg-amber-100 text-amber-800">
+            {KP_CATEGORY_ZH[group.category] ?? group.category}
+          </span>
+          <span className="flex-1 min-w-0 text-sm font-bold text-ink truncate">
+            {group.knowledgePoint}
+          </span>
+          <span className="shrink-0 text-xs font-medium text-ink/55">
+            {questionCount} 道错题
+          </span>
+          <span
+            className="shrink-0 text-base text-ink/55 transition-transform group-open:rotate-180"
+            aria-hidden
+          >
+            ⌄
+          </span>
+        </summary>
+        <div className="border-t border-ink/10 p-3 space-y-3 bg-white rounded-b-xl">
+          {hasMiniLesson && (
+            <p className="text-xs leading-relaxed text-ink/85">
+              {group.miniLesson}
+            </p>
+          )}
+          {questionCount > 0 && (
+            <ol className="space-y-2">
+              {group.questions.map((q, i) => (
+                <li
+                  key={i}
+                  className="rounded-lg border border-ink/10 bg-mist p-2.5 text-xs"
+                >
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <span className="grid h-4 w-4 place-items-center rounded-full bg-ink text-[10px] font-extrabold text-white">
+                      {i + 1}
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-ink/55">
+                      {SECTION_LABEL_ZH[q.section] ?? q.section}
+                    </span>
+                  </div>
+                  <p className="font-medium text-ink/90 leading-relaxed">
+                    {q.questionText}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
+                    <div>
+                      <span className="font-bold text-ink/55">你的答案：</span>
+                      <span className="text-rose-700 font-bold">
+                        {q.userAnswer || "(未作答)"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-ink/55">正确答案：</span>
+                      <span className="text-emerald-700 font-bold">
+                        {q.correctAnswer}
+                      </span>
+                    </div>
+                  </div>
+                  {q.whyWrong?.trim() && (
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-ink/70">
+                      <span className="font-bold text-ink/55">为什么：</span>
+                      {q.whyWrong}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </details>
+    </li>
   );
 }
