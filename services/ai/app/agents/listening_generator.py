@@ -17,6 +17,7 @@ a mock Agent.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import Literal
@@ -85,6 +86,10 @@ def get_listening_generator() -> Agent[None, ListeningTestResponse]:
 
 MAX_ATTEMPTS = 3
 
+# Number of parts in a FULL listening test, by exam type. Mirrors the canonical
+# counts in app.validators.listening._QUESTION_COUNTS / _PART_KIND.
+_FULL_PART_COUNT: dict[str, int] = {"KET": 5, "PET": 4}
+
 
 async def generate_listening_test(
     exam_type: Literal["KET", "PET"],
@@ -93,12 +98,95 @@ async def generate_listening_test(
     part: int | None = None,
     seed_exam_points: list[str] | None = None,
 ) -> ListeningTestResponse:
-    """Generate + validate a listening test, retrying up to MAX_ATTEMPTS on validation failure.
+    """Generate + validate a listening test.
 
-    Raises ValueError if all MAX_ATTEMPTS attempts fail validation.
+    For ``scope="PART"``: a single DeepSeek call generates the requested part,
+    with the existing retry orchestration (pydantic-ai retries=2 + outer
+    MAX_ATTEMPTS=3 with try/except UnexpectedModelBehavior).
+
+    For ``scope="FULL"``: fans out to ``N`` parallel ``scope="PART"`` calls
+    (N=5 for KET, N=4 for PET) and merges the per-part responses. This avoids
+    the DeepSeek 8000-token output-cap that consistently truncates whole-test
+    generations and surfaces as ``UnexpectedModelBehavior(IncompleteToolCall)``.
+    Each per-part call comfortably fits in 8000 tokens.
+
+    Raises ValueError when generation or merged validation fails.
     """
     seed_exam_points = seed_exam_points or []
+    if scope == "FULL":
+        return await _generate_full_via_parts(exam_type, seed_exam_points)
+    return await _generate_single_part(
+        exam_type, scope, part=part, seed_exam_points=seed_exam_points
+    )
 
+
+async def _generate_full_via_parts(
+    exam_type: Literal["KET", "PET"],
+    seed_exam_points: list[str],
+) -> ListeningTestResponse:
+    """Fan out FULL generation to N parallel per-part calls and merge."""
+    part_count = _FULL_PART_COUNT[exam_type]
+    log.info(
+        "generate_listening_test scope=FULL fanning out to %d parallel "
+        "per-part calls (exam_type=%s)",
+        part_count,
+        exam_type,
+    )
+    tasks = [
+        _generate_single_part(
+            exam_type, "PART", part=part_num, seed_exam_points=seed_exam_points
+        )
+        for part_num in range(1, part_count + 1)
+    ]
+    # Fail-fast: if any per-part call raises ValueError after its own retry
+    # budget, the first such exception propagates. The other in-flight tasks
+    # are not cancelled by default — they run to completion in the background
+    # but their results are discarded. This matches the diagnose orchestrator's
+    # pattern (services/ai/app/agents/diagnose_generator.py).
+    part_responses: list[ListeningTestResponse] = await asyncio.gather(*tasks)
+
+    merged_parts = [r.parts[0] for r in part_responses]
+    merged = ListeningTestResponse(
+        version=2,
+        exam_type=exam_type,
+        scope="FULL",
+        part=None,
+        parts=merged_parts,
+        cefr_level="A2" if exam_type == "KET" else "B1",
+    )
+
+    # Sanity-check the merged shape (catches duplicate part_numbers, wrong
+    # ordering, or a per-part response that somehow returned the wrong part).
+    merge_errors = validate_listening_response(merged)
+    if merge_errors:
+        error_msgs = "; ".join(f"{e.code}: {e.message}" for e in merge_errors)
+        log.error(
+            "generate_listening_test FULL merge validation failed "
+            "(exam_type=%s): %s",
+            exam_type,
+            error_msgs,
+        )
+        raise ValueError(
+            f"Listening FULL merge validation failed: {error_msgs}"
+        )
+    return merged
+
+
+async def _generate_single_part(
+    exam_type: Literal["KET", "PET"],
+    scope: Literal["FULL", "PART"],
+    *,
+    part: int | None,
+    seed_exam_points: list[str],
+) -> ListeningTestResponse:
+    """One-shot generation for a single part (or, legacy, FULL scope when
+    callers bypass the fan-out path — currently no callers do).
+
+    Implements the retry orchestration: pydantic-ai's internal retries=2 plus
+    an outer MAX_ATTEMPTS loop that catches ``UnexpectedModelBehavior``
+    (commonly from DeepSeek's tool-call output truncation or trailing chars)
+    and treats it the same as a Cambridge-format-check failure.
+    """
     prompt = (
         f"Generate a {exam_type} listening test. "
         f"scope={scope}. "
@@ -120,14 +208,6 @@ async def generate_listening_test(
         try:
             run = await agent.run(prompt, model_settings=LISTENING_MODEL_SETTINGS)
         except UnexpectedModelBehavior as e:
-            # Pydantic-ai exhausted its own output-validation retry budget
-            # (typical cause: DeepSeek's tool-call args include trailing
-            # characters after the closing `}`, which pydantic-core rejects
-            # as "Invalid JSON: trailing characters at line 1 column NNN";
-            # see commit 54b8e81 for the original observation). Treat this
-            # the same as a Cambridge-format-check failure: log + continue
-            # the outer loop so we get a fresh DeepSeek call. Bubble up only
-            # if every outer attempt fails this way.
             last_pydantic_error = e
             last_failure_kind = "pydantic"
             log.warning(
