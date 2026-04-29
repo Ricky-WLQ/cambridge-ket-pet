@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Mascot } from "@/components/Mascot";
 import { AudioPlayer } from "@/components/listening/AudioPlayer";
 import { TapescriptPanel } from "@/components/listening/TapescriptPanel";
 import { QuestionRenderer } from "@/components/listening/QuestionRenderer";
@@ -33,35 +34,41 @@ export default async function KetListeningResultPage({
     []) as unknown as AudioSegmentRecord[];
   const answers = (attempt.answers ?? {}) as Record<string, string>;
 
+  const rawScore = attempt.rawScore ?? 0;
+  const totalPossible = attempt.totalPossible ?? 0;
+  const passRate = totalPossible > 0 ? (rawScore / totalPossible) * 100 : 0;
+  const pose: "celebrating" | "thinking" | "confused" =
+    passRate >= 70 ? "celebrating" : passRate >= 50 ? "thinking" : "confused";
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="flex-1">
-        <div className="p-6 max-w-3xl mx-auto">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h1 className="text-2xl font-extrabold">
-              听力结果 — <span className="marker-yellow">KET</span>
-            </h1>
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="mx-auto max-w-3xl w-full">
+          <div className="mb-4 flex items-center gap-3 px-1">
+            <Mascot pose={pose} portal="ket" width={56} height={56} decorative />
+            <div className="flex-1">
+              <h1 className="text-base font-extrabold leading-tight">
+                KET 听力 · 成绩
+              </h1>
+              <p className="mt-0.5 text-xs font-medium text-ink/60">
+                得分 {rawScore} / {totalPossible}
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/history"
                 className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
               >
-                ← 返回历史记录
+                ← 历史
               </Link>
               <Link
                 href="/ket"
                 className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
               >
-                返回 KET 门户
+                KET 门户
               </Link>
             </div>
-          </div>
-
-          <div className="rounded-2xl bg-butter-tint border-2 border-ink/10 p-5 mb-6 stitched-card">
-            <p className="text-2xl font-extrabold">
-              得分: {attempt.rawScore ?? 0} / {attempt.totalPossible ?? 0}
-            </p>
           </div>
 
           <div className="mb-6">
@@ -104,7 +111,7 @@ export default async function KetListeningResultPage({
             ))}
           </div>
 
-          <div className="mt-8 mb-10 flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink/10 pt-5">
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink/10 pt-4">
             <Link
               href="/history"
               className="rounded-full bg-white border-2 border-ink/15 px-4 py-2 text-sm font-bold hover:border-ink"

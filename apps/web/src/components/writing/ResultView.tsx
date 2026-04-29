@@ -1,3 +1,5 @@
+import { Mascot } from "@/components/Mascot";
+
 type Scores = {
   content: number;
   communicative: number;
@@ -63,16 +65,28 @@ export default function WritingResultView({
       ? payload.options.find((o) => o.label === chosenOption)
       : null;
 
+  const portal = examType === "KET" ? "ket" : "pet";
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-8">
-      <span className="pill-tag bg-lavender-tint text-ink border-2 border-ink/10">
-        {mode === "MOCK" ? "模拟考试" : "练习模式"}
-      </span>
-      <h1 className="mt-2 text-3xl font-extrabold leading-tight">
-        {examType} 写作 · Part {part} · <span className="marker-yellow">成绩</span>
-      </h1>
+    <div className="mx-auto w-full max-w-3xl">
+      <div className="mb-5 flex items-center gap-3 px-1">
+        <Mascot
+          pose={scaledScore >= 70 ? "celebrating" : scaledScore >= 50 ? "thinking" : "confused"}
+          portal={portal}
+          width={56}
+          height={56}
+          decorative
+        />
+        <div className="flex-1">
+          <h1 className="text-base font-extrabold leading-tight">
+            {examType} 写作 · Part {part}
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            {mode === "MOCK" ? "模拟考试" : "练习模式"}
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-6 stitched-card rounded-2xl bg-butter-tint p-6 text-center border-2 border-ink/10">
+      <div className="stitched-card rounded-2xl bg-butter-tint p-6 text-center border-2 border-ink/10">
         <div className="text-xs font-bold uppercase tracking-widest text-ink/60">
           总分
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { Mascot } from "@/components/Mascot";
 import { RubricBar } from "./RubricBar";
 import { TranscriptViewer } from "./TranscriptViewer";
 
@@ -130,14 +131,26 @@ export function SpeakingResult({
 
   const TILES = ["tile-peach", "tile-butter", "tile-mint", "tile-sky", "tile-lavender", "tile-cream"];
 
+  const portal = level === "KET" ? "ket" : "pet";
+  const overall = scaledScore ?? rawScore;
+  const pose: "celebrating" | "thinking" | "confused" =
+    overall === null
+      ? "thinking"
+      : overall >= 70
+        ? "celebrating"
+        : overall >= 50
+          ? "thinking"
+          : "confused";
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-extrabold leading-tight">
-            口语结果 — <span className="marker-yellow">{level}</span>
+    <div className="mx-auto max-w-3xl w-full space-y-4">
+      <header className="flex items-center gap-3 px-1">
+        <Mascot pose={pose} portal={portal} width={56} height={56} decorative />
+        <div className="flex-1">
+          <h1 className="text-base font-extrabold leading-tight">
+            {level} 口语 · 成绩
           </h1>
-          <p className="mt-1 text-sm text-ink/65">
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
             考官 Mina · 全程 AI 对话
           </p>
         </div>
@@ -146,13 +159,13 @@ export function SpeakingResult({
             href="/history"
             className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
           >
-            ← 返回历史记录
+            ← 历史
           </Link>
           <Link
             href={portalBase}
             className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink"
           >
-            返回 {level} 门户
+            {level} 门户
           </Link>
         </div>
       </header>
