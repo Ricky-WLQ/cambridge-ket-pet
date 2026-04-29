@@ -61,17 +61,16 @@ export default async function DiagnoseHistoryDetailPage({
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl px-6 py-10">
-        <div className="mb-4 rounded-2xl bg-mist border-2 border-ink/10 p-3 text-sm font-bold text-ink/70 flex items-center justify-between">
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="flex items-center justify-between gap-2 px-2">
           <Link
             href="/diagnose/history"
             className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
           >
             ← 返回历史列表
           </Link>
-          <span className="font-extrabold text-ink/70">📚 历史报告</span>
           <Link
             href="/diagnose"
             className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
@@ -82,11 +81,11 @@ export default async function DiagnoseHistoryDetailPage({
 
         <DiagnoseReport report={report} />
 
-        <section className="mt-8 rounded-3xl border-2 border-ink/10 bg-white p-5 sm:p-6 stitched-card">
-          <h2 className="mb-3 text-base font-extrabold text-ink/90">
+        <section className="mt-2 rounded-3xl border-2 border-ink/10 bg-white p-5 stitched-card">
+          <h2 className="mb-2 text-base font-extrabold text-ink/90">
             重做练习（不计分）
           </h2>
-          <p className="mb-4 text-xs font-bold text-ink/60">
+          <p className="mb-3 text-xs font-medium text-ink/60">
             重做仅作复习用途，不会更新本周诊断状态，也不计入历史评分。
           </p>
           <div className="grid gap-2 sm:grid-cols-3">

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnose Report Mockup — Simpler</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<style>
+  :root {
+    --color-ink: #171717;
+    --color-mist: #f3f4f8;
+    --color-lavender-tint: #ede7ff;
+    --color-sky-tint: #e4efff;
+    --color-butter-tint: #fff6d6;
+    --color-peach-tint: #ffebf0;
+    --color-mint-tint: #e6f8ee;
+  }
+  body {
+    background: linear-gradient(180deg, #eef2ff 0%, #f4ecff 100%);
+    color: var(--color-ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+  }
+  .ink { color: var(--color-ink); }
+  .text-ink-90 { color: rgba(23, 23, 23, 0.9); }
+  .text-ink-70 { color: rgba(23, 23, 23, 0.7); }
+  .text-ink-60 { color: rgba(23, 23, 23, 0.6); }
+  .text-ink-55 { color: rgba(23, 23, 23, 0.55); }
+  .text-ink-40 { color: rgba(23, 23, 23, 0.4); }
+  .text-ink-15 { color: rgba(23, 23, 23, 0.15); }
+  .bg-ink { background: #171717; }
+  .bg-ink-5 { background: rgba(23, 23, 23, 0.05); }
+  .border-ink-10 { border-color: rgba(23, 23, 23, 0.1); }
+  .border-ink-15 { border-color: rgba(23, 23, 23, 0.15); }
+  .stitched-card {
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 12px rgba(23, 23, 23, 0.04);
+  }
+  .pill-tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.4;
+  }
+  .from-butter-tint { --tw-gradient-from: var(--color-butter-tint); }
+  .to-peach-tint { --tw-gradient-to: var(--color-peach-tint); }
+  .bg-mist { background: var(--color-mist); }
+  .bg-mint-tint { background: var(--color-mint-tint); }
+  .bg-butter-tint { background: var(--color-butter-tint); }
+  .bg-peach-tint { background: var(--color-peach-tint); }
+  .bg-lavender-tint { background: var(--color-lavender-tint); }
+  .bg-sky-tint { background: var(--color-sky-tint); }
+  .gradient-warm {
+    background: linear-gradient(135deg, var(--color-butter-tint) 0%, var(--color-peach-tint) 100%);
+  }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  details[open] .chevron { transform: rotate(180deg); }
+  .chevron { transition: transform 200ms; }
+  .label-arc { position: absolute; transform-origin: 50% 60px; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- Page wrapper -->
+<div class="mx-auto max-w-3xl px-4 py-6 space-y-4">
+
+  <!-- Site header sketch -->
+  <header class="flex items-center justify-between px-2 mb-2">
+    <div class="font-extrabold text-base">剑桥 KET / PET</div>
+    <a class="text-sm font-bold text-ink-70 hover:underline" href="#">← 返回本周诊断</a>
+  </header>
+
+  <!-- HERO: mascot + framing + small score chip. NO huge red ring. -->
+  <section class="rounded-3xl border-2 border-ink-10 stitched-card p-5 sm:p-6 gradient-warm">
+    <div class="flex items-center gap-4">
+      <div class="shrink-0 w-[88px] h-[88px] rounded-2xl bg-white/60 flex items-center justify-center text-4xl"
+           title="Mascot: Leo (KET) / Aria (PET) in 'reading' pose at 88x88">
+        🦊
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h1 class="text-xl font-extrabold leading-tight">这是本周的起点</h1>
+          <span class="pill-tag bg-white border border-ink-10">KET</span>
+        </div>
+        <p class="mt-1 text-sm text-ink-70 font-medium">一步步来，下面有具体可以练的方向</p>
+        <div class="mt-2.5 flex items-center gap-2 flex-wrap">
+          <span class="inline-flex items-baseline gap-1.5 rounded-full bg-white border border-ink-10 px-3 py-1">
+            <span class="text-[11px] font-bold text-ink-55">综合得分</span>
+            <span class="font-mono text-base font-extrabold ink">16</span>
+            <span class="text-[11px] text-ink-40">/100</span>
+          </span>
+          <span class="text-[11px] font-medium text-ink-55">2026-04-26 至 2026-05-03</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOP 3 ACTIONS — primary takeaway. Replaces the 4-block summary. -->
+  <section class="rounded-3xl border-2 border-ink-10 bg-white stitched-card p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-base font-extrabold ink">下周练这 3 个</h2>
+      <span class="text-xs font-bold text-ink-55">优先级排序</span>
+    </div>
+    <ol class="space-y-2.5">
+      <li class="flex items-start gap-3 rounded-2xl bg-lavender-tint border-2 border-ink-10 p-3.5 stitched-card">
+        <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white text-xs font-extrabold">1</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-extrabold ink">每天 5 个 KET 核心词</div>
+          <p class="mt-0.5 text-xs text-ink-70 font-medium">用 KET 词汇页拼一拼，听一听</p>
+        </div>
+      </li>
+      <li class="flex items-start gap-3 rounded-2xl bg-sky-tint border-2 border-ink-10 p-3.5 stitched-card">
+        <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white text-xs font-extrabold">2</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-extrabold ink">每天 1 篇 Reading Part 1</div>
+          <p class="mt-0.5 text-xs text-ink-70 font-medium">练习扫读：先看题，再扫文找答案</p>
+        </div>
+      </li>
+      <li class="flex items-start gap-3 rounded-2xl bg-mint-tint border-2 border-ink-10 p-3.5 stitched-card">
+        <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-white text-xs font-extrabold">3</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-extrabold ink">每天 3 道 Listening Part 1</div>
+          <p class="mt-0.5 text-xs text-ink-70 font-medium">先听全句，再选答案</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- SIX SECTIONS — 5-star rating. Kid-friendly, gamified. -->
+  <!--
+    Mapping (round half up):
+      0%      -> ☆☆☆☆☆  0/5
+      1-19%   -> ★☆☆☆☆  1/5
+      20-39%  -> ★★☆☆☆  2/5
+      40-59%  -> ★★★☆☆  3/5
+      60-79%  -> ★★★★☆  4/5
+      80-100% -> ★★★★★  5/5
+    null      -> dashes (no attempt yet)
+  -->
+  <section class="rounded-3xl border-2 border-ink-10 bg-white stitched-card p-5">
+    <h2 class="text-base font-extrabold ink mb-3">六项练习情况</h2>
+    <div class="space-y-2.5">
+      <!-- Reading 33% -> ★★☆☆☆ -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 shrink-0 text-sm font-extrabold ink">阅读</div>
+        <div class="flex-1 flex items-center gap-1 text-2xl leading-none tracking-wider"
+             aria-label="2 of 5 stars">
+          <span class="text-amber-500">★</span>
+          <span class="text-amber-500">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+        </div>
+        <div class="w-12 shrink-0 text-right font-mono text-sm font-extrabold text-amber-700">33%</div>
+      </div>
+      <!-- Listening 0% -> ☆☆☆☆☆ -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 shrink-0 text-sm font-extrabold ink">听力</div>
+        <div class="flex-1 flex items-center gap-1 text-2xl leading-none tracking-wider"
+             aria-label="0 of 5 stars">
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+        </div>
+        <div class="w-12 shrink-0 text-right font-mono text-sm font-extrabold text-ink-40">0%</div>
+      </div>
+      <!-- Writing 45% -> ★★★☆☆ -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 shrink-0 text-sm font-extrabold ink">写作</div>
+        <div class="flex-1 flex items-center gap-1 text-2xl leading-none tracking-wider"
+             aria-label="3 of 5 stars">
+          <span class="text-amber-500">★</span>
+          <span class="text-amber-500">★</span>
+          <span class="text-amber-500">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+        </div>
+        <div class="w-12 shrink-0 text-right font-mono text-sm font-extrabold text-amber-700">45%</div>
+      </div>
+      <!-- Speaking — (no data) -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 shrink-0 text-sm font-extrabold ink">口语</div>
+        <div class="flex-1 flex items-center gap-1 text-2xl leading-none tracking-wider text-ink-15"
+             aria-label="not attempted">
+          <span>·</span>
+          <span>·</span>
+          <span>·</span>
+          <span>·</span>
+          <span>·</span>
+        </div>
+        <div class="w-12 shrink-0 text-right font-mono text-sm font-bold text-ink-40">—</div>
+      </div>
+      <!-- Vocab 0% -> ☆☆☆☆☆ -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 shrink-0 text-sm font-extrabold ink">词汇</div>
+        <div class="flex-1 flex items-center gap-1 text-2xl leading-none tracking-wider"
+             aria-label="0 of 5 stars">
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+        </div>
+        <div class="w-12 shrink-0 text-right font-mono text-sm font-extrabold text-ink-40">0%</div>
+      </div>
+      <!-- Grammar 0% -> ☆☆☆☆☆ -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 shrink-0 text-sm font-extrabold ink">语法</div>
+        <div class="flex-1 flex items-center gap-1 text-2xl leading-none tracking-wider"
+             aria-label="0 of 5 stars">
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+          <span class="text-ink-15">★</span>
+        </div>
+        <div class="w-12 shrink-0 text-right font-mono text-sm font-extrabold text-ink-40">0%</div>
+      </div>
+    </div>
+    <p class="mt-3 text-xs text-ink-55 font-medium">五颗星表示满分 · 三颗星即为达标</p>
+  </section>
+
+  <!-- COLLAPSIBLE: full AI narrative + knowledge-point details for those who want them -->
+  <details class="rounded-3xl border-2 border-ink-10 bg-white stitched-card">
+    <summary class="flex items-center justify-between p-4 sm:p-5">
+      <span class="text-base font-extrabold ink">看看 AI 的详细评语</span>
+      <span class="chevron text-xl text-ink-55">⌄</span>
+    </summary>
+    <div class="border-t-2 border-ink-10 p-5 space-y-4">
+      <!-- Single consolidated narrative — replaces 4 blocks -->
+      <p class="text-sm leading-relaxed text-ink-90">
+        本周（2026-04-26 至 2026-05-03）综合得分 16% 是一个起点。Reading 拿到了 33%，
+        Writing 45%，已经能看出你在做题；Listening、词汇、语法这三块还没开始，下周
+        把上面 3 个练习坚持住就有变化。
+      </p>
+
+      <!-- Optional: knowledge points compact summary -->
+      <div class="space-y-2">
+        <div class="text-sm font-extrabold ink">本周想多练的知识点</div>
+        <ul class="space-y-1.5">
+          <li class="flex items-center gap-2 rounded-xl bg-mist border border-ink-10 px-3 py-2">
+            <span class="pill-tag bg-amber-100 text-amber-800">阅读</span>
+            <span class="text-sm font-bold ink">扫读定位</span>
+            <span class="ml-auto text-xs text-ink-55">2 道错题</span>
+          </li>
+          <li class="flex items-center gap-2 rounded-xl bg-mist border border-ink-10 px-3 py-2">
+            <span class="pill-tag bg-amber-100 text-amber-800">写作</span>
+            <span class="text-sm font-bold ink">内容要点覆盖</span>
+            <span class="ml-auto text-xs text-ink-55">4 道错题</span>
+          </li>
+          <li class="flex items-center gap-2 rounded-xl bg-mist border border-ink-10 px-3 py-2">
+            <span class="pill-tag bg-amber-100 text-amber-800">听力</span>
+            <span class="text-sm font-bold ink">细节信息抓取</span>
+            <span class="ml-auto text-xs text-ink-55">5 道错题</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </details>
+
+  <!-- Mockup notes for reviewer -->
+  <aside class="mt-8 rounded-2xl border-2 border-dashed border-ink-15 bg-white/50 p-4 text-xs text-ink-70 leading-relaxed">
+    <div class="font-extrabold ink mb-1">设计要点（mockup notes）</div>
+    <ol class="list-decimal list-inside space-y-1">
+      <li>三层信息：<b>Hero（情绪锚点）→ 行动（最重要）→ 可视化（六科一眼看完）</b>。详细评语折叠隐藏</li>
+      <li>Hero 用暖色渐变包住，吉祥物 88×88，分数小药丸不是大红环</li>
+      <li>"下周练这 3 个" 是页面焦点 — 学生最重要的 takeaway，先于任何分数</li>
+      <li>六项用 5 颗星而不是 3×2 数字网格 — 像手游闯关一样，孩子一眼能读；色调统一琥珀（无红）</li>
+      <li>原本的 4 个 summary 块（优势/薄弱点/重点练习方向/综合评语）+ 知识点卡片（每张 5 段）合并到一个折叠面板里</li>
+      <li>无表情符号，无 marker-yellow 装饰</li>
+    </ol>
+  </aside>
+
+</div>
+
+</body>
+</html>

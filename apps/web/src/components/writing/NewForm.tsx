@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { Mascot } from "@/components/Mascot";
+
 type Props = { examType: "KET" | "PET"; initialPart?: number | null };
 
 const PARTS: Record<
@@ -79,19 +81,26 @@ export default function WritingNewForm({ examType, initialPart }: Props) {
   const TILES = ["tile-lavender", "tile-sky", "tile-butter", "tile-peach", "tile-mint", "tile-cream"];
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href={`/${portal}`}
-        className="mb-4 inline-flex items-center gap-2 rounded-full bg-ink/5 hover:bg-ink/10 px-3.5 py-1.5 text-sm font-bold text-ink"
-      >
-        <span aria-hidden>←</span> 返回 {examType} 门户
-      </Link>
-      <h1 className="mb-1.5 text-3xl font-extrabold">
-        新建 <span className="marker-yellow-thick">{examType} 写作练习</span>
-      </h1>
-      <p className="mb-6 text-base sm:text-lg text-ink/75 leading-relaxed">
-        CEFR {cefr} · 选择题目部分与模式，AI 即时生成符合真题格式的写作任务
-      </p>
+    <div className="mx-auto max-w-3xl w-full">
+      <div className="mb-3 px-1">
+        <Link
+          href={`/${portal}`}
+          className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+        >
+          ← 返回 {examType} 门户
+        </Link>
+      </div>
+      <div className="mb-5 flex items-center gap-3 px-1">
+        <Mascot pose="writing" portal={portal} width={64} height={64} decorative />
+        <div className="flex-1">
+          <h1 className="text-lg font-extrabold leading-tight">
+            {examType} 写作练习
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            CEFR {cefr} · AI 即时生成符合真题格式的写作任务
+          </p>
+        </div>
+      </div>
 
       <div className="mb-6 space-y-2">
         <div className="text-sm font-extrabold">选择题目部分</div>

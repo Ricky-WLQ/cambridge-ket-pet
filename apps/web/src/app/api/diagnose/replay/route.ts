@@ -8,6 +8,9 @@ import {
   DIAGNOSE_SECTION_KINDS,
   type DiagnoseSectionKind,
 } from "@/lib/diagnose/sectionLimits";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 export const maxDuration = 30;
 
@@ -34,21 +37,31 @@ export const maxDuration = 30;
  * mirror update on submit).
  */
 export async function POST(req: Request) {
+  const portal = derivePortalFromRequest(req);
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 });
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "参数错误" }, { status: 400 });
+    return NextResponse.json(
+      { error: pickTone(t.api.malformedRequest, portal) },
+      { status: 400 },
+    );
   }
   const parsed = z.object({ testId: z.string().min(1) }).safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "参数错误" }, { status: 400 });
+    return NextResponse.json(
+      { error: pickTone(t.api.malformedRequest, portal) },
+      { status: 400 },
+    );
   }
 
   // Verify the testId points to a real WeeklyDiagnose owned by the caller.

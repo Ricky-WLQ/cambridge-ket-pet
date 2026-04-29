@@ -9,6 +9,9 @@ import {
   deadlineFor,
   type DiagnoseSectionKind,
 } from "@/lib/diagnose/sectionLimits";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 export const maxDuration = 60;
 
@@ -55,12 +58,16 @@ interface RouteCtx {
  *  start, which the SpeakingRunner component calls when the user clicks
  *  "Start". This split mirrors the practice flow.
  */
-export async function POST(_req: Request, ctx: RouteCtx) {
+export async function POST(req: Request, ctx: RouteCtx) {
   // ──── Step 1: Auth ────────────────────────────────────────────────
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 });
+    const portal = derivePortalFromRequest(req);
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   // ──── Step 2: Validate sectionKind ───────────────────────────────

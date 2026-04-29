@@ -1,3 +1,4 @@
+import { Mascot } from "@/components/Mascot";
 import type { GradableQuestionType } from "@/lib/grading";
 
 type ResultQuestion = {
@@ -71,6 +72,9 @@ export default function ResultView({
   questions,
   weakPoints,
 }: ResultViewProps) {
+  // Defensive: legacy attempts can have payload.questions absent. Page-side
+  // already defaults to []; this is belt-and-suspenders for any new caller.
+  const safeQuestions = questions ?? [];
   const passRate = scaledScore;
   const scoreColor =
     passRate >= 70
@@ -79,16 +83,26 @@ export default function ResultView({
         ? "text-amber-700"
         : "text-red-700";
 
+  const portal = examType === "KET" ? "ket" : "pet";
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      {/* Header + summary */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-extrabold mb-1">
-          {examType} 阅读 · Part {part} · <span className="marker-yellow">成绩</span>
-        </h1>
-        <p className="text-sm text-ink/65 font-bold">
-          {mode === "MOCK" ? "模拟考试" : "练习模式"}
-        </p>
+    <div className="mx-auto max-w-3xl w-full">
+      {/* Compact mascot strip header. */}
+      <div className="mb-5 flex items-center gap-3 px-1">
+        <Mascot
+          pose={passRate >= 70 ? "celebrating" : passRate >= 50 ? "thinking" : "confused"}
+          portal={portal}
+          width={56}
+          height={56}
+          decorative
+        />
+        <div className="flex-1">
+          <h1 className="text-base font-extrabold leading-tight">
+            {examType} 阅读 · Part {part}
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            {mode === "MOCK" ? "模拟考试" : "练习模式"}
+          </p>
+        </div>
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -178,7 +192,7 @@ export default function ResultView({
 
       {/* Per-question breakdown */}
       <ol className="space-y-4">
-        {questions.map((q, idx) => {
+        {safeQuestions.map((q, idx) => {
           const ua = userAnswers[q.id] ?? "";
           const blank = ua.trim().length === 0;
           const correct = isCorrect(q, ua);

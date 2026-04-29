@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { auth } from "@/lib/auth";
 import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
 
 export default async function Home() {
   const session = await auth();
@@ -17,7 +18,8 @@ export default async function Home() {
             <span className="marker-yellow-thick">{t.app.title}</span>
           </h1>
           <p className="mt-5 text-base sm:text-lg font-medium text-ink/70 leading-relaxed max-w-lg mx-auto">
-            {t.app.tagline}
+            {/* Landing page is portal-agnostic — default to kid voice (Section 5.2 fallback). */}
+            {pickTone(t.app.tagline, "ket")}
           </p>
         </div>
 

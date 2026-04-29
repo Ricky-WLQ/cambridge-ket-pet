@@ -137,9 +137,9 @@ export default async function TeacherAttemptDetailPage({
     <div className="mx-auto w-full max-w-3xl px-6 pt-8">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1 rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold text-ink hover:bg-ink/5 transition"
+        className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
       >
-        <span aria-hidden>←</span> 返回学生详情
+        ← 返回学生详情
       </Link>
       <div className="mt-4 rounded-2xl border-2 border-ink/10 bg-sky-tint p-4 text-sm text-ink stitched-card">
         <div className="font-extrabold">
@@ -175,25 +175,28 @@ export default async function TeacherAttemptDetailPage({
   }
 
   if (attempt.test.kind === "READING") {
-    const payload = attempt.test.payload as unknown as ReadingPayload;
-    const storedWp = (attempt.weakPoints ?? {
-      examPoints: [],
-      difficultyPoints: [],
-    }) as unknown as StoredWeakPoints;
+    const payload = (attempt.test.payload ?? {}) as Partial<ReadingPayload>;
+    const questions = payload.questions ?? [];
+    const passage = payload.passage ?? null;
+    // `weakPoints` may be `{}` (truthy → ?? skipped) or have missing keys
+    // for older attempts. Default each list independently.
+    const stored = (attempt.weakPoints ?? {}) as Partial<StoredWeakPoints>;
+    const storedExam = stored.examPoints ?? [];
+    const storedDifficulty = stored.difficultyPoints ?? [];
 
     const [examPoints, difficultyPoints] = await Promise.all([
       prisma.examPoint.findMany({
-        where: { id: { in: storedWp.examPoints.map((e) => e.id) } },
+        where: { id: { in: storedExam.map((e) => e.id) } },
         select: { id: true, label: true, descriptionZh: true },
       }),
       prisma.difficultyPoint.findMany({
-        where: { id: { in: storedWp.difficultyPoints.map((d) => d.id) } },
+        where: { id: { in: storedDifficulty.map((d) => d.id) } },
         select: { id: true, label: true, descriptionZh: true },
       }),
     ]);
 
     const weakPoints: ReadingResultProps["weakPoints"] = {
-      examPoints: storedWp.examPoints.map((wp) => {
+      examPoints: storedExam.map((wp) => {
         const ep = examPoints.find((e) => e.id === wp.id);
         return {
           id: wp.id,
@@ -202,7 +205,7 @@ export default async function TeacherAttemptDetailPage({
           descriptionZh: ep?.descriptionZh ?? "",
         };
       }),
-      difficultyPoints: storedWp.difficultyPoints.map((wp) => {
+      difficultyPoints: storedDifficulty.map((wp) => {
         const dp = difficultyPoints.find((d) => d.id === wp.id);
         return {
           id: wp.id,
@@ -225,11 +228,11 @@ export default async function TeacherAttemptDetailPage({
             part={attempt.test.part ?? 0}
             mode={attempt.mode}
             rawScore={attempt.rawScore ?? 0}
-            totalPossible={attempt.totalPossible ?? payload.questions.length}
+            totalPossible={attempt.totalPossible ?? questions.length}
             scaledScore={attempt.scaledScore ?? 0}
             userAnswers={userAnswers}
-            passage={payload.passage}
-            questions={payload.questions}
+            passage={passage}
+            questions={questions}
             weakPoints={weakPoints}
           />
         </main>

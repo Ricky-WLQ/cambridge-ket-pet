@@ -1,5 +1,33 @@
 @import "tailwindcss";
 
+/* ─── Per-portal accent tokens (Phase A) ─────────────────────────
+ * Driven by a class on <body> set by RootLayout (apps/web/src/app/layout.tsx)
+ * based on the request pathname forwarded via x-pathname (middleware.ts).
+ * KET routes → portal-ket (warm yellow/peach); PET routes → portal-pet
+ * (cool lavender/sky); other routes fall back to the existing Variant A
+ * cool-purple gradient.
+ */
+.portal-ket {
+  --portal-accent:       var(--color-butter);
+  --portal-accent-soft:  var(--color-peach);
+  --portal-bg-grad:      linear-gradient(180deg, #fff6d6 0%, #ffebf0 100%);
+  --portal-mark-bg:      var(--color-ink);
+  --portal-mascot-greet: url('/mascots/leo/greeting.png');
+}
+
+.portal-pet {
+  --portal-accent:       var(--color-lavender);
+  --portal-accent-soft:  var(--color-sky-soft);
+  --portal-bg-grad:      linear-gradient(180deg, #ede7ff 0%, #e4efff 100%);
+  --portal-mark-bg:      #1f1837;
+  --portal-mascot-greet: url('/mascots/aria/greeting.png');
+}
+
+body.portal-ket,
+body.portal-pet {
+  background: var(--portal-bg-grad);
+}
+
 :root {
   /* Backwards-compat */
   --background: #ffffff;

@@ -5,14 +5,63 @@
 //
 // This file is the only place UI copy should live. Future multi-locale work
 // (e.g. en-US) will clone the shape and swap via a resolver; keys are stable.
+//
+// Per-portal voice: entries that differ between KET (kid voice) and PET
+// (teen voice) use the `Tone<T>` helper. Resolve at render time via
+// `pickTone(value, portal)` from `./voice` or via the `useT()` hook from
+// `./PortalProvider`. Plain strings are shared by both portals.
+
+import type { Tone } from "./voice";
 
 export const t = {
   app: {
     name: "剑桥 KET / PET",
     title: "剑桥 KET / PET 备考",
-    tagline: "AI 生成仿真练习题，紧扣剑桥真题的题型、考点和难点",
-    metaDescription:
-      "面向中国 K-12 学生的剑桥英语 KET（A2 Key）与 PET（B1 Preliminary）备考平台，含教师监控与学习进度追踪。",
+    tagline: {
+      ket: "听说读写 · 一题一题来",
+      pet: "AI 帮你找盲点 · 稳稳备考",
+    } as Tone<string>,
+    metaDescription: "中小学剑桥 KET / PET 备考 · AI 出题练习",
+  },
+  /**
+   * Per-portal home-page namespaces. Used by the KET portal home (B.2) and
+   * PET portal home (C.1) — separate namespaces because each portal's home
+   * has portal-specific labels (e.g., "Leo 在 KET 岛等你" vs "Aria 在 PET 城
+   * 等你") that don't naturally collapse into a single Tone<T> key.
+   */
+  ketPortal: {
+    greeting: "嗨！选一题练练 →",
+    greetingSub: "Leo 在 KET 岛等你",
+    weekPillCompleted: "本周诊断打卡 6/6 ✓",
+    weekPillProgress: (done: number, total: number) =>
+      `本周诊断打卡 ${done}/${total}`,
+    todayLabel: "今天",
+    streakLabel: (days: number) => `连打 ${days} 天`,
+    modes: {
+      reading: "读",
+      writing: "写",
+      listening: "听",
+      speaking: "说",
+      vocab: "词",
+      grammar: "语法",
+    },
+  },
+  petPortal: {
+    greeting: "今天练什么 ↓",
+    greetingSub: "Aria 在 PET 城等你",
+    weekPillCompleted: "本周诊断打卡 6/6",
+    weekPillProgress: (done: number, total: number) =>
+      `本周诊断打卡 ${done}/${total}`,
+    todayLabel: "TODAY",
+    streakLabel: (days: number) => `${days} 天连打`,
+    modes: {
+      reading: "阅读",
+      writing: "写作",
+      listening: "听力",
+      speaking: "口语",
+      vocab: "词汇",
+      grammar: "语法",
+    },
   },
   nav: {
     login: "登录",
@@ -242,6 +291,7 @@ export const t = {
     startSection: "开始测验",
     continueSection: "继续测验",
     viewAttempt: "查看报告",
+    viewReport: "查看本周诊断报告 →",
     submittedLabel: "已提交",
     inProgressLabel: "进行中",
     notStartedLabel: "未开始",
@@ -252,6 +302,41 @@ export const t = {
     retryReport: "重新生成报告",
     bannerGated: "本周诊断测试未完成 · 其他练习功能已锁定",
     bannerCta: "立即去做诊断 →",
+  },
+  api: {
+    // Per-portal voice for user-visible API error / instruction strings.
+    // Resolved server-side via pickTone(t.api.<key>, derivedPortal) — see
+    // `apps/web/src/i18n/derivePortalFromPathname.ts`.
+    unauthorized: { ket: "先登录一下哦 →", pet: "请先登录" } as Tone<string>,
+    malformedRequest: { ket: "这个请求看不懂", pet: "请求格式错误" } as Tone<string>,
+    inviteCodeRequired: { ket: "邀请码呢？", pet: "请输入邀请码" } as Tone<string>,
+    inviteCodeInvalid: { ket: "邀请码不对", pet: "邀请码无效" } as Tone<string>,
+    diagnoseRateLimit: {
+      ket: "今天先休息一下吧",
+      pet: "诊断生成调用次数已达上限，请稍后再试",
+    } as Tone<string>,
+    diagnoseGenerateFailed: {
+      ket: "出题没成功，再试一下",
+      pet: "诊断生成失败，请稍后重试",
+    } as Tone<string>,
+    audioNotReady: {
+      ket: "音频还没好 · 重新生成",
+      pet: "音频加载失败，请重新生成",
+    } as Tone<string>,
+    queueFull: { ket: "现在人多 · 等一下", pet: "系统繁忙，请稍后再试" } as Tone<string>,
+    timeExceeded: {
+      ket: "时间到 · 已交卷",
+      pet: "考试时间已结束，答案已自动提交",
+    } as Tone<string>,
+    writingEmpty: { ket: "先写下你的作文哦", pet: "请先写下你的作文" } as Tone<string>,
+    listeningInstruction: {
+      ket: "听一听 · 选答案",
+      pet: "听音频后选择答案",
+    } as Tone<string>,
+    auth: {
+      emailInvalid: { ket: "邮箱填错啦", pet: "邮箱格式不正确" } as Tone<string>,
+      passwordTooShort: { ket: "密码要 8 位以上", pet: "密码至少 8 位" } as Tone<string>,
+    },
   },
 } as const;
 

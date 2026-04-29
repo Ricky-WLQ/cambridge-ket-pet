@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { currentWeekStart, currentWeekEnd } from "@/lib/diagnose/week";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 export const maxDuration = 30;
 
@@ -23,11 +26,15 @@ export const maxDuration = 30;
  *
  * Read-only — no DB writes.
  */
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 });
+    const portal = derivePortalFromRequest(req);
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   const weekStart = currentWeekStart();

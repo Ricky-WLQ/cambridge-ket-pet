@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
+// Zod schema messages stay literal — they describe specific field
+// validation failures and are passed through directly when shown
+// inline to the user. The route-level errors (malformed body, email
+// taken, etc.) use the per-portal pickTone path below.
 const signupSchema = z.object({
   email: z.string().email("邮箱格式不正确"),
   password: z.string().min(8, "密码至少 8 位").max(200),
@@ -10,18 +17,22 @@ const signupSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const portal = derivePortalFromRequest(req);
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "请求格式错误" }, { status: 400 });
+    return NextResponse.json(
+      { error: pickTone(t.api.malformedRequest, portal) },
+      { status: 400 },
+    );
   }
 
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {
     const firstIssue = parsed.error.issues[0];
     return NextResponse.json(
-      { error: firstIssue?.message ?? "输入无效" },
+      { error: firstIssue?.message ?? pickTone(t.api.malformedRequest, portal) },
       { status: 400 },
     );
   }

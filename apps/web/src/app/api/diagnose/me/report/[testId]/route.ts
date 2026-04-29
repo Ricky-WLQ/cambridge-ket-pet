@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 export const maxDuration = 30;
 
@@ -28,13 +31,17 @@ interface RouteCtx {
  *    drill-in) operate on the Test row. WeeklyDiagnose.testId is unique so
  *    this is a stable 1:1 mapping.
  */
-export async function GET(_req: Request, ctx: RouteCtx) {
+export async function GET(req: Request, ctx: RouteCtx) {
   const { testId } = await ctx.params;
 
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 });
+    const portal = derivePortalFromRequest(req);
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   const wd = await prisma.weeklyDiagnose.findUnique({

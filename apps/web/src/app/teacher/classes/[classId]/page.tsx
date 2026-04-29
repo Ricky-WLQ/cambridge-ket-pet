@@ -386,25 +386,25 @@ export default async function ClassOverviewPage({
   return (
     <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl px-6 py-10">
+      <main className="flex flex-1 flex-col gap-3.5">
         {/* Back link + class header */}
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 px-2">
           <div>
             <Link
               href="/teacher/classes"
-              className="text-sm font-bold text-ink/60 hover:text-ink transition"
+              className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
             >
               ← 我的班级
             </Link>
-            <h1 className="mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight">
-              <span className="marker-yellow-thick">{cls.name}</span>
+            <h1 className="mt-1 text-lg font-extrabold leading-tight">
+              {cls.name}
               {cls.examFocus && (
-                <span className="ml-2 rounded-full bg-ink/5 px-2 py-0.5 align-middle text-xs font-bold text-ink/65">
+                <span className="ml-2 pill-tag bg-white border border-ink/10 align-middle">
                   {cls.examFocus}
                 </span>
               )}
             </h1>
-            <p className="text-sm font-medium text-ink/60">
+            <p className="mt-0.5 text-xs font-medium text-ink/60">
               创建于 {cls.createdAt.toLocaleDateString("zh-CN")}
             </p>
           </div>
@@ -454,7 +454,7 @@ export default async function ClassOverviewPage({
         {/* Vocab progress (class-aggregated CORE-tier mastery) */}
         <div className="mb-8 rounded-2xl bg-white border-2 border-ink/10 p-5 stitched-card">
           <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
-            <span className="marker-yellow">词汇练习概况</span>
+            词汇练习概况
           </h2>
           {(["ket", "pet"] as const).map((k) => {
             const rows = vocabSummary[k];
@@ -542,7 +542,7 @@ export default async function ClassOverviewPage({
         {/* Grammar progress (class-aggregated accuracy + weak-topic spotter) */}
         <div className="mb-8 rounded-2xl bg-white border-2 border-ink/10 p-5 stitched-card">
           <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
-            <span className="marker-yellow">语法练习概况</span>
+            语法练习概况
           </h2>
           {(["ket", "pet"] as const).map((k) => {
             const { rows, weakTopics } = grammarSummary[k];
@@ -658,7 +658,7 @@ export default async function ClassOverviewPage({
         {/* Assignments */}
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-xl sm:text-2xl font-extrabold">
-            <span className="marker-yellow">作业</span>
+            作业
           </h2>
           <Link
             href={`/teacher/classes/${cls.id}/assignments/new`}
@@ -759,7 +759,7 @@ export default async function ClassOverviewPage({
 
         {/* Student list */}
         <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
-          <span className="marker-yellow">学生名单</span>
+          学生名单
         </h2>
         {cls.members.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-ink/15 p-8 text-center text-sm font-medium text-ink/60">
@@ -874,7 +874,7 @@ export default async function ClassOverviewPage({
 
         {/* Recent activity feed */}
         <h2 className="mb-3 text-xl sm:text-2xl font-extrabold">
-          <span className="marker-yellow">最近活动</span>
+          最近活动
         </h2>
 
         {cls.members.length > 0 && (

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
+
+import { Mascot } from "@/components/Mascot";
 
 export default function ActivateForm() {
   const router = useRouter();
@@ -46,8 +49,17 @@ export default function ActivateForm() {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-4 text-center">
-          <div className="rounded-xl bg-mint-tint border-2 border-ink/10 p-4 text-sm font-bold text-ink">
-            ✓ 激活成功！你现在是教师身份
+          <Mascot
+            pose="celebrating"
+            portal="ket"
+            width={88}
+            height={88}
+            decorative
+            className="mx-auto"
+          />
+          <div className="flex items-center justify-center gap-2 rounded-xl bg-mint-tint border-2 border-ink/10 p-4 text-sm font-extrabold text-ink">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-700" strokeWidth={2.4} aria-hidden />
+            激活成功！你现在是教师身份
           </div>
           <p className="text-sm font-medium text-ink/65">即将跳转首页…</p>
         </div>
@@ -57,12 +69,20 @@ export default function ActivateForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-6">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-7 stitched-card border-2 border-ink/10 space-y-5">
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold leading-[1.05] tracking-tight">
-            <span className="marker-yellow-thick">教师激活</span>
+          <Mascot
+            pose="thinking"
+            portal="ket"
+            width={88}
+            height={88}
+            decorative
+            className="mx-auto"
+          />
+          <h1 className="mt-1 text-2xl font-extrabold leading-tight">
+            教师激活
           </h1>
-          <p className="mt-2.5 text-sm font-medium text-ink/65">
+          <p className="mt-1 text-sm font-medium text-ink/65">
             输入激活码以获得教师权限
           </p>
         </div>

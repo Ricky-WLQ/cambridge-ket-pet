@@ -1,0 +1,27 @@
+name: Audit hardcoded Chinese in JSX
+on:
+  pull_request:
+    paths:
+      - 'apps/web/src/**'
+      - '.github/workflows/audit-hardcoded-zh.yml'
+  push:
+    branches: [main]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Run audit
+        # Phase A-K: warn-only (continue-on-error true).
+        # Phase L: flip continue-on-error to false to enforce zero violations.
+        continue-on-error: true
+        run: pnpm --filter web tsx scripts/audit-hardcoded-zh.ts

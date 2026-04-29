@@ -9,6 +9,9 @@ import {
   fetchListeningPayload,
   generateListeningAudio,
 } from "@/lib/audio/generate";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 const HOURLY_LIMIT = 20;
 
@@ -30,23 +33,30 @@ const listeningSchema = z.object({
 const requestSchema = z.union([listeningSchema, readingSchema]);
 
 export async function POST(req: Request) {
+  const portal = derivePortalFromRequest(req);
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "请求格式错误" }, { status: 400 });
+    return NextResponse.json(
+      { error: pickTone(t.api.malformedRequest, portal) },
+      { status: 400 },
+    );
   }
 
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "输入无效", details: parsed.error.issues },
+      { error: pickTone(t.api.malformedRequest, portal), details: parsed.error.issues },
       { status: 400 },
     );
   }

@@ -49,15 +49,21 @@ export default function GrammarMistakes({ examType }: Props) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-6 py-8">
-      <div className="mb-4 flex items-center text-sm font-bold text-ink/70">
-        <Link href={`/${examType.toLowerCase()}/grammar`} className="hover:text-ink hover:underline">← 语法主页</Link>
+    <div className="mx-auto w-full max-w-3xl">
+      <div className="mb-3 px-1">
+        <Link
+          href={`/${examType.toLowerCase()}/grammar`}
+          className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+        >
+          ← 语法主页
+        </Link>
       </div>
-
-      <h1 className="mb-3 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-[1.05]">
-        <span className="marker-yellow-thick">语法错题本</span>
-      </h1>
-      <p className="mt-3 mb-6 text-base sm:text-lg text-ink/75 max-w-xl leading-relaxed">所有错题按状态分组，可标记已复习 / 已掌握或重新练习</p>
+      <div className="mb-5 px-1">
+        <h1 className="text-lg font-extrabold leading-tight">语法错题本</h1>
+        <p className="mt-0.5 text-xs font-medium text-ink/60">
+          错题按状态分组 · 可标记已复习 / 已掌握或重新练习
+        </p>
+      </div>
 
       <div className="mb-6 flex flex-wrap items-center gap-2 border-b-2 border-ink/10 pb-2">
         {STATUS_TABS.map((tab) => {

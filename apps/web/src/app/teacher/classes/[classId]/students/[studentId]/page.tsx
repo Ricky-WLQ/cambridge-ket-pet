@@ -543,22 +543,24 @@ export default async function StudentDetailPage({
   return (
     <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl px-6 py-10">
-        <Link
-          href={`/teacher/classes/${cls.id}`}
-          className="inline-flex items-center gap-1 rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold text-ink hover:bg-ink/5 transition"
-        >
-          <span aria-hidden>←</span> 返回 {cls.name}
-        </Link>
-        <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">
-          <span className="marker-yellow-thick">
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="px-2">
+          <Link
+            href={`/teacher/classes/${cls.id}`}
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+          >
+            ← 返回 {cls.name}
+          </Link>
+        </div>
+        <div className="px-2">
+          <h1 className="text-lg font-extrabold leading-tight">
             {student.name ?? student.email}
-          </span>
-        </h1>
-        <p className="text-sm font-medium text-ink/60">
-          {student.email} · 加入于{" "}
-          {membership.joinedAt.toLocaleDateString("zh-CN")}
-        </p>
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            {student.email} · 加入于{" "}
+            {membership.joinedAt.toLocaleDateString("zh-CN")}
+          </p>
+        </div>
 
         <div className="mt-6">
           <AnalysisPanel
@@ -598,7 +600,7 @@ export default async function StudentDetailPage({
         {trendAttempts.length > 0 && (
           <>
             <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-              <span className="marker-yellow">最近成绩走势</span>
+              最近成绩走势
             </h2>
             <ScoreTrend
               attempts={trendAttempts}
@@ -611,7 +613,7 @@ export default async function StudentDetailPage({
         {perKind.length > 0 && (
           <>
             <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-              <span className="marker-yellow">按科目 × 题型分布</span>
+              按科目 × 题型分布
             </h2>
             <ul className="grid gap-2 sm:grid-cols-2">
               {perKind.map((k) => {
@@ -653,7 +655,7 @@ export default async function StudentDetailPage({
         {writingAverages && (
           <>
             <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-              <span className="marker-yellow">写作四项能力平均</span>
+              写作四项能力平均
               <span className="ml-2 text-sm font-medium text-ink/55">
                 （共 {writingAverages.count} 份）
               </span>
@@ -695,7 +697,7 @@ export default async function StudentDetailPage({
         {speakingAverages && (
           <>
             <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-              <span className="marker-yellow">口语分项平均</span>
+              口语分项平均
               <span className="ml-2 text-sm font-medium text-ink/55">
                 （共 {speakingAverages.count} 份 · 最弱:
                 {speakingAverages.weakestLabel}）
@@ -748,7 +750,7 @@ export default async function StudentDetailPage({
         {listeningBreakdown && (
           <>
             <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-              <span className="marker-yellow">听力分项平均</span>
+              听力分项平均
               <span className="ml-2 text-sm font-medium text-ink/55">
                 （共 {listeningBreakdown.total} 份）
               </span>
@@ -788,7 +790,7 @@ export default async function StudentDetailPage({
         )}
 
         <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-          <span className="marker-yellow">词汇练习</span>
+          词汇练习
         </h2>
         <div className="rounded-2xl bg-white border-2 border-ink/10 p-5 stitched-card">
           {vocabData.tiers.map((t) => (
@@ -829,7 +831,7 @@ export default async function StudentDetailPage({
         </div>
 
         <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-          <span className="marker-yellow">语法练习</span>
+          语法练习
         </h2>
         <div className="rounded-2xl bg-white border-2 border-ink/10 p-5 stitched-card">
           {grammarData.tiers.map((t) => (
@@ -907,7 +909,7 @@ export default async function StudentDetailPage({
         {topMistakesByExamPoint.length > 0 && (
           <>
             <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-              <span className="marker-yellow">高频错误考点</span>
+              高频错误考点
             </h2>
             <ul className="space-y-2">
               {topMistakesByExamPoint.map((m) => {
@@ -947,7 +949,7 @@ export default async function StudentDetailPage({
         {totalMistakes > 0 && (
           <>
             <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-              <span className="marker-yellow">错题状态</span>
+              错题状态
             </h2>
             <div className="flex flex-wrap gap-2">
               {(["NEW", "REVIEWED", "MASTERED"] as const).map((s) => {
@@ -964,7 +966,7 @@ export default async function StudentDetailPage({
         )}
 
         <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-          <span className="marker-yellow">留言记录</span>
+          留言记录
         </h2>
         <CommentPanel
           classId={cls.id}
@@ -974,7 +976,7 @@ export default async function StudentDetailPage({
         />
 
         <h2 className="mt-8 mb-3 text-xl sm:text-2xl font-extrabold">
-          <span className="marker-yellow">答卷记录</span>
+          答卷记录
         </h2>
         {attempts.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-ink/15 p-8 text-center text-sm font-medium text-ink/60">

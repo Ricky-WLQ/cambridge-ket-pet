@@ -133,15 +133,10 @@ export default async function DiagnoseRunnerSectionPage({
   const payload = wd.test.payload as unknown as DiagnosePayload;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl px-6 py-10">
-        <div
-          className="mb-4 rounded-2xl border-2 border-ink/10 stitched-card flex flex-wrap items-center justify-between gap-2 py-2.5 px-4"
-          style={{
-            background: "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
-          }}
-        >
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="flex items-center justify-between gap-2 px-2">
           <Link
             href="/diagnose"
             className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
@@ -179,6 +174,7 @@ export default async function DiagnoseRunnerSectionPage({
         {sectionKind === "VOCAB" && (
           <VocabSection
             attemptId={attempt.id}
+            examType={examType}
             content={payload.sections.VOCAB}
             timeLimitSec={remaining || SECTION_TIME_LIMIT_SEC.VOCAB}
           />
@@ -186,6 +182,7 @@ export default async function DiagnoseRunnerSectionPage({
         {sectionKind === "GRAMMAR" && (
           <GrammarSection
             attemptId={attempt.id}
+            examType={examType}
             content={payload.sections.GRAMMAR}
             timeLimitSec={remaining || SECTION_TIME_LIMIT_SEC.GRAMMAR}
           />
@@ -297,16 +294,19 @@ function WritingSection({
 
 function VocabSection({
   attemptId,
+  examType,
   content,
   timeLimitSec,
 }: {
   attemptId: string;
+  examType: "KET" | "PET";
   content: DiagnoseVocabContent;
   timeLimitSec: number;
 }) {
   return (
     <DiagnoseRunnerVocab
       attemptId={attemptId}
+      portal={examType === "KET" ? "ket" : "pet"}
       items={content.items}
       timeLimitSec={timeLimitSec}
     />
@@ -315,16 +315,19 @@ function VocabSection({
 
 function GrammarSection({
   attemptId,
+  examType,
   content,
   timeLimitSec,
 }: {
   attemptId: string;
+  examType: "KET" | "PET";
   content: DiagnoseGrammarContent;
   timeLimitSec: number;
 }) {
   return (
     <DiagnoseRunnerGrammar
       attemptId={attemptId}
+      portal={examType === "KET" ? "ket" : "pet"}
       questions={content.questions}
       timeLimitSec={timeLimitSec}
     />

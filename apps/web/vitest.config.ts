@@ -14,6 +14,14 @@ const serverOnlyMain = req.resolve("server-only");
 const serverOnlyEmpty = path.join(path.dirname(serverOnlyMain), "empty.js");
 
 export default defineConfig({
+  test: {
+    // Default to Node environment so existing speaking/audio tests that
+    // import Node-only APIs keep working. React component tests opt into
+    // jsdom via a per-file pragma:
+    //   // @vitest-environment jsdom
+    environment: "node",
+    setupFiles: ["./vitest.setup.ts"],
+  },
   resolve: {
     alias: {
       "server-only": serverOnlyEmpty,

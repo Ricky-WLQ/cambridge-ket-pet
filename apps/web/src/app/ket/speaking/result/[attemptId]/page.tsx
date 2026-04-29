@@ -31,9 +31,9 @@ export default async function KetSpeakingResultPage({
     | null) ?? [];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="flex-1">
+      <main className="flex flex-1 flex-col gap-3.5">
         <SpeakingResult
           attemptId={attempt.id}
           level="KET"

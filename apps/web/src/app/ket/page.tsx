@@ -1,10 +1,48 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Mascot } from "@/components/Mascot";
+import { PortalMap, type ModeChip } from "@/components/PortalMap";
 import AssignmentList from "@/components/student/AssignmentList";
 import { auth } from "@/lib/auth";
 import { getStudentAssignments } from "@/lib/assignments";
-import { requireUngated } from "@/lib/diagnose/eligibility";
+import {
+  findCurrentWeekDiagnose,
+  requireUngated,
+} from "@/lib/diagnose/eligibility";
+import {
+  DIAGNOSE_SECTION_KINDS,
+  type DiagnoseSectionKind,
+} from "@/lib/diagnose/sectionLimits";
+import type { WeeklyDiagnose } from "@prisma/client";
+import { t } from "@/i18n/zh-CN";
+
+const SECTION_DONE = new Set(["SUBMITTED", "AUTO_SUBMITTED", "GRADED"]);
+
+/** Read the per-section status off a WeeklyDiagnose row. Mirrors the helper
+ *  in apps/web/src/app/diagnose/page.tsx (sectionStateFor) — kept inline
+ *  here rather than importing because that helper is private to that page. */
+function sectionStatusFor(wd: WeeklyDiagnose, kind: DiagnoseSectionKind): string {
+  switch (kind) {
+    case "READING":
+      return wd.readingStatus;
+    case "LISTENING":
+      return wd.listeningStatus;
+    case "WRITING":
+      return wd.writingStatus;
+    case "SPEAKING":
+      return wd.speakingStatus;
+    case "VOCAB":
+      return wd.vocabStatus;
+    case "GRAMMAR":
+      return wd.grammarStatus;
+    default: {
+      const _exhaustive: never = kind;
+      void _exhaustive;
+      return "NOT_STARTED";
+    }
+  }
+}
 
 export default async function KetPortalPage() {
   const session = await auth();
@@ -13,127 +51,122 @@ export default async function KetPortalPage() {
 
   // Belt-and-suspenders against stale JWT cache: the middleware should have
   // already redirected gated STUDENTs to /diagnose, but the JWT cache may
-  // be stale (e.g., a teacher tool reset the user's diagnose mid-session,
-  // or this is the first request after generate before update() ran).
+  // be stale.
   const role = (session?.user as { role?: string } | undefined)?.role;
   if (role === "STUDENT") {
-    await requireUngated(userId); // throws redirect to /diagnose if gated
+    await requireUngated(userId);
   }
 
-  const assignments = await getStudentAssignments(userId, { examType: "KET" });
+  const [assignments, wd] = await Promise.all([
+    getStudentAssignments(userId, { examType: "KET" }),
+    findCurrentWeekDiagnose(userId),
+  ]);
+
+  // Real diagnose progress: count sections in a "done" state out of 6.
+  // If the user has no row for this week (wd === null) we show 0/6.
+  const completedSections = wd
+    ? DIAGNOSE_SECTION_KINDS.filter((k) =>
+        SECTION_DONE.has(sectionStatusFor(wd, k)),
+      ).length
+    : 0;
+  const totalSections = DIAGNOSE_SECTION_KINDS.length; // 6
+
+  const portal = "ket" as const;
+
+  // Learning-journey tile grid (Phase 5 will revisit the illustrated-map
+  // metaphor after the rest of the redesign ships). Order ① → ⑥ matches
+  // the natural progression: 词汇 (foundation) → 写 (full output).
+  // Each tile carries Leo doing the matching activity (Mascot pose) +
+  // ordinal badge + bilingual label. No fabricated data — spec §2.1.1.
+  const chips: ModeChip[] = [
+    {
+      mode: "vocab",
+      order: 1,
+      label: t.ketPortal.modes.vocab,
+      href: "/ket/vocab",
+      mascotPose: "flashcards",
+      palette: "lavender",
+      subtitle: "Vocabulary",
+    },
+    {
+      mode: "grammar",
+      order: 2,
+      label: t.ketPortal.modes.grammar,
+      href: "/ket/grammar",
+      mascotPose: "chart",
+      palette: "cream",
+      subtitle: "Grammar",
+    },
+    {
+      mode: "listening",
+      order: 3,
+      label: t.ketPortal.modes.listening,
+      href: "/ket/listening/new",
+      mascotPose: "listening",
+      palette: "sky",
+      subtitle: "Listening",
+    },
+    {
+      mode: "speaking",
+      order: 4,
+      label: t.ketPortal.modes.speaking,
+      href: "/ket/speaking/new",
+      mascotPose: "microphone",
+      palette: "peach",
+      subtitle: "Speaking",
+    },
+    {
+      mode: "reading",
+      order: 5,
+      label: t.ketPortal.modes.reading,
+      href: "/ket/reading/new",
+      mascotPose: "reading",
+      palette: "mint",
+      subtitle: "Reading",
+    },
+    {
+      mode: "writing",
+      order: 6,
+      label: t.ketPortal.modes.writing,
+      href: "/ket/writing/new",
+      mascotPose: "writing",
+      palette: "butter",
+      subtitle: "Writing",
+    },
+  ];
 
   return (
     <div className="page-section">
       <SiteHeader />
       <main className="flex flex-1 flex-col gap-3.5">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.1]">
-            <span className="marker-yellow-thick">KET 门户</span>
-          </h1>
-          <p className="mt-3 text-sm sm:text-base font-medium text-ink/70">
-            Cambridge A2 Key · 选择你想练习的题目类型
-          </p>
+        {/* Hero strip: Leo + greeting + week pill (real diagnose progress) */}
+        <div className="flex items-center gap-3 px-2">
+          <Mascot
+            pose="greeting"
+            portal={portal}
+            width={64}
+            height={64}
+            className="rounded-xl"
+          />
+          <div className="flex-1">
+            <h1 className="text-lg font-extrabold leading-tight">
+              {t.ketPortal.greeting}
+            </h1>
+            <p className="mt-0.5 text-xs font-medium text-ink/60">
+              {t.ketPortal.greetingSub}
+            </p>
+          </div>
+          <Link
+            href="/diagnose"
+            className="rounded-full bg-gradient-to-br from-butter to-peach px-3 py-1.5 text-xs font-extrabold text-ink/90 hover:opacity-90 transition"
+          >
+            {t.ketPortal.weekPillProgress(completedSections, totalSections)}
+          </Link>
         </div>
 
         <AssignmentList examType="KET" assignments={assignments} />
 
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 grow-fill">
-          <Link
-            href="/ket/reading/new"
-            className="skill-tile tile-lavender stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>📖</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">阅读</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Reading · AI 即时生成仿真题
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/ket/writing/new"
-            className="skill-tile tile-butter stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>✍️</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">写作</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Writing · AI 即时生成写作任务
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/ket/listening/new"
-            className="skill-tile tile-sky stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>🎧</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">听力</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Listening · AI 即时生成真题听力
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/ket/speaking/new"
-            className="skill-tile tile-peach stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>🎤</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">口语</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Speaking · 与 AI 考官 Mina 实时对话
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/ket/vocab"
-            className="skill-tile tile-mint stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>🔠</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">词汇</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Vocabulary · A2 Key 官方词表 · 1,599 词
-              </div>
-            </div>
-          </Link>
-
-          <Link
-            href="/ket/grammar"
-            className="skill-tile tile-cream stitched-card group"
-          >
-            <div className="flex items-start justify-between">
-              <div className="text-3xl" aria-hidden>📐</div>
-              <span className="arrow-chip">→</span>
-            </div>
-            <div>
-              <div className="text-xl sm:text-2xl font-extrabold leading-tight">语法</div>
-              <div className="mt-1.5 text-sm font-medium text-ink/70 leading-snug">
-                Grammar · A2 Key 官方语法清单 · 19 个主题
-              </div>
-            </div>
-          </Link>
-        </div>
+        <PortalMap portal={portal} chips={chips} />
       </main>
     </div>
   );

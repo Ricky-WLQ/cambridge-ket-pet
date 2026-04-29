@@ -6,6 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { checkAndRecordGeneration } from "@/lib/rateLimit";
 import { generateDiagnose } from "@/lib/aiClient";
 import { currentWeekStart, currentWeekEnd } from "@/lib/diagnose/week";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 import { fisherYates } from "@/lib/diagnose/random";
 import { SECTION_TIME_LIMIT_SEC } from "@/lib/diagnose/sectionLimits";
 import {
@@ -61,12 +64,16 @@ const DIAGNOSE_RATE_LIMIT_PER_HOUR = 10;
  *    only (see services/ai/app/agents/diagnose_generator.py:_focus_exam_points),
  *    so coarse-grained signals are acceptable v1.
  */
-export async function POST() {
+export async function POST(req: Request) {
+  const portal = derivePortalFromRequest(req);
   // ──── Step 1: Auth ────────────────────────────────────────────────
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 });
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   // ──── Step 2: Idempotency ────────────────────────────────────────
@@ -93,7 +100,7 @@ export async function POST() {
   if (!rl.allowed) {
     return NextResponse.json(
       {
-        error: "本周诊断生成调用次数已达上限，请稍后再试",
+        error: pickTone(t.api.diagnoseRateLimit, portal),
         resetAt: rl.resetAt.toISOString(),
       },
       { status: 429 },
@@ -151,7 +158,7 @@ export async function POST() {
     console.error("Diagnose AI generation failed:", err);
     return NextResponse.json(
       {
-        error: "诊断生成失败，请稍后重试",
+        error: pickTone(t.api.diagnoseGenerateFailed, portal),
         detail: err instanceof Error ? err.message : String(err),
       },
       { status: 502 },

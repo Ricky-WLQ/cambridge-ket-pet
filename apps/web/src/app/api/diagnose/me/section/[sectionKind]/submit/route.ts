@@ -6,6 +6,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { currentWeekStart } from "@/lib/diagnose/week";
 import { maybeMarkDiagnoseComplete } from "@/lib/diagnose/markComplete";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 import {
   DIAGNOSE_SECTION_KINDS,
   type DiagnoseSectionKind,
@@ -74,11 +77,15 @@ interface RouteCtx {
  *  third "GRADING" status mirror, which the schema doesn't have.
  */
 export async function POST(req: Request, ctx: RouteCtx) {
+  const portal = derivePortalFromRequest(req);
   // ──── Step 1: Auth ────────────────────────────────────────────────
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 });
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   // ──── Step 2: Validate sectionKind ───────────────────────────────

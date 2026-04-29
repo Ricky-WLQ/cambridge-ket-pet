@@ -14,9 +14,9 @@ export default async function PetWritingNewPage({
   const parsed = sp.part ? Number.parseInt(sp.part, 10) : NaN;
   const initialPart = Number.isFinite(parsed) ? parsed : null;
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="flex-1">
+      <main className="flex flex-1 flex-col gap-3.5">
         <WritingNewForm examType="PET" initialPart={initialPart} />
       </main>
     </div>

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { ExamType, WordTier } from "@prisma/client";
+import { Mascot } from "@/components/Mascot";
 import type { WordDto, VocabProgressDto, VocabStats, WordlistTotals, PaginationDto } from "@/lib/vocab/types";
 import { WordRow } from "./WordRow";
 
 const TIER_LABELS: Record<WordTier, { zh: string; stars: string; sub: string }> = {
-  CORE:        { zh: "必修核心", stars: "★★★", sub: "必须掌握 · 决定通过率" },
-  RECOMMENDED: { zh: "推荐",     stars: "★★",  sub: "建议掌握 · 高分必备" },
-  EXTRA:       { zh: "拓展",     stars: "★",   sub: "非必须 · 进阶提升" },
+  CORE:        { zh: "必修核心", stars: "★★★", sub: "考试核心词" },
+  RECOMMENDED: { zh: "推荐",     stars: "★★",  sub: "建议掌握" },
+  EXTRA:       { zh: "拓展",     stars: "★",   sub: "进阶提升" },
 };
 
 interface Props { examType: ExamType }
@@ -75,16 +76,26 @@ export default function VocabHub({ examType }: Props) {
     return total === 0 ? 0 : Math.round((mastered / total) * 100);
   }, [stats, wordlistTotals]);
 
+  const portal = examType === "KET" ? "ket" : "pet";
   return (
-    <div className="mx-auto w-full max-w-5xl px-6 py-8 flex flex-col gap-4">
-      <header>
-        <h1 className="text-3xl font-extrabold leading-tight">
-          {examLabelZh} 词汇 · <span className="marker-yellow-thick">{examLabel} Vocabulary</span>
-        </h1>
-        <p className="mt-2 text-sm font-medium text-ink/65">
-          Cambridge {examLabel} 官方词表（2025 修订）{wordlistTotals ? ` · 共 ${wordlistTotals.total} 词` : ""}
-        </p>
-      </header>
+    <div className="flex flex-col gap-3.5 grow-fill">
+      <div className="flex items-center gap-3 px-2">
+        <Mascot pose="flashcards" portal={portal} width={56} height={56} decorative />
+        <div className="flex-1">
+          <h1 className="text-base font-extrabold leading-tight">
+            {examLabelZh} 词汇 · {examLabel} Vocabulary
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            Cambridge {examLabel} 官方词表（2025 修订）{wordlistTotals ? ` · 共 ${wordlistTotals.total} 词` : ""}
+          </p>
+        </div>
+        <Link
+          href={`/${portal}`}
+          className="rounded-full bg-white border-2 border-ink/15 px-3 py-1.5 text-sm font-bold hover:border-ink whitespace-nowrap"
+        >
+          ← {examType} 门户
+        </Link>
+      </div>
 
       {/* Overall mastery card */}
       <div className="rounded-2xl tile-butter border-2 border-ink/10 p-5 stitched-card">

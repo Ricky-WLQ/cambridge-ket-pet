@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { runFinalizePipeline } from "@/lib/diagnose/finalize";
+import { t } from "@/i18n/zh-CN";
+import { pickTone } from "@/i18n/voice";
+import { derivePortalFromRequest } from "@/i18n/derivePortalFromRequest";
 
 export const maxDuration = 180;
 
@@ -42,11 +45,15 @@ export const maxDuration = 180;
  *   - If writing is already GRADED, skip step A.
  *   - If speaking is already SCORED, skip step B's poll.
  */
-export async function POST() {
+export async function POST(req: Request) {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) {
-    return NextResponse.json({ error: "未登录" }, { status: 401 });
+    const portal = derivePortalFromRequest(req);
+    return NextResponse.json(
+      { error: pickTone(t.api.unauthorized, portal) },
+      { status: 401 },
+    );
   }
 
   const result = await runFinalizePipeline(userId);

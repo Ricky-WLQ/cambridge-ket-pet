@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { BookOpen, MessageSquare } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 import { SiteHeader } from "@/components/SiteHeader";
+import { Mascot } from "@/components/Mascot";
 import GateBanner from "@/components/diagnose/GateBanner";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -143,16 +145,19 @@ export default async function HistoryPage({
   if (sp.mode && (MODE_VALUES as readonly string[]).includes(sp.mode)) {
     where.mode = sp.mode as (typeof MODE_VALUES)[number];
   }
-  const testFilter: Prisma.TestWhereInput = {};
+  // DIAGNOSE attempts live under /diagnose/history (per-section replay /
+  // overall report). Excluding them here prevents them from rendering in
+  // the regular history grid where the result-link template doesn't know
+  // how to view them — kindPathFor() defaults DIAGNOSE -> "reading", which
+  // produced a 500 / blank breakdown previously.
+  const testFilter: Prisma.TestWhereInput = { kind: { not: "DIAGNOSE" } };
   if (sp.examType && (EXAM_VALUES as readonly string[]).includes(sp.examType)) {
     testFilter.examType = sp.examType as (typeof EXAM_VALUES)[number];
   }
   if (sp.kind && (KIND_VALUES as readonly string[]).includes(sp.kind)) {
     testFilter.kind = sp.kind as (typeof KIND_VALUES)[number];
   }
-  if (Object.keys(testFilter).length > 0) {
-    where.test = testFilter;
-  }
+  where.test = testFilter;
 
   const [attempts, mistakeCount, comments] = await Promise.all([
     prisma.testAttempt.findMany({
@@ -185,51 +190,54 @@ export default async function HistoryPage({
   return (
     <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl px-6 py-10">
+      <main className="flex flex-1 flex-col gap-3.5">
         {requiredDiagnoseId && (
           <GateBanner requiredDiagnoseId={requiredDiagnoseId} />
         )}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl sm:text-4xl font-extrabold leading-[1.05] tracking-tight">
-            <span className="marker-yellow-thick">历史记录</span>
-          </h1>
+        <div className="flex items-center gap-3 px-2">
+          <Mascot pose="thinking" portal="ket" width={56} height={56} decorative />
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-extrabold leading-tight">
+              历史记录
+            </h1>
+            <p className="mt-0.5 text-xs font-medium text-ink/60">
+              所有练习与模拟考试 · 最多 100 条
+            </p>
+          </div>
           <Link
             href="/history/mistakes"
-            className="flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-sm font-extrabold text-white stitched-card transition hover:bg-amber-600"
+            className="inline-flex items-center gap-1.5 rounded-full bg-butter border-2 border-ink/15 px-3 py-1.5 text-sm font-extrabold text-ink hover:border-ink whitespace-nowrap transition"
           >
-            <span aria-hidden>📒</span>
-            <span>错题本</span>
+            <BookOpen className="h-4 w-4 shrink-0" strokeWidth={2.4} aria-hidden />
+            错题本
             {mistakeCount > 0 && (
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-amber-700">
-                {mistakeCount} 待复习
+              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold">
+                {mistakeCount}
               </span>
             )}
           </Link>
         </div>
-        <p className="mb-4 text-base sm:text-lg text-ink/75 leading-relaxed">
-          你所有的练习和模拟考试，最多展示 100 条。使用下方筛选缩小范围。
-        </p>
 
-        <div className="mb-6 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-ink/60">快速跳转：</span>
+        <div className="flex flex-wrap items-center gap-2 px-2">
+          <span className="text-xs font-bold text-ink/55">快速跳转</span>
           <Link
             href="/ket"
-            className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
+            className="rounded-full border-2 border-ink/15 bg-white px-3 py-1 text-sm font-bold hover:bg-ink/5 transition"
           >
             KET 门户
           </Link>
           <Link
             href="/pet"
-            className="rounded-full border-2 border-ink/15 bg-white px-3 py-1.5 text-sm font-bold hover:bg-ink/5 transition"
+            className="rounded-full border-2 border-ink/15 bg-white px-3 py-1 text-sm font-bold hover:bg-ink/5 transition"
           >
             PET 门户
           </Link>
         </div>
 
         {comments.length > 0 && (
-          <div className="mb-6 rounded-2xl border-2 border-ink/10 bg-sky-tint p-4 stitched-card">
+          <div className="rounded-2xl border-2 border-ink/10 bg-sky-tint p-4 stitched-card">
             <div className="mb-2 flex items-center gap-2 text-sm font-extrabold text-ink">
-              <span aria-hidden>💬</span>
+              <MessageSquare className="h-4 w-4" strokeWidth={2.4} aria-hidden />
               老师的留言
               <span className="rounded-full bg-white px-2 py-0.5 text-xs font-bold text-ink">
                 {comments.length}

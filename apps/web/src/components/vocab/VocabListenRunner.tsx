@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import type { ExamType, WordTier } from "@prisma/client";
 import type { WordDto } from "@/lib/vocab/types";
 
@@ -141,7 +142,7 @@ export default function VocabListenRunner({ examType }: Props) {
       <div className="flex flex-wrap justify-center gap-2">
         <button onClick={playAgain} className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold hover:bg-ink/5 transition">🔊 再听一次</button>
         {!revealed && <button onClick={() => setRevealed(true)} className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold hover:bg-ink/5 transition">显示单词</button>}
-        <button onClick={markMastered} className="rounded-full border-2 border-emerald-600 bg-emerald-600 px-5 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 transition">✓ 已掌握</button>
+        <button onClick={markMastered} className="inline-flex items-center gap-1.5 rounded-full border-2 border-emerald-600 bg-emerald-600 px-5 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 transition"><CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={2.4} aria-hidden /> 已掌握</button>
       </div>
 
       <div className="mx-auto flex max-w-md justify-between text-sm font-bold text-ink/65">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle2, XCircle, Volume2 } from "lucide-react";
 import type { ExamType, WordTier } from "@prisma/client";
 import type { WordDto } from "@/lib/vocab/types";
 import { generateFillBlank, type FillBlankResult } from "@/lib/vocab/fillBlank";
@@ -188,17 +189,27 @@ export default function VocabSpellRunner({ examType }: Props) {
           })}
         </div>
         {submitted && (
-          <div className={`mt-2 text-sm font-extrabold ${isCorrect ? "text-emerald-700" : "text-red-700"}`}>
-            {isCorrect ? "✓ 正确" : `× 正确答案：${cur.word.word}`}
+          <div className={`mt-2 inline-flex items-center gap-1.5 text-sm font-extrabold ${isCorrect ? "text-emerald-700" : "text-red-700"}`}>
+            {isCorrect ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 shrink-0" strokeWidth={2.4} aria-hidden /> 正确
+              </>
+            ) : (
+              <>
+                <XCircle className="h-4 w-4 shrink-0" strokeWidth={2.4} aria-hidden /> 正确答案：{cur.word.word}
+              </>
+            )}
           </div>
         )}
       </div>
 
       <div className="flex flex-wrap justify-center gap-2">
-        <button onClick={playAudio} className="rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold hover:bg-ink/5 transition">🔊 再听</button>
+        <button onClick={playAudio} className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink/15 bg-white px-4 py-2 text-sm font-bold hover:bg-ink/5 transition">
+          <Volume2 className="h-4 w-4 shrink-0" strokeWidth={2.4} aria-hidden /> 再听
+        </button>
         {!submitted ? (
           <>
-            <button onClick={submit} className="rounded-full border-2 border-emerald-600 bg-emerald-600 px-5 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 transition">✓ 提交 (Enter)</button>
+            <button onClick={submit} className="rounded-full border-2 border-emerald-600 bg-emerald-600 px-5 py-2 text-sm font-extrabold text-white hover:bg-emerald-700 transition">提交 (Enter)</button>
             <button onClick={reveal} className="rounded-full border-2 border-amber-600 bg-white px-4 py-2 text-sm font-bold text-amber-700 hover:bg-amber-50 transition">显示答案</button>
           </>
         ) : (

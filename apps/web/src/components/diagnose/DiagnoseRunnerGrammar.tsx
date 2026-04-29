@@ -18,6 +18,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { MCQOption } from "@/components/grammar/MCQOption";
+import { Mascot } from "@/components/Mascot";
+import type { Portal } from "@/i18n/voice";
 import type { GrammarAnswers, GrammarItem } from "@/lib/diagnose/types";
 
 interface Props {
@@ -28,6 +30,8 @@ interface Props {
    * computes this with `remainingSec()` from the section's startedAt.
    */
   timeLimitSec: number;
+  /** Mascot to render in the hero strip — Leo for KET, Aria for PET. */
+  portal?: Portal;
   /**
    * When true, the runner is rendered in view-only mode — no submit button
    * (and no auto-submit-on-timer), with a "练习模式 — 不计分" banner. Used
@@ -48,6 +52,7 @@ export default function DiagnoseRunnerGrammar({
   attemptId,
   questions,
   timeLimitSec,
+  portal = "ket",
   readOnly = false,
 }: Props) {
   const router = useRouter();
@@ -116,23 +121,19 @@ export default function DiagnoseRunnerGrammar({
   }, [remaining, readOnly]);
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-8">
-      <div
-        className="mb-6 rounded-2xl border-2 border-ink/10 stitched-card flex flex-wrap items-center justify-between gap-2 py-3 px-4"
-        style={{
-          background: "linear-gradient(135deg, #ede7ff 0%, #e4efff 100%)",
-        }}
-      >
-        <div>
-          <h1 className="text-xl font-extrabold">
-            本周诊断 · <span className="marker-yellow">语法</span>
+    <div className="mx-auto max-w-2xl w-full">
+      <div className="mb-4 flex items-center gap-3 px-1">
+        <Mascot pose="chart" portal={portal} width={56} height={56} decorative />
+        <div className="flex-1">
+          <h1 className="text-base font-extrabold leading-tight">
+            语法 · 共 {questions.length} 题
           </h1>
-          <p className="text-sm font-bold text-ink/70">
-            选择正确选项 · 共 {questions.length} 题
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            选择正确选项
           </p>
         </div>
         <div
-          className={`rounded-full border-2 px-3 py-1.5 font-mono text-lg font-extrabold ${
+          className={`rounded-full border-2 px-3 py-1.5 font-mono text-base font-extrabold ${
             remaining <= 30
               ? "border-rose-300 bg-rose-50 text-rose-700"
               : "border-ink/15 bg-white"

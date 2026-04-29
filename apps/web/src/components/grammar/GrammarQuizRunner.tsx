@@ -193,14 +193,14 @@ export default function GrammarQuizRunner({ examType }: Props) {
               disabled={idx === 0}
               className="rounded-full bg-white border-2 border-ink/15 text-base font-extrabold px-6 py-3 hover:border-ink transition disabled:opacity-30 flex items-center gap-2"
             >
-              <span aria-hidden>←</span> 上一题
+              ← 上一题
             </button>
             {isLast && submitted ? (
               <Link
                 href={`/${examType.toLowerCase()}/grammar`}
                 className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-3 hover:bg-ink/90 transition"
               >
-                完成 ✓
+                完成
               </Link>
             ) : (
               <button
@@ -208,7 +208,7 @@ export default function GrammarQuizRunner({ examType }: Props) {
                 disabled={!submitted}
                 className="rounded-full bg-ink text-white text-base font-extrabold px-6 py-3 hover:bg-ink/90 transition disabled:opacity-30 flex items-center gap-2"
               >
-                下一题 <span aria-hidden>→</span>
+                下一题 →
               </button>
             )}
           </div>

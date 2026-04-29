@@ -136,24 +136,24 @@ export default async function TeacherDiagnoseStatusPage({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="page-section">
       <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl px-6 py-10">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <Link
-              href={`/teacher/classes/${cls.id}`}
-              className="text-sm text-neutral-500 hover:text-neutral-700"
-            >
-              ← {cls.name}
-            </Link>
-            <h1 className="mt-1 text-2xl font-semibold">本周诊断状态</h1>
-            <p className="text-sm text-neutral-500">
-              {weekStart.toISOString().slice(0, 10)} 至{" "}
-              {weekEnd.toISOString().slice(0, 10)} · 共 {cls.members.length}{" "}
-              位学生
-            </p>
-          </div>
+      <main className="flex flex-1 flex-col gap-3.5">
+        <div className="px-2">
+          <Link
+            href={`/teacher/classes/${cls.id}`}
+            className="text-sm font-bold text-ink/70 hover:text-ink hover:underline"
+          >
+            ← {cls.name}
+          </Link>
+          <h1 className="mt-1 text-lg font-extrabold leading-tight">
+            本周诊断状态
+          </h1>
+          <p className="mt-0.5 text-xs font-medium text-ink/60">
+            {weekStart.toISOString().slice(0, 10)} 至{" "}
+            {weekEnd.toISOString().slice(0, 10)} · 共 {cls.members.length}{" "}
+            位学生
+          </p>
         </div>
 
         {/* Top-level roll-up. */}
