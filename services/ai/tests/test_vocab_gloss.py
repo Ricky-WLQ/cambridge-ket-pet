@@ -82,3 +82,92 @@ async def test_run_vocab_gloss_retries_on_missing_coverage():
 
     assert {it.cambridgeId for it in out.items} == {"a", "b"}
     assert mock.await_count == 2
+
+
+# -------- Fan-out tests (chunked parallel sub-calls when batch > CHUNK_SIZE) --------
+
+
+@pytest.mark.asyncio
+async def test_no_fanout_when_batch_at_or_under_chunk_size():
+    """A small batch (≤ CHUNK_SIZE) goes through one call, no fan-out."""
+    pairs = [(f"id{i}", f"w{i}", "v") for i in range(vocab_gloss_mod._CHUNK_SIZE)]
+    req = _make_req(*pairs)
+    fake_resp = _make_resp(*[(cid, "中", "Sentence.", "A2") for cid, _, _ in pairs])
+
+    mock = AsyncMock(return_value=SimpleNamespace(output=fake_resp))
+    with _patch_agent_run(mock):
+        out = await run_vocab_gloss(req)
+
+    assert {it.cambridgeId for it in out.items} == {p[0] for p in pairs}
+    # Single call only — no fan-out at the boundary.
+    assert mock.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_fans_out_when_batch_exceeds_chunk_size():
+    """A large batch (> CHUNK_SIZE) is split into ceil(N/CHUNK_SIZE) parallel
+    sub-calls; the merged response covers every input cambridgeId."""
+    chunk = vocab_gloss_mod._CHUNK_SIZE
+    n_words = chunk * 2 + 3  # forces 3 chunks
+    pairs = [(f"id{i}", f"w{i}", "v") for i in range(n_words)]
+    req = _make_req(*pairs)
+
+    def side_effect(prompt, **kwargs):
+        # Echo back the cambridgeIds the prompt asks for so each chunk
+        # returns exactly the requested ones — proves the dispatcher is
+        # passing chunk-specific prompts.
+        ids = [
+            line.split("cambridgeId=")[1].split()[0]
+            for line in prompt.splitlines()
+            if "cambridgeId=" in line
+        ]
+        chunk_resp = _make_resp(
+            *[(cid, "中", "Sentence.", "A2") for cid in ids]
+        )
+        return SimpleNamespace(output=chunk_resp)
+
+    mock = AsyncMock(side_effect=side_effect)
+    with _patch_agent_run(mock):
+        out = await run_vocab_gloss(req)
+
+    assert {it.cambridgeId for it in out.items} == {p[0] for p in pairs}
+    # 3 chunks for n_words=23 with chunk=10 (10, 10, 3).
+    expected_chunks = -(-n_words // chunk)
+    assert mock.await_count == expected_chunks
+
+
+@pytest.mark.asyncio
+async def test_fanout_propagates_per_chunk_failure():
+    """If one chunk's per-chunk retries are exhausted (all 3 attempts fail),
+    the whole batch raises (asyncio.gather fail-fast), with the final error."""
+    chunk = vocab_gloss_mod._CHUNK_SIZE
+    pairs = [(f"id{i}", f"w{i}", "v") for i in range(chunk + 1)]  # 2 chunks
+    req = _make_req(*pairs)
+
+    # Always return only id0 — so the "first chunk" satisfies coverage
+    # (because it asks for id0..id9) but the second chunk (asking for
+    # id10) fails coverage every retry.
+    def side_effect(prompt, **kwargs):
+        ids_requested = [
+            line.split("cambridgeId=")[1].split()[0]
+            for line in prompt.splitlines()
+            if "cambridgeId=" in line
+        ]
+        # Return only "id0" — covers chunk 1 fully, but not chunk 2.
+        if "id0" in ids_requested:
+            chunk_resp = _make_resp(
+                *[(cid, "中", "Sentence.", "A2") for cid in ids_requested]
+            )
+        else:
+            chunk_resp = _make_resp(("id0", "中", "Sentence.", "A2"))
+        return SimpleNamespace(output=chunk_resp)
+
+    mock = AsyncMock(side_effect=side_effect)
+    with (
+        _patch_agent_run(mock),
+        # validate_response_covers_all_words raises ValueError when a chunk's
+        # response is missing requested cambridgeIds; the inner retry loop
+        # exhausts (3 tries), and asyncio.gather propagates the ValueError.
+        pytest.raises(ValueError, match="missing"),
+    ):
+        await run_vocab_gloss(req)

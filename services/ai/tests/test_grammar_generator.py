@@ -127,7 +127,32 @@ async def test_run_raises_after_max_retries():
     fake = SimpleNamespace(
         run=AsyncMock(return_value=SimpleNamespace(output=_resp(bad_item))),
     )
-    with patch.object(agent_mod, "_agent_cache", fake):
-        with pytest.raises(ValueError, match="classification"):
-            await run_grammar_generate(req)
+    with (
+        patch.object(agent_mod, "_agent_cache", fake),
+        pytest.raises(ValueError, match="classification"),
+    ):
+        await run_grammar_generate(req)
     assert fake.run.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_run_passes_max_tokens_8000_setting():
+    """grammar_generator must pass max_tokens=8000 at agent.run() time —
+    DeepSeek's default 4096 is too small for count=10+ MCQs (each ~1KB
+    Chinese-leaning), so without this the response truncates and the
+    validators retry. Mirrors the fix in listening_generator/reading.
+    """
+    req = _request(count=1)
+    fake = SimpleNamespace(
+        run=AsyncMock(return_value=SimpleNamespace(output=_resp(_mcq()))),
+    )
+    with patch.object(agent_mod, "_agent_cache", fake):
+        await run_grammar_generate(req)
+
+    # Inspect what the agent.run call received.
+    assert fake.run.await_count == 1
+    _, kwargs = fake.run.await_args
+    assert kwargs.get("model_settings", {}).get("max_tokens") == 8000, (
+        f"agent.run was called without max_tokens=8000 in model_settings; "
+        f"got kwargs={kwargs}"
+    )
