@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
 
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -37,6 +36,16 @@ from app.validators.grammar import (
 logger = logging.getLogger(__name__)
 
 MAX_ATTEMPTS = 3
+
+# DeepSeek-chat's default max_tokens is 4096, which is too small for the
+# structured GrammarGenerateResponse: each MCQ carries question + 4 options
+# + Chinese explanation ≈ ~1KB, so count=10 reaches ~5-6K tokens output and
+# routinely truncates at the default cap. 8000 is just under DeepSeek-chat's
+# 8192 ceiling. Mirrors listening_generator/reading/writing.
+#
+# IMPORTANT: pydantic-ai applies model_settings only when passed to
+# ``agent.run(...)``, NOT when passed to ``Agent(...)`` constructor.
+_GRAMMAR_MODEL_SETTINGS = {"max_tokens": 8000}
 
 
 def _build_agent() -> Agent[None, GrammarGenerateResponse]:
@@ -123,11 +132,13 @@ async def run_grammar_generate(
     Raises the last exception on attempt 3 (no silent return).
     """
     user_msg = _format_user_message(req)
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            result = await grammar_generator_agent.run(user_msg)
+            result = await grammar_generator_agent.run(
+                user_msg, model_settings=_GRAMMAR_MODEL_SETTINGS
+            )
             response: GrammarGenerateResponse = result.output
 
             # Per-item business validators (schema-level already fired during construction).

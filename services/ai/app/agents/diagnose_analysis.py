@@ -27,9 +27,10 @@ lines so neither file's edits ripple into the other.
 
 from __future__ import annotations
 
+import logging
 import os
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent, UnexpectedModelBehavior
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
@@ -42,6 +43,8 @@ from app.schemas.diagnose import (
     DiagnoseAnalysisResponse,
 )
 from app.validators.diagnose import validate_diagnose_analysis
+
+log = logging.getLogger(__name__)
 
 
 def _build_deepseek_provider() -> OpenAIProvider:
@@ -129,7 +132,30 @@ async def analyze_diagnose(
                 + feedback_lines
             )
 
-        result = await agent.run(user_prompt, model_settings=_ANALYSIS_MODEL_SETTINGS)
+        try:
+            result = await agent.run(
+                user_prompt, model_settings=_ANALYSIS_MODEL_SETTINGS
+            )
+        except UnexpectedModelBehavior as e:
+            # Pydantic-ai exhausted its own output-validation retry budget
+            # (typical cause for diagnose_analysis: DeepSeek output truncated
+            # near the 8000-token cap because the 8-category KnowledgePointGroup
+            # schema is large). Treat this the same as a soft validator
+            # failure: log and continue the outer retry loop. After 3
+            # outer attempts, fall through to the empty-response fallback
+            # so apps/web's gate semantics (Plan B.5) treat it as
+            # "still unblocked" rather than a 500.
+            log.warning(
+                "analyze_diagnose attempt %d (exam_type=%s wrong_answers=%d) "
+                "raised UnexpectedModelBehavior: %s",
+                attempt + 1,
+                req.exam_type,
+                len(req.wrong_answers),
+                repr(e)[:500],
+            )
+            last_errors = [f"pydantic_ai_unexpected: {e}"]
+            continue
+
         last_response = result.output
 
         errors = validate_diagnose_analysis(last_response)
@@ -143,4 +169,10 @@ async def analyze_diagnose(
     # a hard error.
     if last_response is not None:
         return last_response
+    log.error(
+        "analyze_diagnose exhausted all 3 attempts with no usable output "
+        "(exam_type=%s wrong_answers=%d); returning empty response",
+        req.exam_type,
+        len(req.wrong_answers),
+    )
     return DiagnoseAnalysisResponse(knowledge_points=[])

@@ -1,7 +1,9 @@
 """vocab_gloss agent — DeepSeek-backed batch translator for Cambridge wordlists.
 
-Used by the apps/web seed script `generate-vocab-glosses.ts` (one batch per
-call, ≤100 words). 3-retry on validator failure (matches Phase 2/3 pattern).
+Used by the apps/web seed script `generate-vocab-glosses.ts`. Caller-side
+batches are up to 100 words; this module further chunks them into
+``_CHUNK_SIZE`` per parallel DeepSeek call to stay well under DeepSeek-chat's
+8192-token output cap. Each chunk has its own 3-retry validator loop.
 
 **Lazy-build note** (mirrors `listening_generator.py` / `speaking_examiner.py`):
 the Pydantic-AI `Agent` is built on first call to `get_vocab_gloss_agent()`,
@@ -12,9 +14,9 @@ or `get_vocab_gloss_agent` directly.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
-from typing import Optional
 
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -30,6 +32,17 @@ from app.validators.vocab import validate_response_covers_all_words
 logger = logging.getLogger(__name__)
 
 MAX_ATTEMPTS = 3
+
+# Number of words per parallel sub-call. Each VocabGlossItem's max payload is
+# ~400 chars (glossZh ≤ 200 + example ≤ 200, both Chinese-leaning). 10 items
+# ≈ 4000 chars ≈ ~2-3K output tokens, comfortably under DeepSeek-chat's 8192
+# cap with the 8000 max_tokens setting below. Caller-side batches up to the
+# 100-word schema cap fan out to ceil(N / 10) parallel sub-calls.
+_CHUNK_SIZE = 10
+
+# Match the cap used by listening/reading/writing/diagnose agents. Each chunk's
+# expected output is ~2-3K tokens; 8000 is generous headroom.
+_VOCAB_MODEL_SETTINGS = {"max_tokens": 8000}
 
 
 def _build_agent() -> Agent[None, VocabGlossResponse]:
@@ -97,17 +110,22 @@ def _format_user_message(req: VocabGlossRequest) -> str:
     return "\n".join(lines)
 
 
-async def run_vocab_gloss(req: VocabGlossRequest) -> VocabGlossResponse:
-    """Execute one batch. Up to 3 retries on validator failure.
+async def _run_vocab_gloss_single_batch(
+    req: VocabGlossRequest,
+) -> VocabGlossResponse:
+    """Execute one chunk-sized DeepSeek call with retry-on-validator-failure.
 
-    Raises the last exception on attempt 3 (no silent return).
+    Raises the last exception on attempt 3 (no silent return). Caller is
+    responsible for keeping ``len(req.words) <= _CHUNK_SIZE``.
     """
     user_msg = _format_user_message(req)
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
 
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
-            result = await vocab_gloss_agent.run(user_msg)
+            result = await vocab_gloss_agent.run(
+                user_msg, model_settings=_VOCAB_MODEL_SETTINGS
+            )
             response: VocabGlossResponse = result.output
 
             # Coverage check: every requested cambridgeId is present in items.
@@ -123,18 +141,20 @@ async def run_vocab_gloss(req: VocabGlossRequest) -> VocabGlossResponse:
 
             if attempt > 1:
                 logger.info(
-                    "vocab_gloss succeeded on attempt %d/%d",
+                    "vocab_gloss chunk succeeded on attempt %d/%d (size=%d)",
                     attempt,
                     MAX_ATTEMPTS,
+                    len(req.words),
                 )
             return response
 
         except Exception as exc:  # noqa: BLE001 — we re-raise on attempt 3
             last_error = exc
             logger.warning(
-                "vocab_gloss attempt %d/%d failed: %s",
+                "vocab_gloss chunk attempt %d/%d failed (size=%d): %s",
                 attempt,
                 MAX_ATTEMPTS,
+                len(req.words),
                 exc,
             )
             if attempt == MAX_ATTEMPTS:
@@ -142,3 +162,41 @@ async def run_vocab_gloss(req: VocabGlossRequest) -> VocabGlossResponse:
 
     # Unreachable: the loop either returns or raises. Kept to satisfy type checker.
     raise RuntimeError("unreachable") from last_error
+
+
+async def run_vocab_gloss(req: VocabGlossRequest) -> VocabGlossResponse:
+    """Execute a vocab_gloss batch. For batches larger than ``_CHUNK_SIZE``,
+    split into chunks and run them in parallel via ``asyncio.gather`` to
+    avoid hitting DeepSeek-chat's 8192-token output cap (the same cap that
+    motivated PR #9's listening fan-out fix).
+
+    Each chunk has its own 3-retry validator loop in
+    ``_run_vocab_gloss_single_batch``. ``asyncio.gather`` is fail-fast — if
+    any chunk's retries are exhausted, the whole call raises.
+    """
+    if len(req.words) <= _CHUNK_SIZE:
+        return await _run_vocab_gloss_single_batch(req)
+
+    chunk_count = -(-len(req.words) // _CHUNK_SIZE)  # ceil-div
+    logger.info(
+        "vocab_gloss fanning out len=%d into %d parallel chunks of %d",
+        len(req.words),
+        chunk_count,
+        _CHUNK_SIZE,
+    )
+    sub_requests = [
+        VocabGlossRequest(
+            examType=req.examType,
+            words=req.words[i : i + _CHUNK_SIZE],
+        )
+        for i in range(0, len(req.words), _CHUNK_SIZE)
+    ]
+    sub_responses: list[VocabGlossResponse] = await asyncio.gather(
+        *[_run_vocab_gloss_single_batch(sr) for sr in sub_requests]
+    )
+
+    # Merge in chunk order (gather preserves submission order). Caller-side
+    # `validate_response_covers_all_words` was already enforced per chunk, so
+    # the merged items collectively cover all req.words.
+    merged_items = [item for resp in sub_responses for item in resp.items]
+    return VocabGlossResponse(items=merged_items)
