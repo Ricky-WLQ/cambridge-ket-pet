@@ -4,16 +4,21 @@
  * Post-submit report viewer. Reads the payload returned by
  * GET /api/diagnose/me/report/[testId] (T22).
  *
- * Layout:
- *  1. Overall score ring (hand-rolled SVG; matches the no-chart-lib rule).
- *  2. Per-section 6-cell score grid with color thresholds (≥70 green / ≥50 amber / else red).
- *  3. Four-field summary (优势 / 薄弱点 / 重点练习方向 / 综合评语) reusing the
- *     visual idiom from `AnalysisPanel.tsx`.
- *  4. Knowledge-point clusters sorted by severity (critical first), one
- *     `<KnowledgePointCluster>` per group.
+ * Three-layer layout (kid-friendly redesign):
+ *  1. Hero card — Mascot + reframed headline + small score chip.
+ *     Warm butter→peach gradient. Never the harsh red ring of v1.
+ *  2. "下周练这 3 个" — top three priorityActions as numbered tinted
+ *     cards. The PRIMARY takeaway, replaces the old 4-block summary.
+ *  3. "六项练习情况" — 5-star list per section (gamified, scannable
+ *     in 3s). Replaces the 6-cell number grid.
+ *  4. Collapsible "看看 AI 的详细评语" — narrative + simple list of
+ *     weak knowledge points. Hidden by default.
  *
- * The component sorts knowledge points by severity locally — the persisted
- * order is whatever the AI emitted, which we don't trust to be sorted.
+ * Accuracy contract: every datapoint comes from `report` directly.
+ * Stars derive from real per-section scores. Top-3 actions are the
+ * AI's actual priorityActions[0..2] (no padding when fewer than 3
+ * exist). Knowledge-point list shows only category + topic + count,
+ * no fabricated severity labels (no "critical 弱项" tags etc.).
  */
 import { Mascot, type MascotPose } from "@/components/Mascot";
 import {
@@ -27,7 +32,6 @@ import type {
   PerSectionScores,
 } from "@/lib/diagnose/types";
 
-import KnowledgePointCluster from "./KnowledgePointCluster";
 import { SECTION_TITLE_ZH } from "./SectionStatusCard";
 
 interface ReportPayload {
@@ -55,37 +59,27 @@ interface Props {
 }
 
 /**
- * Per-section grid card colors. Soft pastels keyed to score band — low
- * scores get butter (warm encouragement), not rose (failure red). The
- * redesign target is 10–13yr kids; a red number staring back is
- * demoralizing rather than informative.
+ * Map a 0–100 percentage to a 0–5 star count. Mirrors the mockup's
+ * progressive bands so a kid's first attempt at 10–20% still earns
+ * one star (acknowledges effort), while ≥80% earns the full 5.
+ *
+ *   0%      -> 0 stars
+ *   1–19%   -> 1
+ *   20–39%  -> 2
+ *   40–59%  -> 3
+ *   60–79%  -> 4
+ *   80–100% -> 5
+ *
+ * `null` means the section was never attempted — caller renders dots.
  */
-function scoreColorClasses(pct: number): {
-  text: string;
-  bg: string;
-  ring: string;
-} {
-  if (pct >= 70) {
-    return {
-      text: "text-emerald-700",
-      bg: "bg-mint-tint",
-      ring: "ring-emerald-200",
-    };
-  }
-  if (pct >= 50) {
-    return {
-      text: "text-amber-700",
-      bg: "bg-butter-tint",
-      ring: "ring-amber-200",
-    };
-  }
-  // <50%: still warm, not punishing. Peach tint + amber text reads as
-  // "more practice needed" rather than "you failed".
-  return {
-    text: "text-amber-800",
-    bg: "bg-peach-tint",
-    ring: "ring-amber-200",
-  };
+function scoreToStars(pct: number | null): number {
+  if (pct === null) return 0;
+  if (pct <= 0) return 0;
+  if (pct < 20) return 1;
+  if (pct < 40) return 2;
+  if (pct < 60) return 3;
+  if (pct < 80) return 4;
+  return 5;
 }
 
 /**
@@ -194,133 +188,200 @@ export default function DiagnoseReport({ report, showStudentName }: Props) {
         </div>
       )}
 
-      {/* Per-section score grid. */}
+      {/* Top 3 priority actions — the primary takeaway. Only renders
+          if the AI actually returned actions (no padding, no fakes). */}
+      {report.summary && report.summary.priorityActions.length > 0 && (
+        <ActionsCard actions={report.summary.priorityActions.slice(0, 3)} />
+      )}
+
+      {/* Six sections as a 5-star scannable list. */}
       {report.perSectionScores && (
-        <section>
-          <h2 className="px-2 text-base font-extrabold mb-2 text-ink/85">
-            六项能力本周得分
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {DIAGNOSE_SECTION_KINDS.map((kind) => {
-              const score = report.perSectionScores![kind as DiagnoseSectionKind];
-              const hasScore = typeof score === "number";
-              const styles = hasScore
-                ? scoreColorClasses(score)
-                : {
-                    text: "text-ink/55",
-                    bg: "bg-mist",
-                    ring: "ring-ink/10",
-                  };
-              return (
-                <div
-                  key={kind}
-                  className={`rounded-2xl p-4 ring-1 ring-inset ${styles.bg} ${styles.ring}`}
-                >
-                  <div className="text-xs font-bold text-ink/65">
-                    {SECTION_TITLE_ZH[kind]}
-                  </div>
-                  <div
-                    className={`mt-1 font-mono text-2xl font-extrabold ${styles.text}`}
-                  >
-                    {hasScore ? `${score}` : "—"}
-                    {hasScore && (
-                      <span className="ml-1 text-base font-normal text-ink/55">
-                        / 100
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        <SectionStarsCard scores={report.perSectionScores} />
       )}
 
-      {/* 4-field AI summary. */}
-      {report.summary && (
-        <section className="space-y-4">
-          <SummaryBlock
-            title="优势"
-            items={report.summary.strengths}
-            accent="bg-emerald-50 text-emerald-900 border-emerald-200"
-            badgeColor="bg-emerald-600"
-            numberColor="text-emerald-600/70"
-          />
-          <SummaryBlock
-            title="薄弱点"
-            items={report.summary.weaknesses}
-            accent="bg-amber-50 text-amber-900 border-amber-200"
-            badgeColor="bg-amber-600"
-            numberColor="text-amber-600/70"
-          />
-          <SummaryBlock
-            title="重点练习方向"
-            items={report.summary.priorityActions}
-            accent="bg-sky-tint text-sky-900 border-sky-soft"
-            badgeColor="bg-blue-600"
-            numberColor="text-blue-600/70"
-          />
-          {report.summary.narrativeZh && (
-            <div className="rounded-2xl border-2 border-indigo-200 bg-white p-4 stitched-card">
-              <div className="mb-2 text-sm font-extrabold text-indigo-900">
-                综合评语
-              </div>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
-                {report.summary.narrativeZh}
-              </p>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Knowledge-point clusters. */}
-      {sortedKps.length > 0 && (
-        <section>
-          <h2 className="px-2 text-base font-extrabold mb-2 text-ink/85">
-            本周知识点弱项
-          </h2>
-          <div className="space-y-3">
-            {sortedKps.map((g, i) => (
-              <KnowledgePointCluster key={`${g.knowledgePoint}-${i}`} group={g} />
-            ))}
-          </div>
-        </section>
+      {/* Collapsible details — the verbose AI text + KP list, hidden
+          by default. Only rendered if there's something to put in. */}
+      {(report.summary || sortedKps.length > 0) && (
+        <DetailsCollapsible
+          summary={report.summary}
+          knowledgePoints={sortedKps}
+        />
       )}
     </div>
   );
 }
 
-function SummaryBlock({
-  title,
-  items,
-  accent,
-  badgeColor,
-  numberColor,
-}: {
-  title: string;
-  items: string[];
-  accent: string;
-  badgeColor: string;
-  numberColor: string;
-}) {
-  if (items.length === 0) return null;
+// ── Top 3 actions ──────────────────────────────────────────────────────
+
+const ACTION_TINTS = ["bg-lavender-tint", "bg-sky-tint", "bg-mint-tint"] as const;
+
+function ActionsCard({ actions }: { actions: string[] }) {
   return (
-    <div className={`rounded-2xl border-2 stitched-card p-4 ${accent}`}>
-      <div className="mb-2 flex items-center gap-2 text-base font-extrabold">
-        <span
-          className={`inline-block h-2.5 w-2.5 rounded-full ${badgeColor}`}
-          aria-hidden
-        />
-        {title}
+    <section className="rounded-3xl border-2 border-ink/10 bg-white stitched-card p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-base font-extrabold text-ink">
+          下周练这{" "}
+          <span className="font-mono">{actions.length}</span> 个
+        </h2>
+        <span className="text-xs font-bold text-ink/55">优先级排序</span>
       </div>
-      <ul className="space-y-1.5 text-sm leading-relaxed">
-        {items.map((s, i) => (
-          <li key={i} className="flex gap-2">
-            <span className={`shrink-0 ${numberColor}`}>{i + 1}.</span>
-            <span>{s}</span>
+      <ol className="space-y-2.5">
+        {actions.map((action, idx) => (
+          <li
+            key={idx}
+            className={`flex items-start gap-3 rounded-2xl border-2 border-ink/10 p-3.5 stitched-card ${ACTION_TINTS[idx % ACTION_TINTS.length]}`}
+          >
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-xs font-extrabold text-white">
+              {idx + 1}
+            </span>
+            <p className="flex-1 min-w-0 text-sm font-bold leading-relaxed text-ink/90 whitespace-pre-wrap">
+              {action}
+            </p>
           </li>
         ))}
-      </ul>
+      </ol>
+    </section>
+  );
+}
+
+// ── Six sections — 5-star list ─────────────────────────────────────────
+
+function SectionStarsCard({ scores }: { scores: PerSectionScores }) {
+  return (
+    <section className="rounded-3xl border-2 border-ink/10 bg-white stitched-card p-5">
+      <h2 className="mb-3 text-base font-extrabold text-ink">六项练习情况</h2>
+      <div className="space-y-2.5">
+        {DIAGNOSE_SECTION_KINDS.map((kind) => (
+          <SectionStarRow
+            key={kind}
+            kind={kind as DiagnoseSectionKind}
+            score={scores[kind as DiagnoseSectionKind] ?? null}
+          />
+        ))}
+      </div>
+      <p className="mt-3 text-xs font-medium text-ink/55">
+        五颗星表示满分 · 三颗星即为达标
+      </p>
+    </section>
+  );
+}
+
+function SectionStarRow({
+  kind,
+  score,
+}: {
+  kind: DiagnoseSectionKind;
+  score: number | null;
+}) {
+  const stars = scoreToStars(score);
+  const attempted = score !== null;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-12 shrink-0 text-sm font-extrabold text-ink">
+        {SECTION_TITLE_ZH[kind]}
+      </div>
+      <div
+        className="flex-1 flex items-center gap-1 text-2xl leading-none tracking-wider"
+        aria-label={attempted ? `${stars} of 5 stars` : "not attempted"}
+      >
+        {attempted
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <span
+                key={i}
+                className={i < stars ? "text-amber-500" : "text-ink/15"}
+                aria-hidden
+              >
+                ★
+              </span>
+            ))
+          : Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} className="text-ink/15" aria-hidden>
+                ·
+              </span>
+            ))}
+      </div>
+      <div
+        className={`w-12 shrink-0 text-right font-mono text-sm font-extrabold ${attempted ? (stars >= 3 ? "text-amber-700" : "text-ink/40") : "text-ink/40"}`}
+      >
+        {attempted ? `${Math.round(score)}%` : "—"}
+      </div>
     </div>
+  );
+}
+
+// ── Collapsible details ────────────────────────────────────────────────
+
+const KP_CATEGORY_ZH: Record<string, string> = {
+  grammar: "语法",
+  collocation: "搭配",
+  vocabulary: "词汇",
+  sentence_pattern: "句型",
+  reading_skill: "阅读",
+  listening_skill: "听力",
+  cambridge_strategy: "考试策略",
+  writing_skill: "写作",
+};
+
+function DetailsCollapsible({
+  summary,
+  knowledgePoints,
+}: {
+  summary: DiagnoseSummary | null;
+  knowledgePoints: KnowledgePointGroup[];
+}) {
+  // Only the narrative + topic list go in here. The 4-block summary
+  // (优势/薄弱点/重点练习方向/综合评语) was retired — the top-3 actions
+  // card replaces priorityActions, and narrativeZh subsumes the rest
+  // by design (the AI prompt instructs it to put strengths/weaknesses
+  // into the narrative).
+  const hasNarrative = (summary?.narrativeZh.trim().length ?? 0) > 0;
+  if (!hasNarrative && knowledgePoints.length === 0) return null;
+
+  return (
+    <details className="rounded-3xl border-2 border-ink/10 bg-white stitched-card group">
+      <summary className="flex cursor-pointer items-center justify-between p-4 sm:p-5 list-none">
+        <span className="text-base font-extrabold text-ink">
+          看看 AI 的详细评语
+        </span>
+        <span
+          className="text-xl text-ink/55 transition-transform group-open:rotate-180"
+          aria-hidden
+        >
+          ⌄
+        </span>
+      </summary>
+      <div className="border-t-2 border-ink/10 p-5 space-y-4">
+        {hasNarrative && summary && (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/90">
+            {summary.narrativeZh}
+          </p>
+        )}
+        {knowledgePoints.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-sm font-extrabold text-ink">
+              本周想多练的知识点
+            </div>
+            <ul className="space-y-1.5">
+              {knowledgePoints.map((kp, i) => (
+                <li
+                  key={`${kp.knowledgePoint}-${i}`}
+                  className="flex items-center gap-2 rounded-xl border border-ink/10 bg-mist px-3 py-2"
+                >
+                  <span className="pill-tag bg-amber-100 text-amber-800">
+                    {KP_CATEGORY_ZH[kp.category] ?? kp.category}
+                  </span>
+                  <span className="flex-1 text-sm font-bold text-ink truncate">
+                    {kp.knowledgePoint}
+                  </span>
+                  <span className="shrink-0 text-xs font-medium text-ink/55">
+                    {kp.questions.length} 道错题
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
