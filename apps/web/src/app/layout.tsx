@@ -28,7 +28,10 @@ export default async function RootLayout({
       lang="zh-CN"
       className={`${manrope.variable} h-full antialiased`}
     >
-      <body className={`min-h-full flex flex-col ${portalClass}`}>
+      <body
+        className={`min-h-full flex flex-col ${portalClass}`}
+        suppressHydrationWarning
+      >
         <PortalProvider portal={portal}>{children}</PortalProvider>
       </body>
     </html>

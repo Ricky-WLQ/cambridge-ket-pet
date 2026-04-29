@@ -64,26 +64,27 @@ export default async function KetReadingResultPage({
   }
 
   const payload = attempt.test.payload as unknown as ReadingTestPayload;
-  const storedWeakPoints = (attempt.weakPoints ?? {
-    examPoints: [],
-    difficultyPoints: [],
-  }) as unknown as StoredWeakPoints;
+  // Older attempts (or attempts where the grading pipeline didn't write
+  // weak-point arrays) can have `weakPoints` as `{}` or missing keys —
+  // truthy enough to skip a `??` fallback but not array-shaped. Default
+  // each field independently.
+  const stored = (attempt.weakPoints ?? {}) as Partial<StoredWeakPoints>;
+  const storedExam = stored.examPoints ?? [];
+  const storedDifficulty = stored.difficultyPoints ?? [];
 
   const [examPoints, difficultyPoints] = await Promise.all([
     prisma.examPoint.findMany({
-      where: { id: { in: storedWeakPoints.examPoints.map((e) => e.id) } },
+      where: { id: { in: storedExam.map((e) => e.id) } },
       select: { id: true, label: true, descriptionZh: true },
     }),
     prisma.difficultyPoint.findMany({
-      where: {
-        id: { in: storedWeakPoints.difficultyPoints.map((d) => d.id) },
-      },
+      where: { id: { in: storedDifficulty.map((d) => d.id) } },
       select: { id: true, label: true, descriptionZh: true },
     }),
   ]);
 
   const weakPoints: ResultViewProps["weakPoints"] = {
-    examPoints: storedWeakPoints.examPoints.map((wp) => {
+    examPoints: storedExam.map((wp) => {
       const ep = examPoints.find((e) => e.id === wp.id);
       return {
         id: wp.id,
@@ -92,7 +93,7 @@ export default async function KetReadingResultPage({
         descriptionZh: ep?.descriptionZh ?? "",
       };
     }),
-    difficultyPoints: storedWeakPoints.difficultyPoints.map((wp) => {
+    difficultyPoints: storedDifficulty.map((wp) => {
       const dp = difficultyPoints.find((d) => d.id === wp.id);
       return {
         id: wp.id,
