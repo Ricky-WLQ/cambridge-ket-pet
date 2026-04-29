@@ -50,11 +50,11 @@ describe("KET portal home", () => {
 
     // The mock has 3 sections in a done state (GRADED, SUBMITTED,
     // AUTO_SUBMITTED) out of 6. Real-data-only: pill should read 3/6.
-    expect(container.textContent).toContain("本周 3/6");
+    expect(container.textContent).toContain("本周诊断打卡 3/6");
 
     // Pill is a link to /diagnose.
     const pill = Array.from(container.querySelectorAll("a")).find((a) =>
-      a.textContent?.includes("本周 3/6"),
+      a.textContent?.includes("本周诊断打卡 3/6"),
     );
     expect(pill).toBeTruthy();
     expect(pill?.getAttribute("href")).toBe("/diagnose");
@@ -66,7 +66,7 @@ describe("KET portal home", () => {
 
     const Page = await KetPortalPage();
     const { container } = render(Page);
-    expect(container.textContent).toContain("本周 0/6");
+    expect(container.textContent).toContain("本周诊断打卡 0/6");
   });
 
   it("does not render fabricated UI (no TodayCard / streak / hardcoded stats)", async () => {

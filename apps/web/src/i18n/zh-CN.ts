@@ -32,8 +32,9 @@ export const t = {
   ketPortal: {
     greeting: "嗨！选一题练练 →",
     greetingSub: "Leo 在 KET 岛等你",
-    weekPillCompleted: "本周 6/6 ✓",
-    weekPillProgress: (done: number, total: number) => `本周 ${done}/${total}`,
+    weekPillCompleted: "本周诊断打卡 6/6 ✓",
+    weekPillProgress: (done: number, total: number) =>
+      `本周诊断打卡 ${done}/${total}`,
     todayLabel: "今天",
     streakLabel: (days: number) => `🔥 连打 ${days} 天`,
     modes: {
@@ -48,8 +49,9 @@ export const t = {
   petPortal: {
     greeting: "今天练什么 ↓",
     greetingSub: "Aria 在 PET 城等你",
-    weekPillCompleted: "本周 6/6",
-    weekPillProgress: (done: number, total: number) => `本周 ${done}/${total}`,
+    weekPillCompleted: "本周诊断打卡 6/6",
+    weekPillProgress: (done: number, total: number) =>
+      `本周诊断打卡 ${done}/${total}`,
     todayLabel: "TODAY",
     streakLabel: (days: number) => `🔥 ${days} 天连打`,
     modes: {

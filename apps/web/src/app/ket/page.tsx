@@ -73,45 +73,55 @@ export default async function KetPortalPage() {
 
   const portal = "ket" as const;
 
-  // Mode chips: just label + click-through. No fabricated accuracy values.
-  // Per spec §2.1.1, per-mode accuracy is restored later when real
-  // attempt-history aggregation is wired (Phase H or a follow-up).
+  // Each chip's `region` is the building footprint on the KET 岛 map
+  // (apps/web/public/maps/ket-island.png). Whole region is the click
+  // target — direct manipulation per ui-ux-pro-max Immersive/Interactive
+  // pattern. Bounding boxes were eyeballed from the generated PNG; they
+  // can be fine-tuned with a visual tool later. They do NOT overlap.
+  // Chip accuracy fields are intentionally omitted — see spec §2.1.1
+  // (no fabricated UI data).
   const chips: ModeChip[] = [
     {
       mode: "reading",
       label: t.ketPortal.modes.reading,
       href: "/ket/reading/new",
-      position: { top: "28%", left: "7%" },
+      region: { top: "38%", left: "3%", width: "29%", height: "32%" },
+      labelAnchor: "top-left",
     },
     {
       mode: "writing",
       label: t.ketPortal.modes.writing,
       href: "/ket/writing/new",
-      position: { top: "18%", left: "36%" },
+      region: { top: "14%", left: "24%", width: "26%", height: "32%" },
+      labelAnchor: "top-left",
     },
     {
       mode: "listening",
       label: t.ketPortal.modes.listening,
       href: "/ket/listening/new",
-      position: { top: "22%", left: "67%" },
+      region: { top: "12%", left: "52%", width: "25%", height: "30%" },
+      labelAnchor: "top-right",
     },
     {
       mode: "speaking",
       label: t.ketPortal.modes.speaking,
       href: "/ket/speaking/new",
-      position: { top: "52%", left: "38%" },
+      region: { top: "32%", left: "36%", width: "24%", height: "26%" },
+      labelAnchor: "top-left",
     },
     {
       mode: "vocab",
       label: t.ketPortal.modes.vocab,
       href: "/ket/vocab",
-      position: { top: "70%", left: "12%" },
+      region: { top: "60%", left: "60%", width: "32%", height: "23%" },
+      labelAnchor: "top-left",
     },
     {
       mode: "grammar",
       label: t.ketPortal.modes.grammar,
       href: "/ket/grammar",
-      position: { top: "72%", left: "60%" },
+      region: { top: "16%", left: "78%", width: "20%", height: "48%" },
+      labelAnchor: "top-right",
     },
   ];
 
