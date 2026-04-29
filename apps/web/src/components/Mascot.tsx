@@ -43,7 +43,11 @@ export function Mascot({
 }: MascotProps) {
   const character = portal === "ket" ? "leo" : "aria";
   const defaultAlt = portal === "ket" ? "Leo" : "Aria";
-  const src = `/mascots/${character}/${pose}.png`;
+  // Cache-buster so the browser + next/image optimizer refetch when
+  // pose assets are regenerated (otherwise old optimized versions stick
+  // around even after a hard refresh). Bump this when assets change.
+  const ASSET_VERSION = 4;
+  const src = `/mascots/${character}/${pose}.png?v=${ASSET_VERSION}`;
   return (
     <Image
       src={src}
