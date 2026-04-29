@@ -17,9 +17,49 @@ export const t = {
   app: {
     name: "剑桥 KET / PET",
     title: "剑桥 KET / PET 备考",
-    tagline: "AI 生成仿真练习题，紧扣剑桥真题的题型、考点和难点",
-    metaDescription:
-      "面向中国 K-12 学生的剑桥英语 KET（A2 Key）与 PET（B1 Preliminary）备考平台，含教师监控与学习进度追踪。",
+    tagline: {
+      ket: "听说读写 · 一题一题来",
+      pet: "AI 帮你找盲点 · 稳稳备考",
+    } as Tone<string>,
+    metaDescription: "中小学剑桥 KET / PET 备考 · AI 出题练习",
+  },
+  /**
+   * Per-portal home-page namespaces. Used by the KET portal home (B.2) and
+   * PET portal home (C.1) — separate namespaces because each portal's home
+   * has portal-specific labels (e.g., "Leo 在 KET 岛等你" vs "Aria 在 PET 城
+   * 等你") that don't naturally collapse into a single Tone<T> key.
+   */
+  ketPortal: {
+    greeting: "嗨！选一题练练 →",
+    greetingSub: "Leo 在 KET 岛等你",
+    weekPillCompleted: "本周 6/6 ✓",
+    weekPillProgress: (done: number, total: number) => `本周 ${done}/${total}`,
+    todayLabel: "今天",
+    streakLabel: (days: number) => `🔥 连打 ${days} 天`,
+    modes: {
+      reading: "📖 读",
+      writing: "✍ 写",
+      listening: "🎧 听",
+      speaking: "🎤 说",
+      vocab: "🔠 词",
+      grammar: "📐 语法",
+    },
+  },
+  petPortal: {
+    greeting: "今天练什么 ↓",
+    greetingSub: "Aria 在 PET 城等你",
+    weekPillCompleted: "本周 6/6",
+    weekPillProgress: (done: number, total: number) => `本周 ${done}/${total}`,
+    todayLabel: "TODAY",
+    streakLabel: (days: number) => `🔥 ${days} 天连打`,
+    modes: {
+      reading: "阅读",
+      writing: "写作",
+      listening: "听力",
+      speaking: "口语",
+      vocab: "词汇",
+      grammar: "语法",
+    },
   },
   nav: {
     login: "登录",
